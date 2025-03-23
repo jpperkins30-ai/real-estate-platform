@@ -1,0 +1,256 @@
+import express, { Request, Response } from 'express';
+import { validationResult } from 'express-validator';
+import crypto from 'crypto';
+// @ts-ignore\nimport User, { IUser } from '../models/User';
+import { generateToken } from '../utils/auth';
+import { sendPasswordResetEmail } from '../utils/email';
+import { 
+  registerValidation, 
+  loginValidation, 
+  passwordResetRequestValidation, 
+  passwordResetValidation 
+} from '../middleware/validation';
+import { HydratedDocument, Types } from 'mongoose';
+
+const router = express.Router();
+
+// Helper function to handle validation errors
+const handleValidationErrors = (req: Request, res: Response): boolean => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    res.status(400).json({ errors: errors.array() });
+    return true;
+  }
+  return false;
+};
+
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Register a new user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *     responses:
+ *       201:
+ *         description: User registered successfully
+ *       400:
+ *         description: Invalid input or email already exists
+ */
+router.post('/register', registerValidation, async (req: Request, res: Response): Promise<void> => {
+  if (handleValidationErrors(req, res)) return;
+
+  try {
+    const { email, password } = req.body;
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      res.status(400).json({ message: 'Email already registered' });
+      return;
+    }
+
+    // Create new user
+    const user = await User.create({ email, password });
+
+    // Generate token
+    // @ts-ignore\n    const token = generateToken(user._id instanceof Types.ObjectId ? user._id.toString() : user._id);
+
+    res.status(201).json({
+      message: 'User registered successfully',
+      token,
+      user: { id: user._id, email: user.email }
+    });
+  } catch (error) {
+    res.status(400).json({ message: 'Error registering user', error });
+  }
+});
+
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Login user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *       401:
+ *         description: Invalid credentials
+ */
+router.post('/login', loginValidation, async (req: Request, res: Response): Promise<void> => {
+  if (handleValidationErrors(req, res)) return;
+
+  try {
+    const { email, password } = req.body;
+
+    // Find user
+    const user = await User.findOne({ email });
+    if (!user) {
+      res.status(401).json({ message: 'Invalid email or password' });
+      return;
+    }
+
+    // Verify password
+    // @ts-ignore\n    const isValidPassword = await user.comparePassword(password);
+    if (!isValidPassword) {
+      res.status(401).json({ message: 'Invalid email or password' });
+      return;
+    }
+
+    // Generate token
+    // @ts-ignore\n    const token = generateToken(user._id instanceof Types.ObjectId ? user._id.toString() : user._id);
+
+    res.json({
+      message: 'Login successful',
+      token,
+      user: { id: user._id, email: user.email }
+    });
+  } catch (error) {
+    res.status(400).json({ message: 'Error logging in', error });
+  }
+});
+
+/**
+ * @swagger
+ * /api/auth/forgot-password:
+ *   post:
+ *     summary: Request password reset
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *     responses:
+ *       200:
+ *         description: Password reset email sent
+ *       404:
+ *         description: User not found
+ */
+router.post('/forgot-password', passwordResetRequestValidation, async (req: Request, res: Response): Promise<void> => {
+  if (handleValidationErrors(req, res)) return;
+
+  try {
+    const { email } = req.body;
+
+    // Find user
+    const user = await User.findOne({ email });
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour
+
+    // Save reset token to user
+    // @ts-ignore\n    user.resetPasswordToken = resetToken;
+    // @ts-ignore\n    user.resetPasswordExpires = resetTokenExpiry;
+    await user.save();
+
+    // Send reset email
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password`;
+    await sendPasswordResetEmail(email, resetToken, resetUrl);
+
+    res.json({ message: 'Password reset email sent' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error requesting password reset', error });
+  }
+});
+
+/**
+ * @swagger
+ * /api/auth/reset-password:
+ *   post:
+ *     summary: Reset password using token
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - password
+ *             properties:
+ *               token:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *     responses:
+ *       200:
+ *         description: Password reset successful
+ *       400:
+ *         description: Invalid or expired token
+ */
+router.post('/reset-password', passwordResetValidation, async (req: Request, res: Response): Promise<void> => {
+  if (handleValidationErrors(req, res)) return;
+
+  try {
+    const { token, password } = req.body;
+
+    // Find user with valid reset token
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      res.status(400).json({ message: 'Invalid or expired reset token' });
+      return;
+    }
+
+    // Update password and clear reset token
+    user.password = password;
+    // @ts-ignore\n    user.resetPasswordToken = undefined;
+    // @ts-ignore\n    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    res.json({ message: 'Password reset successful' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error resetting password', error });
+  }
+});
+
+export default router; 

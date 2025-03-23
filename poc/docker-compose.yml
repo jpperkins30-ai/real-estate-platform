@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  poc:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: real-estate-platform-poc
+    volumes:
+      # Mount data directories for persistence
+      - ./data:/app/data
+    # Set environment variables if needed
+    environment:
+      - NODE_ENV=development
+    # Keep container running until manually stopped
+    tty: true
+    stdin_open: true 

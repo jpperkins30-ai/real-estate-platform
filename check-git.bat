@@ -1,0 +1,9 @@
+@echo off
+echo Checking Git status...
+git status
+echo.
+echo Checking Git configuration...
+git config --list
+echo.
+echo Checking Git remote...
+git remote -v 

@@ -1,0 +1,29 @@
+# Node modules
+/node_modules
+
+# Generated data
+/data
+
+# Log files
+*.log
+npm-debug.log*
+
+# Environment variables
+.env
+
+# Build directory
+/dist
+
+# Dependency directories
+/.pnp
+.pnp.js
+
+# IDE and editor files
+/.idea
+/.vscode
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db 

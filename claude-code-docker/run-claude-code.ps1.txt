@@ -1,0 +1,1 @@
+docker run -it --rm -v ${PWD}:/app node:18 /bin/bash -c "npm install -g @anthropic-ai/claude-code && exec /bin/bash"

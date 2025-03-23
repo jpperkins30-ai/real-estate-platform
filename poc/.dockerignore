@@ -1,0 +1,25 @@
+# Node modules
+node_modules
+npm-debug.log
+
+# Output directories
+data
+
+# Git files
+.git
+.gitignore
+
+# Docker files (redundant in build context)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Editor directories and files
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db 

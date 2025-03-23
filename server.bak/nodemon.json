@@ -1,0 +1,15 @@
+{
+  "ignore": [
+    ".git",
+    "node_modules/**/node_modules",
+    "dist",
+    "*.test.ts",
+    "*.spec.ts",
+    ".env",
+    "*.md",
+    "*.log"
+  ],
+  "watch": ["src"],
+  "ext": "ts",
+  "exec": "ts-node ./src/index.ts"
+} 
