@@ -125,6 +125,7 @@ const PropertySchema = new Schema({
     }
   },
   
+
   // Metadata and collection tracking
   metadata: {
     sourceId: Schema.Types.ObjectId,
@@ -138,13 +139,26 @@ const PropertySchema = new Schema({
   strict: false  // Allow additional fields not defined in schema
 });
 
+
 // Create base indexes for common search fields
 PropertySchema.index({ propertyAddress: 1 });
 PropertySchema.index({ parcelId: 1 });
 PropertySchema.index({ taxAccountNumber: 1 });
+PropertySchema.index({ state: 1, county: 1 });
+PropertySchema.index({ ownerName: 1 });
+PropertySchema.index({ 'location.coordinates': '2dsphere' });
+
+
+// Create indexes for efficient queries
+PropertySchema.index({ state: 1, county: 1 });
+PropertySchema.index({ propertyAddress: 1 });
+PropertySchema.index({ ownerName: 1 });
+PropertySchema.index({ parcelId: 1 });
+PropertySchema.index({ 'location.coordinates': '2dsphere' });
 PropertySchema.index({ 'saleInfo.saleDate': 1 });
 PropertySchema.index({ createdAt: 1 });
 PropertySchema.index({ updatedAt: 1 });
+
 
 // Create compound indexes for efficient queries
 PropertySchema.index({ "countyId": 1, "parcelId": 1 }, { unique: true });
@@ -170,6 +184,7 @@ export interface PropertyDocument extends Document {
   zipCode?: string;
   countyId: mongoose.Types.ObjectId;
   stateId: mongoose.Types.ObjectId;
+
   propertyType: string;
   propertyDetails?: {
     landArea?: number;
@@ -211,6 +226,7 @@ export interface PropertyDocument extends Document {
     type?: 'Point' | 'Polygon' | 'MultiPolygon';
     coordinates?: any;
   };
+
   metadata?: {
     sourceId?: mongoose.Types.ObjectId;
     collectionDate?: Date;
