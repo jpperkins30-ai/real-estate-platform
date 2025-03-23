@@ -1,0 +1,5 @@
+[33mcommit 660da2565c43c1bbed8b99ab1a34a74d99267235[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/collector-framework[m[33m)[m
+Author: Real Estate Platform Developer <user@example.com>
+Date:   Sun Mar 23 13:17:16 2025 -0600
+
+    Initial commit with all project files including React frontend for inventory module

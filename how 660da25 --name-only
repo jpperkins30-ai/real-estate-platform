@@ -1,0 +1,10 @@
+[33m660da25[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/collector-framework[m[33m)[m Initial commit with all project files including React frontend for inventory module
+[33m16b2943[m Implement TransformationPipeline for property data standardization
+[33m9965ca1[m Implement St. Mary's County Collector
+[33m4a65dd8[m Create base collector abstract class
+[33mb2a257c[m Implement CollectorManager for orchestrating data collection
+[33m8b834b0[m Create services directory structure
+[33m8ded09d[m Create dedicated logger utility for collector framework
+[33ma6fb10b[m Create collector type definitions
+[33mb4d684b[m Add models index file for easier imports
+[33m115a7e2[m Create Collection model for tracking collection runs
