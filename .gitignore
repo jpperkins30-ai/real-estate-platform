@@ -1,0 +1,26 @@
+# Node modules
+node_modules/
+
+# Environment variables
+.env
+.env.*
+
+# Build directories
+dist/
+
+# Logs
+logs/
+*.log
+
+# Data files (except examples)
+data/*
+!data/examples/
+
+# macOS
+.DS_Store
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*.swo
