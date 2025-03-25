@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  Container, Row, Col, Card, Badge, Table, Spinner, Alert, Tabs, Tab, Button, Modal 
+  Container, Row, Col, Card, Badge, Table, Spinner, Alert, Tabs, Tab, Button, Modal, ListGroup, Form, Pagination 
 } from 'react-bootstrap';
 import { FaCity, FaHome, FaEdit, FaTrash, FaDownload, FaSync, FaSearch } from 'react-icons/fa';
 import axios from 'axios';
 import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 
 interface CountyDetail {
   _id: string;
@@ -29,6 +31,18 @@ interface CountyDetail {
       totalPropertiesWithLiens: number;
       lastUpdated: string;
     };
+    searchConfig?: {
+      lookupMethod: 'account_number' | 'parcel_id';
+      searchUrl: string;
+      lienUrl?: string;
+      selectors: {
+        ownerName: string;
+        propertyAddress: string;
+        marketValue: string;
+        taxStatus: string;
+        [key: string]: string;
+      }
+    }
   };
   controllers: {
     controllerId: string;
@@ -38,33 +52,6 @@ interface CountyDetail {
     nextScheduledRun?: string;
     configuration: any;
   }[];
-  searchConfig: {
-    enabled: boolean;
-    lastRun?: string;
-    nextScheduledRun?: string;
-    searchCriteria: {
-      propertyTypes?: string[];
-      minValue?: number;
-      maxValue?: number;
-      minSquareFeet?: number;
-      maxSquareFeet?: number;
-      minBedrooms?: number;
-      maxBedrooms?: number;
-      minBathrooms?: number;
-      maxBathrooms?: number;
-      minYearBuilt?: number;
-      maxYearBuilt?: number;
-      minLotSize?: number;
-      maxLotSize?: number;
-      propertyConditions?: string[];
-      additionalFilters?: any;
-    };
-    notificationSettings?: {
-      email?: string[];
-      slack?: string[];
-      webhook?: string[];
-    };
-  };
 }
 
 interface Property {
@@ -91,564 +78,802 @@ interface State {
   abbreviation: string;
 }
 
-const CountyDetailView: React.FC = () => {
-  const { countyId } = useParams<{ countyId: string }>();
-  const navigate = useNavigate();
-  const [county, setCounty] = useState<CountyDetail | null>(null);
-  const [parentState, setParentState] = useState<State | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<string>('overview');
-  const [properties, setProperties] = useState<Property[]>([]);
-  const [propertiesLoading, setPropertiesLoading] = useState<boolean>(false);
-  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
-  const [page, setPage] = useState<number>(1);
-  const [totalProperties, setTotalProperties] = useState<number>(0);
-  const [searchActive, setSearchActive] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (countyId) {
-      fetchCountyDetails(countyId);
-    }
-  }, [countyId]);
-
-  const fetchCountyDetails = async (id: string) => {
-    setLoading(true);
-    try {
-      const response = await axios.get(`/api/counties/${id}`);
-      setCounty(response.data);
-      
-      // Fetch parent state info
-      const stateResponse = await axios.get(`/api/states/${response.data.parentId}`);
-      setParentState(stateResponse.data);
-      
-      setLoading(false);
-    } catch (err) {
-      console.error('Error fetching county details:', err);
-      setError('Failed to load county details. Please try again later.');
-      setLoading(false);
-    }
+interface CountyObject {
+  _id: string;
+  name: string;
+  stateId: {
+    _id: string;
+    name: string;
+    abbreviation: string;
   };
-
-  const fetchProperties = async (pageNum: number = 1) => {
-    if (!countyId) return;
-    
-    setPropertiesLoading(true);
-    try {
-      const response = await axios.get(`/api/properties/search?countyId=${countyId}&page=${pageNum}&limit=10`);
-      setProperties(response.data.properties);
-      setTotalProperties(response.data.pagination.totalItems);
-      setPage(pageNum);
-      setPropertiesLoading(false);
-    } catch (err) {
-      console.error('Error fetching properties:', err);
-      setPropertiesLoading(false);
-    }
-  };
-
-  const handleDeleteCounty = async () => {
-    if (!countyId) return;
-    
-    try {
-      await axios.delete(`/api/counties/${countyId}`);
-      setShowDeleteModal(false);
-      
-      // Navigate back to the parent state
-      if (county && county.parentId) {
-        navigate(`/inventory/states/${county.parentId}`);
-      } else {
-        navigate('/inventory');
+  createdAt: string;
+  updatedAt: string;
+  geometry: any; // GeoJSON geometry
+  metadata: {
+    totalProperties: number;
+    statistics: {
+      totalTaxLiens: number;
+      totalValue: number;
+      averagePropertyValue: number;
+    },
+    searchConfig?: {
+      lookupMethod: 'account_number' | 'parcel_id';
+      searchUrl: string;
+      lienUrl?: string;
+      selectors: {
+        ownerName: string;
+        propertyAddress: string;
+        marketValue: string;
+        taxStatus: string;
+        [key: string]: string;
       }
-    } catch (err: any) {
-      console.error('Error deleting county:', err);
-      setError(err.response?.data?.message || 'Failed to delete county. Please try again later.');
-      setShowDeleteModal(false);
     }
   };
+  controllers: ControllerReference[];
+}
 
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-    if (tab === 'properties' && properties.length === 0) {
-      fetchProperties();
-    }
+interface PropertyObject {
+  _id: string;
+  parcelId: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  value: number;
+  taxStatus: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface ControllerReference {
+  controllerId: string | {
+    _id: string;
+    name: string;
   };
+  controllerType: string;
+  enabled: boolean;
+  lastRun?: string;
+  nextScheduledRun?: string;
+}
 
-  const handleSearchToggle = async () => {
-    if (!countyId || !county) return;
-    
-    try {
-      await axios.patch(`/api/counties/${countyId}/search-config`, {
-        enabled: !county.searchConfig.enabled
-      });
-      
-      // Update local state
-      setCounty({
-        ...county,
-        searchConfig: {
-          ...county.searchConfig,
-          enabled: !county.searchConfig.enabled
+interface PaginationInfo {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+interface PropertiesResponse {
+  properties: PropertyObject[];
+  pagination: PaginationInfo;
+}
+
+interface CountyDetailViewProps {
+  countyId: string;
+}
+
+interface CountyEditFormProps {
+  county: CountyObject;
+  onSubmit: (data: Partial<CountyObject>) => void;
+  onCancel: () => void;
+}
+
+interface SearchConfigModalProps {
+  open: boolean;
+  onClose: () => void;
+  searchConfig?: CountyObject['metadata']['searchConfig'];
+  onSubmit: (data: CountyObject['metadata']['searchConfig']) => void;
+}
+
+interface PropertyListTableProps {
+  properties: PropertyObject[];
+  onRowClick: (propertyId: string) => void;
+}
+
+interface TabPanelProps {
+  children?: React.ReactNode;
+  activeKey: string;
+  eventKey: string;
+}
+
+const TabPanel: React.FC<TabPanelProps> = ({ children, activeKey, eventKey }) => {
+  return (
+    <div
+      className={`tab-pane ${activeKey === eventKey ? 'active' : 'fade'}`}
+      role="tabpanel"
+      id={`county-tabpanel-${eventKey}`}
+      aria-labelledby={`county-tab-${eventKey}`}
+    >
+      {activeKey === eventKey && <div className="p-3">{children}</div>}
+    </div>
+  );
+};
+
+const useCountyData = (countyId: string) => {
+  return useQuery<CountyObject>({
+    queryKey: ['county', countyId],
+    queryFn: async () => {
+      const { data } = await axios.get(`/api/counties/${countyId}`);
+      return data;
+    }
+  });
+};
+
+const useProperties = (countyId: string, filters = {}, page = 1, limit = 10) => {
+  return useQuery<PropertiesResponse>({
+    queryKey: ['properties', countyId, filters, page, limit],
+    queryFn: async () => {
+      const { data } = await axios.get(`/api/counties/${countyId}/properties`, {
+        params: {
+          ...filters,
+          page,
+          limit
         }
       });
-      
-      setSearchActive(!county.searchConfig.enabled);
-    } catch (err) {
-      console.error('Error toggling search:', err);
-    }
+      return data;
+    },
+    enabled: !!countyId
+  });
+};
+
+const PropertyListTable: React.FC<PropertyListTableProps> = ({ properties, onRowClick }) => {
+  return (
+    <Table striped bordered hover responsive>
+      <thead>
+        <tr>
+          <th>Parcel ID</th>
+          <th>Address</th>
+          <th>City</th>
+          <th>Value</th>
+          <th>Tax Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {properties.map(property => (
+          <tr 
+            key={property._id} 
+            onClick={() => onRowClick(property._id)}
+            style={{ cursor: 'pointer' }}
+          >
+            <td>{property.parcelId}</td>
+            <td>{property.address}</td>
+            <td>{property.city}</td>
+            <td>${property.value?.toLocaleString() || 'N/A'}</td>
+            <td>{property.taxStatus || 'Unknown'}</td>
+          </tr>
+        ))}
+      </tbody>
+    </Table>
+  );
+};
+
+const CountyEditForm: React.FC<CountyEditFormProps> = ({ county, onSubmit, onCancel }) => {
+  const [formData, setFormData] = useState({
+    name: county.name
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  const handleExportData = async (format: 'csv' | 'excel') => {
-    if (!countyId) return;
-    
-    try {
-      const response = await axios.get(`/api/export/county/${countyId}?format=${format}`, {
-        responseType: 'blob'
-      });
-      
-      // Create a download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `${county?.name || 'county'}-data.${format}`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (err) {
-      console.error(`Error exporting ${format} data:`, err);
-      setError(`Failed to export ${format} data. Please try again later.`);
-    }
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(formData);
   };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
-  if (loading) {
-    return (
-      <Container className="mt-4 text-center">
-        <Spinner animation="border" />
-        <p>Loading county details...</p>
-      </Container>
-    );
-  }
-
-  if (error) {
-    return (
-      <Container className="mt-4">
-        <Alert variant="danger">{error}</Alert>
-      </Container>
-    );
-  }
-
-  if (!county) {
-    return (
-      <Container className="mt-4">
-        <Alert variant="warning">County not found.</Alert>
-      </Container>
-    );
-  }
 
   return (
-    <Container fluid className="mt-4">
-      <Row className="mb-4">
-        <Col>
-          <div className="d-flex justify-content-between align-items-center">
-            <div>
-              <h2>
-                <FaCity className="me-2" />
-                {county.name}
-              </h2>
-              {parentState && (
-                <div className="text-muted">
-                  Located in{' '}
+    <Form onSubmit={handleSubmit}>
+      <Form.Group className="mb-3">
+        <Form.Label>County Name</Form.Label>
+        <Form.Control 
+          type="text" 
+          name="name" 
+          value={formData.name} 
+          onChange={handleChange}
+          required
+        />
+      </Form.Group>
+      
+      <div className="d-flex gap-2">
+        <Button variant="primary" type="submit">
+          Save Changes
+        </Button>
+        <Button variant="outline-secondary" onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
+    </Form>
+  );
+};
+
+const SearchConfigModal: React.FC<SearchConfigModalProps> = ({ open, onClose, searchConfig, onSubmit }) => {
+  const defaultSelectors = {
+    ownerName: '',
+    propertyAddress: '',
+    marketValue: '',
+    taxStatus: ''
+  };
+
+  const [formData, setFormData] = useState({
+    lookupMethod: searchConfig?.lookupMethod || 'account_number',
+    searchUrl: searchConfig?.searchUrl || '',
+    lienUrl: searchConfig?.lienUrl || '',
+    selectors: searchConfig?.selectors || defaultSelectors
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLElement>) => {
+    const { name, value } = e.target as HTMLInputElement | HTMLSelectElement;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSelectorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      selectors: {
+        ...prev.selectors,
+        [name]: value
+      }
+    }));
+  };
+
+  const handleSubmit = () => {
+    onSubmit(formData as CountyObject['metadata']['searchConfig']);
+  };
+
+  return (
+    <Modal show={open} onHide={onClose} size="lg">
+      <Modal.Header closeButton>
+        <Modal.Title>Search Configuration</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <Form>
+          <Row className="mb-3">
+            <Col xs={12}>
+              <Form.Group>
+                <Form.Label>Lookup Method</Form.Label>
+                <Form.Select
+                  name="lookupMethod"
+                  value={formData.lookupMethod}
+                  onChange={handleChange}
+                >
+                  <option value="account_number">Account Number</option>
+                  <option value="parcel_id">Parcel ID</option>
+                </Form.Select>
+              </Form.Group>
+            </Col>
+          </Row>
+          <Row className="mb-3">
+            <Col xs={12}>
+              <Form.Group>
+                <Form.Label>Search URL</Form.Label>
+                <Form.Control
+                  type="text"
+                  name="searchUrl"
+                  value={formData.searchUrl}
+                  onChange={handleChange}
+                  placeholder="URL for property search"
+                />
+                <Form.Text className="text-muted">
+                  URL for property search
+                </Form.Text>
+              </Form.Group>
+            </Col>
+          </Row>
+          <Row className="mb-3">
+            <Col xs={12}>
+              <Form.Group>
+                <Form.Label>Lien URL (Optional)</Form.Label>
+                <Form.Control
+                  type="text"
+                  name="lienUrl"
+                  value={formData.lienUrl}
+                  onChange={handleChange}
+                  placeholder="URL for lien status checks (if available)"
+                />
+                <Form.Text className="text-muted">
+                  URL for lien status checks (if available)
+                </Form.Text>
+              </Form.Group>
+            </Col>
+          </Row>
+          <h5 className="mt-4 mb-3">Selectors</h5>
+          <Row className="mb-3">
+            <Col xs={12} md={6}>
+              <Form.Group>
+                <Form.Label>Owner Name Selector</Form.Label>
+                <Form.Control
+                  type="text"
+                  name="ownerName"
+                  value={formData.selectors.ownerName}
+                  onChange={handleSelectorChange}
+                  placeholder="CSS selector for owner name"
+                />
+                <Form.Text className="text-muted">
+                  CSS selector for owner name
+                </Form.Text>
+              </Form.Group>
+            </Col>
+            <Col xs={12} md={6}>
+              <Form.Group>
+                <Form.Label>Property Address Selector</Form.Label>
+                <Form.Control
+                  type="text"
+                  name="propertyAddress"
+                  value={formData.selectors.propertyAddress}
+                  onChange={handleSelectorChange}
+                  placeholder="CSS selector for property address"
+                />
+                <Form.Text className="text-muted">
+                  CSS selector for property address
+                </Form.Text>
+              </Form.Group>
+            </Col>
+          </Row>
+          <Row className="mb-3">
+            <Col xs={12} md={6}>
+              <Form.Group>
+                <Form.Label>Market Value Selector</Form.Label>
+                <Form.Control
+                  type="text"
+                  name="marketValue"
+                  value={formData.selectors.marketValue}
+                  onChange={handleSelectorChange}
+                  placeholder="CSS selector for market value"
+                />
+                <Form.Text className="text-muted">
+                  CSS selector for market value
+                </Form.Text>
+              </Form.Group>
+            </Col>
+            <Col xs={12} md={6}>
+              <Form.Group>
+                <Form.Label>Tax Status Selector</Form.Label>
+                <Form.Control
+                  type="text"
+                  name="taxStatus"
+                  value={formData.selectors.taxStatus}
+                  onChange={handleSelectorChange}
+                  placeholder="CSS selector for tax status"
+                />
+                <Form.Text className="text-muted">
+                  CSS selector for tax status
+                </Form.Text>
+              </Form.Group>
+            </Col>
+          </Row>
+        </Form>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button variant="primary" onClick={handleSubmit}>
+          Save Configuration
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
+};
+
+interface CustomPaginationProps {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}
+
+const CustomPagination: React.FC<CustomPaginationProps> = ({ currentPage, totalPages, onPageChange }) => {
+  const items = [];
+  
+  items.push(
+    <Pagination.Prev 
+      key="prev" 
+      onClick={() => onPageChange(currentPage - 1)}
+      disabled={currentPage === 1}
+    />
+  );
+  
+  if (currentPage > 3) {
+    items.push(
+      <Pagination.Item key={1} onClick={() => onPageChange(1)}>
+        1
+      </Pagination.Item>
+    );
+    
+    if (currentPage > 4) {
+      items.push(<Pagination.Ellipsis key="ellipsis1" />);
+    }
+  }
+  
+  for (let page = Math.max(1, currentPage - 1); page <= Math.min(totalPages, currentPage + 1); page++) {
+    items.push(
+      <Pagination.Item 
+        key={page} 
+        active={page === currentPage}
+        onClick={() => onPageChange(page)}
+      >
+        {page}
+      </Pagination.Item>
+    );
+  }
+  
+  if (currentPage < totalPages - 2) {
+    if (currentPage < totalPages - 3) {
+      items.push(<Pagination.Ellipsis key="ellipsis2" />);
+    }
+    
+    items.push(
+      <Pagination.Item 
+        key={totalPages} 
+        onClick={() => onPageChange(totalPages)}
+      >
+        {totalPages}
+      </Pagination.Item>
+    );
+  }
+  
+  items.push(
+    <Pagination.Next 
+      key="next" 
+      onClick={() => onPageChange(currentPage + 1)}
+      disabled={currentPage === totalPages}
+    />
+  );
+  
+  return <Pagination>{items}</Pagination>;
+};
+
+const CountyDetailView: React.FC<CountyDetailViewProps> = ({ countyId }) => {
+  const { data: county, isLoading, error } = useCountyData(countyId);
+  const { 
+    data: propertiesData, 
+    isLoading: propertiesLoading 
+  } = useProperties(countyId, {}, 1, 10);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSearchConfigModalOpen, setIsSearchConfigModalOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  
+  const handleTabChange = (key: string | null) => {
+    if (key) {
+      setActiveTab(key);
+    }
+  };
+  
+  const handleEditToggle = () => {
+    setIsEditing(!isEditing);
+  };
+  
+  const updateCountyMutation = useMutation({
+    mutationFn: async (countyData: Partial<CountyObject>) => {
+      const { data } = await axios.put(`/api/counties/${countyId}`, countyData);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['county', countyId] });
+      setIsEditing(false);
+    }
+  });
+  
+  const handleUpdate = (formData: Partial<CountyObject>) => {
+    updateCountyMutation.mutate(formData);
+  };
+  
+  const updateSearchConfigMutation = useMutation({
+    mutationFn: async (searchConfig: CountyObject['metadata']['searchConfig']) => {
+      const { data } = await axios.put(`/api/counties/${countyId}/searchConfig`, searchConfig);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['county', countyId] });
+      setIsSearchConfigModalOpen(false);
+    }
+  });
+  
+  const handleSearchConfigModalOpen = () => {
+    setIsSearchConfigModalOpen(true);
+  };
+  
+  const handleSearchConfigModalClose = () => {
+    setIsSearchConfigModalOpen(false);
+  };
+  
+  const handleSearchConfigUpdate = (configData: CountyObject['metadata']['searchConfig']) => {
+    updateSearchConfigMutation.mutate(configData);
+  };
+  
+  const handlePropertyRowClick = (propertyId: string) => {
+    navigate(`/properties/${propertyId}`);
+  };
+  
+  const handleAddProperty = () => {
+    navigate(`/properties/create?countyId=${countyId}`);
+  };
+  
+  if (isLoading) {
+    return (
+      <div className="d-flex justify-content-center p-5">
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </Spinner>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <Alert variant="danger">
+        Error loading county: {(error as Error).message}
+      </Alert>
+    );
+  }
+  
+  if (!county) {
+    return <Alert variant="warning">No county data found</Alert>;
+  }
+  
+  return (
+    <div className="county-detail-view">
+      <Row className="g-3">
+        <Col xs={12}>
+          <Card>
+            <Card.Header>
+              <div className="d-flex justify-content-between align-items-center">
+                <div>
+                  <h4 className="mb-0">
+                    {county.name}, {county.stateId.abbreviation || 'State'}
+                  </h4>
+                  <div className="text-muted small">
+                    Total Properties: {county.metadata?.totalProperties || 0}
+                  </div>
+                </div>
+                <div className="d-flex gap-2">
                   <Button
-                    variant="link"
-                    className="p-0"
-                    onClick={() => navigate(`/inventory/states/${county.parentId}`)}
+                    variant="outline-secondary"
+                    size="sm"
+                    onClick={handleSearchConfigModalOpen}
                   >
-                    {parentState.name}, {parentState.abbreviation}
+                    Search Configuration
+                  </Button>
+                  <Button 
+                    variant="outline-primary" 
+                    size="sm" 
+                    onClick={handleEditToggle}
+                  >
+                    {isEditing ? 'Cancel' : 'Edit'}
                   </Button>
                 </div>
-              )}
-            </div>
-            <div>
-              <Button 
-                variant="outline-primary" 
-                className="me-2"
-                onClick={() => navigate(`/inventory/counties/${countyId}/edit`)}
-              >
-                <FaEdit /> Edit
-              </Button>
-              <Button 
-                variant="outline-danger" 
-                onClick={() => setShowDeleteModal(true)}
-              >
-                <FaTrash /> Delete
-              </Button>
-            </div>
-          </div>
-        </Col>
-      </Row>
-
-      <Row className="mb-4">
-        <Col md={3}>
-          <Card>
+              </div>
+            </Card.Header>
             <Card.Body>
-              <Card.Title>Overview</Card.Title>
-              <div className="my-3">
-                <Badge bg="primary">
-                  {county.metadata.totalProperties} Properties
-                </Badge>
-              </div>
-              <Table size="sm">
-                <tbody>
-                  <tr>
-                    <td>Tax Liens:</td>
-                    <td>{county.metadata.statistics.totalTaxLiens}</td>
-                  </tr>
-                  <tr>
-                    <td>Total Value:</td>
-                    <td>{formatCurrency(county.metadata.statistics.totalValue)}</td>
-                  </tr>
-                  <tr>
-                    <td>Avg Property Value:</td>
-                    <td>
-                      {county.metadata.statistics.averagePropertyValue
-                        ? formatCurrency(county.metadata.statistics.averagePropertyValue)
-                        : 'N/A'}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Last Updated:</td>
-                    <td>{formatDate(county.metadata.statistics.lastUpdated)}</td>
-                  </tr>
-                </tbody>
-              </Table>
-              <div className="d-grid gap-2 mt-3">
-                <Button 
-                  variant={county.searchConfig.enabled ? "success" : "outline-secondary"}
-                  size="sm"
-                  onClick={handleSearchToggle}
-                >
-                  <FaSearch /> {county.searchConfig.enabled ? 'Auto Search: ON' : 'Auto Search: OFF'}
-                </Button>
-                <Button 
-                  variant="outline-secondary" 
-                  size="sm"
-                  onClick={() => handleExportData('csv')}
-                >
-                  <FaDownload /> Export CSV
-                </Button>
-                <Button 
-                  variant="outline-secondary" 
-                  size="sm"
-                  onClick={() => handleExportData('excel')}
-                >
-                  <FaDownload /> Export Excel
-                </Button>
-              </div>
+              {isEditing ? (
+                <CountyEditForm 
+                  county={county} 
+                  onSubmit={handleUpdate} 
+                  onCancel={handleEditToggle} 
+                />
+              ) : (
+                <>
+                  <Tabs
+                    activeKey={activeTab}
+                    onSelect={handleTabChange}
+                    className="mb-3"
+                  >
+                    <Tab eventKey="overview" title="Overview" />
+                    <Tab eventKey="properties" title="Properties" />
+                    <Tab eventKey="controllers" title="Controllers" />
+                    <Tab eventKey="statistics" title="Statistics" />
+                  </Tabs>
+                  
+                  <TabPanel activeKey={activeTab} eventKey="overview">
+                    <Row className="g-3">
+                      <Col xs={12} md={6}>
+                        <h5>County Details</h5>
+                        <p>State: {county.stateId.name || 'State'}</p>
+                        <p>Created: {new Date(county.createdAt).toLocaleDateString()}</p>
+                        <p>Last Updated: {new Date(county.updatedAt).toLocaleDateString()}</p>
+                        
+                        {county.metadata.searchConfig && (
+                          <div className="mt-4">
+                            <h5>Search Configuration</h5>
+                            <p>Lookup Method: {county.metadata.searchConfig.lookupMethod}</p>
+                            <p>Search URL: {county.metadata.searchConfig.searchUrl}</p>
+                            {county.metadata.searchConfig.lienUrl && (
+                              <p>Lien URL: {county.metadata.searchConfig.lienUrl}</p>
+                            )}
+                          </div>
+                        )}
+                      </Col>
+                      <Col xs={12} md={6}>
+                        <div style={{ height: '300px', width: '100%', backgroundColor: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {county.geometry ? (
+                            <span>Map will be displayed here once libraries are installed</span>
+                          ) : (
+                            <span>No geographic data available</span>
+                          )}
+                        </div>
+                      </Col>
+                    </Row>
+                  </TabPanel>
+                  
+                  <TabPanel activeKey={activeTab} eventKey="properties">
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                      <h5 className="mb-0">Properties</h5>
+                      <Button 
+                        variant="primary" 
+                        size="sm"
+                        onClick={handleAddProperty}
+                      >
+                        Add Property
+                      </Button>
+                    </div>
+                    
+                    {propertiesLoading ? (
+                      <div className="text-center p-3">
+                        <Spinner animation="border" role="status">
+                          <span className="visually-hidden">Loading...</span>
+                        </Spinner>
+                      </div>
+                    ) : propertiesData?.properties && propertiesData.properties.length > 0 ? (
+                      <>
+                        <PropertyListTable 
+                          properties={propertiesData.properties}
+                          onRowClick={handlePropertyRowClick}
+                        />
+                        
+                        <div className="d-flex justify-content-between align-items-center mt-3">
+                          <div>
+                            <Form.Select 
+                              style={{ width: 'auto', display: 'inline-block' }}
+                              value={limit}
+                              onChange={(e) => {
+                                setLimit(parseInt(e.target.value, 10));
+                                setPage(1);
+                              }}
+                            >
+                              <option value={5}>5 per page</option>
+                              <option value={10}>10 per page</option>
+                              <option value={25}>25 per page</option>
+                              <option value={50}>50 per page</option>
+                              <option value={100}>100 per page</option>
+                            </Form.Select>
+                            <span className="ms-2">
+                              Total: {propertiesData.pagination?.total || 0} properties
+                            </span>
+                          </div>
+                          
+                          <CustomPagination
+                            currentPage={page}
+                            totalPages={propertiesData.pagination?.totalPages || 1}
+                            onPageChange={setPage}
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <Alert variant="info">No properties found for this county</Alert>
+                    )}
+                  </TabPanel>
+                  
+                  <TabPanel activeKey={activeTab} eventKey="controllers">
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                      <h5 className="mb-0">Controllers</h5>
+                      <Button 
+                        variant="primary" 
+                        size="sm"
+                        onClick={() => {
+                          // Open controller selection modal
+                        }}
+                      >
+                        Add Controller
+                      </Button>
+                    </div>
+                    
+                    {county.controllers && county.controllers.length > 0 ? (
+                      <ListGroup>
+                        {county.controllers.map((controller) => {
+                          const controllerName = typeof controller.controllerId === 'object' 
+                            ? controller.controllerId.name 
+                            : 'Controller';
+                            
+                          return (
+                            <ListGroup.Item 
+                              key={typeof controller.controllerId === 'object' ? controller.controllerId._id : controller.controllerId} 
+                              action
+                              className="d-flex justify-content-between align-items-center"
+                            >
+                              <div>
+                                <div className="fw-bold">{controllerName}</div>
+                                <div className="text-muted small">
+                                  Type: {controller.controllerType} | 
+                                  Status: {controller.enabled ? 'Enabled' : 'Disabled'}
+                                </div>
+                              </div>
+                              <div>
+                                <Form.Check 
+                                  type="switch"
+                                  id={`controller-switch-${typeof controller.controllerId === 'object' ? controller.controllerId._id : controller.controllerId}`}
+                                  label=""
+                                  checked={controller.enabled}
+                                  onChange={() => {
+                                    // Toggle controller enabled status
+                                  }}
+                                />
+                              </div>
+                            </ListGroup.Item>
+                          );
+                        })}
+                      </ListGroup>
+                    ) : (
+                      <Alert variant="info">No controllers attached to this county</Alert>
+                    )}
+                  </TabPanel>
+                  
+                  <TabPanel activeKey={activeTab} eventKey="statistics">
+                    <h5>Statistics</h5>
+                    <Row className="g-3 mt-2">
+                      <Col xs={12} md={6}>
+                        <Card className="bg-light h-100">
+                          <Card.Body className="text-center">
+                            <h6>Tax Liens</h6>
+                            <h3>{county.metadata?.statistics?.totalTaxLiens || 0}</h3>
+                          </Card.Body>
+                        </Card>
+                      </Col>
+                      <Col xs={12} md={6}>
+                        <Card className="bg-light h-100">
+                          <Card.Body className="text-center">
+                            <h6>Total Value</h6>
+                            <h3>
+                              ${(county.metadata?.statistics?.totalValue || 0).toLocaleString()}
+                            </h3>
+                          </Card.Body>
+                        </Card>
+                      </Col>
+                      <Col xs={12} md={6}>
+                        <Card className="bg-light h-100">
+                          <Card.Body className="text-center">
+                            <h6>Average Property Value</h6>
+                            <h3>
+                              ${(county.metadata?.statistics?.averagePropertyValue || 0).toLocaleString()}
+                            </h3>
+                          </Card.Body>
+                        </Card>
+                      </Col>
+                      <Col xs={12} md={6}>
+                        <Card className="bg-light h-100">
+                          <Card.Body className="text-center">
+                            <h6>Total Properties</h6>
+                            <h3>{county.metadata?.totalProperties || 0}</h3>
+                          </Card.Body>
+                        </Card>
+                      </Col>
+                    </Row>
+                  </TabPanel>
+                </>
+              )}
             </Card.Body>
           </Card>
         </Col>
-        
-        <Col md={9}>
-          <Tabs
-            activeKey={activeTab}
-            onSelect={(k) => handleTabChange(k || 'overview')}
-            className="mb-3"
-          >
-            <Tab eventKey="overview" title="Overview">
-              <Card>
-                <Card.Body>
-                  <Row>
-                    <Col md={6}>
-                      <h4>County Information</h4>
-                      <Table bordered hover>
-                        <tbody>
-                          <tr>
-                            <td>ID:</td>
-                            <td>{county.id}</td>
-                          </tr>
-                          <tr>
-                            <td>Name:</td>
-                            <td>{county.name}</td>
-                          </tr>
-                          <tr>
-                            <td>State:</td>
-                            <td>{parentState?.name || county.parentId}</td>
-                          </tr>
-                          <tr>
-                            <td>Created:</td>
-                            <td>{formatDate(county.createdAt)}</td>
-                          </tr>
-                          <tr>
-                            <td>Updated:</td>
-                            <td>{formatDate(county.updatedAt)}</td>
-                          </tr>
-                          <tr>
-                            <td>Type:</td>
-                            <td>{county.type}</td>
-                          </tr>
-                        </tbody>
-                      </Table>
-                    </Col>
-                    <Col md={6}>
-                      {county.geometry && county.geometry.coordinates.length > 0 && (
-                        <div style={{ height: '300px' }}>
-                          <MapContainer 
-                            center={[39.8283, -98.5795]} 
-                            zoom={5} 
-                            style={{ height: '100%', width: '100%' }}
-                          >
-                            <TileLayer
-                              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                            />
-                            <GeoJSON 
-                              data={{
-                                type: 'Feature',
-                                properties: {},
-                                geometry: county.geometry
-                              } as any}
-                            />
-                          </MapContainer>
-                        </div>
-                      )}
-                    </Col>
-                  </Row>
-                </Card.Body>
-              </Card>
-            </Tab>
-            
-            <Tab eventKey="properties" title="Properties">
-              <Card>
-                <Card.Body>
-                  {propertiesLoading ? (
-                    <div className="text-center p-4">
-                      <Spinner animation="border" />
-                      <p>Loading properties...</p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="d-flex justify-content-between mb-3">
-                        <h4>Properties in {county.name}</h4>
-                        <Button
-                          variant="outline-primary"
-                          size="sm"
-                          onClick={() => navigate(`/inventory/counties/${countyId}/properties/new`)}
-                        >
-                          Add Property
-                        </Button>
-                      </div>
-                      
-                      {properties.length === 0 ? (
-                        <Alert variant="info">
-                          No properties found in this county. Add a property to get started.
-                        </Alert>
-                      ) : (
-                        <>
-                          <Table striped bordered hover responsive>
-                            <thead>
-                              <tr>
-                                <th>Name</th>
-                                <th>Address</th>
-                                <th>Status</th>
-                                <th>Value</th>
-                                <th>Actions</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {properties.map(property => (
-                                <tr key={property._id}>
-                                  <td>{property.name}</td>
-                                  <td>{property.location.address.street}, {property.location.address.city}</td>
-                                  <td>
-                                    <Badge bg={property.status === 'Tax Lien' ? 'warning' : 
-                                          property.status === 'Active' ? 'success' : 'secondary'}>
-                                      {property.status}
-                                    </Badge>
-                                  </td>
-                                  <td>{formatCurrency(property.taxStatus.assessedValue)}</td>
-                                  <td>
-                                    <Button
-                                      variant="link"
-                                      size="sm"
-                                      onClick={() => navigate(`/inventory/properties/${property._id}`)}
-                                    >
-                                      View
-                                    </Button>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </Table>
-                          
-                          {/* Simple pagination */}
-                          <div className="d-flex justify-content-between align-items-center">
-                            <div>
-                              Showing {properties.length} of {totalProperties} properties
-                            </div>
-                            <div>
-                              <Button
-                                variant="outline-secondary"
-                                size="sm"
-                                className="me-2"
-                                disabled={page === 1}
-                                onClick={() => fetchProperties(page - 1)}
-                              >
-                                Previous
-                              </Button>
-                              <Button
-                                variant="outline-secondary"
-                                size="sm"
-                                disabled={page * 10 >= totalProperties}
-                                onClick={() => fetchProperties(page + 1)}
-                              >
-                                Next
-                              </Button>
-                            </div>
-                          </div>
-                        </>
-                      )}
-                    </>
-                  )}
-                </Card.Body>
-              </Card>
-            </Tab>
-            
-            <Tab eventKey="search-config" title="Search Config">
-              <Card>
-                <Card.Body>
-                  <div className="d-flex justify-content-between mb-3">
-                    <h4>Property Search Configuration</h4>
-                    <div>
-                      <Button
-                        variant={county.searchConfig.enabled ? "success" : "outline-secondary"}
-                        size="sm"
-                        onClick={handleSearchToggle}
-                      >
-                        {county.searchConfig.enabled ? 'Enabled' : 'Disabled'}
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <Alert variant="info">
-                    Configure automated property searches for {county.name}. When enabled, the system will periodically
-                    search for new properties based on your criteria and notify you when matching properties are found.
-                  </Alert>
-                  
-                  <Row>
-                    <Col md={6}>
-                      <h5>Search Criteria</h5>
-                      <Button
-                        variant="outline-primary"
-                        size="sm"
-                        className="mb-3"
-                        onClick={() => navigate(`/inventory/counties/${countyId}/search-config/edit`)}
-                      >
-                        Edit Search Criteria
-                      </Button>
-                      
-                      <Table bordered>
-                        <tbody>
-                          {county.searchConfig.searchCriteria.propertyTypes?.length > 0 && (
-                            <tr>
-                              <td>Property Types:</td>
-                              <td>
-                                {county.searchConfig.searchCriteria.propertyTypes.join(', ')}
-                              </td>
-                            </tr>
-                          )}
-                          {(county.searchConfig.searchCriteria.minValue !== undefined || 
-                            county.searchConfig.searchCriteria.maxValue !== undefined) && (
-                            <tr>
-                              <td>Value Range:</td>
-                              <td>
-                                {county.searchConfig.searchCriteria.minValue !== undefined ? 
-                                  formatCurrency(county.searchConfig.searchCriteria.minValue) : '$0'} 
-                                {' - '}
-                                {county.searchConfig.searchCriteria.maxValue !== undefined ? 
-                                  formatCurrency(county.searchConfig.searchCriteria.maxValue) : 'No Max'}
-                              </td>
-                            </tr>
-                          )}
-                          {/* Add more search criteria display here */}
-                        </tbody>
-                      </Table>
-                    </Col>
-                    
-                    <Col md={6}>
-                      <h5>Notification Settings</h5>
-                      <Button
-                        variant="outline-primary"
-                        size="sm"
-                        className="mb-3"
-                        onClick={() => navigate(`/inventory/counties/${countyId}/notifications/edit`)}
-                      >
-                        Edit Notifications
-                      </Button>
-                      
-                      <Table bordered>
-                        <tbody>
-                          {county.searchConfig.notificationSettings?.email?.length > 0 && (
-                            <tr>
-                              <td>Email Notifications:</td>
-                              <td>
-                                {county.searchConfig.notificationSettings.email.join(', ')}
-                              </td>
-                            </tr>
-                          )}
-                          {county.searchConfig.notificationSettings?.slack?.length > 0 && (
-                            <tr>
-                              <td>Slack Notifications:</td>
-                              <td>
-                                {county.searchConfig.notificationSettings.slack.join(', ')}
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </Table>
-                    </Col>
-                  </Row>
-                </Card.Body>
-              </Card>
-            </Tab>
-          </Tabs>
-        </Col>
       </Row>
-
-      {/* Delete Confirmation Modal */}
-      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Confirm Delete</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <p>Are you sure you want to delete <strong>{county.name}</strong>?</p>
-          <Alert variant="warning">
-            This action cannot be undone. All associated properties will be orphaned.
-          </Alert>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={handleDeleteCounty}>
-            Delete
-          </Button>
-        </Modal.Footer>
-      </Modal>
-    </Container>
+      
+      <SearchConfigModal
+        open={isSearchConfigModalOpen}
+        onClose={handleSearchConfigModalClose}
+        searchConfig={county.metadata.searchConfig}
+        onSubmit={handleSearchConfigUpdate}
+      />
+    </div>
   );
 };
 

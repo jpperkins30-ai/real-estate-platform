@@ -358,17 +358,23 @@ export interface StateGeometry {
  * State object representing a US state
  */
 export interface StateObject {
-  id: string;
+  _id: string;
   name: string;
   abbreviation: string;
-  type: 'state';
-  parentId: string;  // Reference to US Map Object
-  createdAt: Date;
-  updatedAt: Date;
-  geometry: StateGeometry;
-  metadata: StateMetadata;
+  createdAt: string;
+  updatedAt: string;
+  geometry: any; // GeoJSON geometry
+  metadata: {
+    totalCounties: number;
+    totalProperties: number;
+    statistics: {
+      totalTaxLiens: number;
+      totalValue: number;
+      averagePropertyValue: number;
+      lastUpdated: string;
+    }
+  };
   controllers: ControllerReference[];
-  counties: CountyObject[];  // Child objects
 }
 
 /**
@@ -418,17 +424,20 @@ export interface CountyGeometry {
  * County object representing a US county
  */
 export interface CountyObject {
-  id: string;
+  _id: string;
   name: string;
-  type: 'county';
-  parentId: string;  // Reference to State Object
-  stateId: string;   // Direct reference to state for quicker lookups
-  createdAt: Date;
-  updatedAt: Date;
-  geometry: CountyGeometry;
-  metadata: CountyMetadata;
-  controllers: ControllerReference[];
-  properties: PropertyObject[];  // Child objects
+  stateId: string;
+  createdAt: string;
+  updatedAt: string;
+  geometry: any; // GeoJSON geometry
+  metadata: {
+    totalProperties: number;
+    statistics: {
+      totalTaxLiens: number;
+      totalValue: number;
+      averagePropertyValue: number;
+    }
+  };
 }
 
 /**
@@ -493,22 +502,27 @@ export interface PropertyMetadata {
  * Property object representing a real estate property
  */
 export interface PropertyObject {
-  id: string;
+  _id: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  countyId: string;
+  stateId: string;
   parcelId: string;
-  taxAccountNumber: string;
-  type: 'property';
-  parentId: string;  // Reference to County Object
-  countyId: string;  // Direct reference to county
-  stateId: string;   // Direct reference to state
-  createdAt: Date;
-  updatedAt: Date;
-  ownerName: string;
-  propertyAddress: string;
-  city?: string;
-  zipCode?: string;
-  geometry?: PropertyGeometry;
-  metadata: PropertyMetadata;
-  controllers: ControllerReference[];
+  taxStatus: string;
+  value: number;
+  acreage: number;
+  createdAt: string;
+  updatedAt: string;
+  geometry: any; // GeoJSON point
+  metadata: {
+    hasTaxLien: boolean;
+    assessedValue: number;
+    marketValue: number;
+    lastAssessment: string;
+    zoning: string;
+  };
 }
 
 /**

@@ -1,26 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import { 
-  Container, Row, Col, Card, Badge, Table, Spinner, Alert, Tabs, Tab, Button, Modal 
+  Card, 
+  Row, 
+  Col, 
+  Button, 
+  Tabs, 
+  Tab, 
+  Spinner, 
+  Alert, 
+  ListGroup, 
+  Form, 
+  Modal
 } from 'react-bootstrap';
-import { FaMapMarkerAlt, FaCity, FaChartBar, FaEdit, FaTrash, FaDownload, FaSync } from 'react-icons/fa';
+// Import types for map (commented out until library is installed)
+// import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
+// import 'leaflet/dist/leaflet.css';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
 
-interface StateDetail {
+// Type definitions
+interface StateObject {
   _id: string;
-  id: string;
   name: string;
   abbreviation: string;
-  type: string;
-  parentId: string;
   createdAt: string;
   updatedAt: string;
-  geometry: {
-    type: string;
-    coordinates: number[][][];
-  };
+  geometry: any; // GeoJSON geometry
   metadata: {
     totalCounties: number;
     totalProperties: number;
@@ -28,327 +33,414 @@ interface StateDetail {
       totalTaxLiens: number;
       totalValue: number;
       averagePropertyValue: number;
-      totalPropertiesWithLiens: number;
       lastUpdated: string;
-    };
-  };
-  controllers: {
-    controllerId: string;
-    controllerType: string;
-    enabled: boolean;
-    lastRun?: string;
-    nextScheduledRun?: string;
-    configuration: any;
-  }[];
-  counties: {
-    _id: string;
-    name: string;
-    metadata: {
-      totalProperties: number;
-      statistics: {
-        totalTaxLiens: number;
-        totalValue: number;
-      }
     }
-  }[];
+  };
+  controllers: ControllerReference[];
 }
 
-interface County {
+interface CountyObject {
   _id: string;
   name: string;
+  stateId: string;
+  createdAt: string;
+  updatedAt: string;
+  geometry: any; // GeoJSON geometry
   metadata: {
     totalProperties: number;
     statistics: {
       totalTaxLiens: number;
       totalValue: number;
+      averagePropertyValue: number;
     }
-  }
+  };
 }
 
-const StateDetailView: React.FC = () => {
-  const { stateId } = useParams<{ stateId: string }>();
-  const navigate = useNavigate();
-  const [state, setState] = useState<StateDetail | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<string>('overview');
-  const [counties, setCounties] = useState<County[]>([]);
-  const [countyLoading, setCountyLoading] = useState<boolean>(false);
-  const [recalculateLoading, setRecalculateLoading] = useState<boolean>(false);
-  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+interface ControllerReference {
+  controllerId: string;
+  controllerType: string;
+  enabled: boolean;
+  lastRun?: string;
+  nextScheduledRun?: string;
+}
 
-  useEffect(() => {
-    if (stateId) {
-      fetchStateDetails(stateId);
+// Props for the component
+interface StateDetailViewProps {
+  stateId: string;
+}
+
+// State edit form props
+interface StateEditFormProps {
+  state: StateObject;
+  onSubmit: (data: Partial<StateObject>) => void;
+  onCancel: () => void;
+}
+
+// Controller modal props
+interface ControllerSelectionModalProps {
+  open: boolean;
+  onClose: () => void;
+  stateId: string;
+}
+
+// Custom hooks for data fetching
+const useStateData = (stateId: string) => {
+  return useQuery<StateObject>({
+    queryKey: ['state', stateId],
+    queryFn: async () => {
+      const { data } = await axios.get(`/api/states/${stateId}`);
+      return data;
     }
-  }, [stateId]);
+  });
+};
 
-  const fetchStateDetails = async (id: string) => {
-    setLoading(true);
-    try {
-      const response = await axios.get(`/api/states/${id}`);
-      setState(response.data);
-      setLoading(false);
-    } catch (err) {
-      console.error('Error fetching state details:', err);
-      setError('Failed to load state details. Please try again later.');
-      setLoading(false);
-    }
-  };
+const useCounties = (stateId: string) => {
+  return useQuery<CountyObject[]>({
+    queryKey: ['counties', stateId],
+    queryFn: async () => {
+      const { data } = await axios.get(`/api/states/${stateId}/counties`);
+      return data.counties;
+    },
+    enabled: !!stateId
+  });
+};
 
-  const fetchCounties = async () => {
-    if (!stateId || counties.length > 0) return;
-    
-    setCountyLoading(true);
-    try {
-      const response = await axios.get(`/api/states/${stateId}/counties`);
-      setCounties(response.data);
-      setCountyLoading(false);
-    } catch (err) {
-      console.error('Error fetching counties:', err);
-      setCountyLoading(false);
-    }
-  };
-
-  const handleRecalculateStatistics = async () => {
-    if (!stateId) return;
-    
-    setRecalculateLoading(true);
-    try {
-      await axios.post(`/api/states/${stateId}/recalculate`);
-      fetchStateDetails(stateId);
-      setRecalculateLoading(false);
-    } catch (err) {
-      console.error('Error recalculating statistics:', err);
-      setRecalculateLoading(false);
-    }
-  };
-
-  const handleDeleteState = async () => {
-    if (!stateId) return;
-    
-    try {
-      await axios.delete(`/api/states/${stateId}`);
-      setShowDeleteModal(false);
-      navigate('/inventory');
-    } catch (err: any) {
-      console.error('Error deleting state:', err);
-      setError(err.response?.data?.message || 'Failed to delete state. Please try again later.');
-      setShowDeleteModal(false);
-    }
-  };
-
-  const handleExportData = async (format: 'csv' | 'excel') => {
-    if (!stateId) return;
-    
-    try {
-      const response = await axios.get(`/api/export/state/${stateId}?format=${format}`, {
-        responseType: 'blob'
+const useAddController = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ stateId, controllerId, controllerType }: { 
+      stateId: string;
+      controllerId: string;
+      controllerType: string;
+    }) => {
+      const { data } = await axios.post(`/api/states/${stateId}/controllers`, {
+        controllerId,
+        controllerType
       });
-      
-      // Create a download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `${state?.name || 'state'}-data.${format}`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (err) {
-      console.error(`Error exporting ${format} data:`, err);
-      setError(`Failed to export ${format} data. Please try again later.`);
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['state', variables.stateId] });
     }
+  });
+};
+
+// Tab panel component
+interface TabPanelProps {
+  children?: React.ReactNode;
+  activeKey: string;
+  eventKey: string;
+}
+
+const TabPanel: React.FC<TabPanelProps> = ({ children, activeKey, eventKey }) => {
+  return (
+    <div
+      className={`tab-pane ${activeKey === eventKey ? 'active' : 'fade'}`}
+      role="tabpanel"
+      id={`state-tabpanel-${eventKey}`}
+      aria-labelledby={`state-tab-${eventKey}`}
+    >
+      {activeKey === eventKey && <div className="p-3">{children}</div>}
+    </div>
+  );
+};
+
+// State Edit Form component
+const StateEditForm: React.FC<StateEditFormProps> = ({ state, onSubmit, onCancel }) => {
+  const [formData, setFormData] = useState({
+    name: state.name,
+    abbreviation: state.abbreviation
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-    if (tab === 'counties') {
-      fetchCounties();
-    }
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(formData);
   };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
-  if (loading) {
-    return (
-      <Container className="mt-4 text-center">
-        <Spinner animation="border" />
-        <p>Loading state details...</p>
-      </Container>
-    );
-  }
-
-  if (error) {
-    return (
-      <Container className="mt-4">
-        <Alert variant="danger">{error}</Alert>
-      </Container>
-    );
-  }
-
-  if (!state) {
-    return (
-      <Container className="mt-4">
-        <Alert variant="warning">State not found.</Alert>
-      </Container>
-    );
-  }
 
   return (
-    <Container fluid className="mt-4">
-      <Row className="mb-4">
-        <Col>
-          <div className="d-flex justify-content-between align-items-center">
-            <h2>
-              <FaMapMarkerAlt className="me-2" />
-              {state.name} ({state.abbreviation})
-            </h2>
-            <div>
-              <Button 
-                variant="outline-primary" 
-                className="me-2"
-                onClick={() => navigate(`/inventory/states/${stateId}/edit`)}
-              >
-                <FaEdit /> Edit
-              </Button>
-              <Button 
-                variant="outline-danger" 
-                onClick={() => setShowDeleteModal(true)}
-              >
-                <FaTrash /> Delete
-              </Button>
-            </div>
-          </div>
-        </Col>
-      </Row>
+    <Form onSubmit={handleSubmit}>
+      <Form.Group className="mb-3">
+        <Form.Label>State Name</Form.Label>
+        <Form.Control 
+          type="text" 
+          name="name" 
+          value={formData.name} 
+          onChange={handleChange}
+          required
+        />
+      </Form.Group>
+      
+      <Form.Group className="mb-3">
+        <Form.Label>Abbreviation</Form.Label>
+        <Form.Control 
+          type="text" 
+          name="abbreviation" 
+          value={formData.abbreviation} 
+          onChange={handleChange} 
+          maxLength={2}
+          required
+        />
+      </Form.Group>
+      
+      <div className="d-flex gap-2">
+        <Button variant="primary" type="submit">
+          Save Changes
+        </Button>
+        <Button variant="outline-secondary" onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
+    </Form>
+  );
+};
 
-      <Row className="mb-4">
-        <Col md={3}>
+// Controller Selection Modal
+const ControllerSelectionModal: React.FC<ControllerSelectionModalProps> = ({ open, onClose, stateId }) => {
+  const [selectedController, setSelectedController] = useState('');
+  const [controllerType, setControllerType] = useState('data');
+  
+  const addControllerMutation = useAddController();
+  
+  const { data: controllers, isLoading: loadingControllers } = useQuery({
+    queryKey: ['controllers'],
+    queryFn: async () => {
+      const { data } = await axios.get('/api/controllers');
+      return data;
+    }
+  });
+  
+  const handleAddController = () => {
+    if (selectedController) {
+      addControllerMutation.mutate({
+        stateId,
+        controllerId: selectedController,
+        controllerType
+      }, {
+        onSuccess: () => {
+          onClose();
+        }
+      });
+    }
+  };
+  
+  return (
+    <Modal show={open} onHide={onClose}>
+      <Modal.Header closeButton>
+        <Modal.Title>Add Controller</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        {loadingControllers ? (
+          <div className="text-center p-3">
+            <Spinner animation="border" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </Spinner>
+          </div>
+        ) : (
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>Controller</Form.Label>
+              <Form.Select 
+                value={selectedController} 
+                onChange={(e) => setSelectedController(e.target.value)}
+              >
+                <option value="">Select a controller</option>
+                {controllers?.map((controller: any) => (
+                  <option key={controller._id} value={controller._id}>
+                    {controller.name}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+            
+            <Form.Group className="mb-3">
+              <Form.Label>Controller Type</Form.Label>
+              <Form.Select 
+                value={controllerType} 
+                onChange={(e) => setControllerType(e.target.value)}
+              >
+                <option value="data">Data</option>
+                <option value="search">Search</option>
+                <option value="validation">Validation</option>
+                <option value="notification">Notification</option>
+              </Form.Select>
+            </Form.Group>
+          </Form>
+        )}
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button 
+          variant="primary" 
+          onClick={handleAddController} 
+          disabled={!selectedController || addControllerMutation.isPending}
+        >
+          {addControllerMutation.isPending ? (
+            <>
+              <Spinner
+                as="span"
+                animation="border"
+                size="sm"
+                role="status"
+                aria-hidden="true"
+                className="me-2"
+              />
+              Adding...
+            </>
+          ) : (
+            'Add Controller'
+          )}
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
+};
+
+// Main Component
+const StateDetailView: React.FC<StateDetailViewProps> = ({ stateId }) => {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [isEditing, setIsEditing] = useState(false);
+  const [isControllerModalOpen, setIsControllerModalOpen] = useState(false);
+  
+  const queryClient = useQueryClient();
+  
+  // Fetch state data
+  const { data: state, isLoading, error } = useStateData(stateId);
+  
+  // Fetch counties for this state
+  const { data: counties } = useCounties(stateId);
+  
+  // Mutation for updating state
+  const updateStateMutation = useMutation({
+    mutationFn: async (stateData: Partial<StateObject>) => {
+      const { data } = await axios.put(`/api/states/${stateId}`, stateData);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['state', stateId] });
+      setIsEditing(false);
+    }
+  });
+  
+  // Handle tab change
+  const handleTabChange = (key: string | null) => {
+    if (key) {
+      setActiveTab(key);
+    }
+  };
+  
+  // Handle edit mode toggle
+  const handleEditToggle = () => {
+    setIsEditing(!isEditing);
+  };
+  
+  // Handle state update
+  const handleUpdate = (formData: Partial<StateObject>) => {
+    updateStateMutation.mutate(formData);
+  };
+  
+  // Handle controller modal
+  const handleControllerModalOpen = () => {
+    setIsControllerModalOpen(true);
+  };
+  
+  const handleControllerModalClose = () => {
+    setIsControllerModalOpen(false);
+  };
+  
+  if (isLoading) {
+    return (
+      <div className="d-flex justify-content-center p-5">
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </Spinner>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <Alert variant="danger">
+        Error loading state: {(error as Error).message}
+      </Alert>
+    );
+  }
+  
+  if (!state) {
+    return <Alert variant="warning">No state data found</Alert>;
+  }
+  
+  return (
+    <div className="state-detail-view">
+      <Row className="g-3">
+        <Col xs={12}>
           <Card>
+            <Card.Header>
+              <div className="d-flex justify-content-between align-items-center">
+                <div>
+                  <h4 className="mb-0">
+                    {state.name} ({state.abbreviation})
+                  </h4>
+                  <div className="text-muted small">
+                    Total Counties: {state.metadata?.totalCounties || 0} | 
+                    Total Properties: {state.metadata?.totalProperties || 0}
+                  </div>
+                </div>
+                <Button 
+                  variant="outline-primary" 
+                  size="sm" 
+                  onClick={handleEditToggle}
+                >
+                  {isEditing ? 'Cancel' : 'Edit'}
+                </Button>
+              </div>
+            </Card.Header>
             <Card.Body>
-              <Card.Title>Overview</Card.Title>
-              <div className="my-3">
-                <Badge bg="primary" className="me-2">
-                  {state.metadata.totalCounties} Counties
-                </Badge>
-                <Badge bg="info">
-                  {state.metadata.totalProperties} Properties
-                </Badge>
-              </div>
-              <Table size="sm">
-                <tbody>
-                  <tr>
-                    <td>Tax Liens:</td>
-                    <td>{state.metadata.statistics.totalTaxLiens}</td>
-                  </tr>
-                  <tr>
-                    <td>Total Value:</td>
-                    <td>{formatCurrency(state.metadata.statistics.totalValue)}</td>
-                  </tr>
-                  <tr>
-                    <td>Avg Property Value:</td>
-                    <td>{formatCurrency(state.metadata.statistics.averagePropertyValue)}</td>
-                  </tr>
-                  <tr>
-                    <td>Last Updated:</td>
-                    <td>{formatDate(state.metadata.statistics.lastUpdated)}</td>
-                  </tr>
-                </tbody>
-              </Table>
-              <div className="d-grid gap-2 mt-3">
-                <Button 
-                  variant="outline-secondary" 
-                  size="sm"
-                  onClick={handleRecalculateStatistics}
-                  disabled={recalculateLoading}
-                >
-                  {recalculateLoading ? (
-                    <>
-                      <Spinner animation="border" size="sm" /> Recalculating...
-                    </>
-                  ) : (
-                    <>
-                      <FaSync /> Recalculate Statistics
-                    </>
-                  )}
-                </Button>
-                <Button 
-                  variant="outline-secondary" 
-                  size="sm"
-                  onClick={() => handleExportData('csv')}
-                >
-                  <FaDownload /> Export CSV
-                </Button>
-                <Button 
-                  variant="outline-secondary" 
-                  size="sm"
-                  onClick={() => handleExportData('excel')}
-                >
-                  <FaDownload /> Export Excel
-                </Button>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-        
-        <Col md={9}>
-          <Tabs
-            activeKey={activeTab}
-            onSelect={(k) => handleTabChange(k || 'overview')}
-            className="mb-3"
-          >
-            <Tab eventKey="overview" title="Overview">
-              <Card>
-                <Card.Body>
-                  <Row>
-                    <Col md={6}>
-                      <h4>State Information</h4>
-                      <Table bordered hover>
-                        <tbody>
-                          <tr>
-                            <td>ID:</td>
-                            <td>{state.id}</td>
-                          </tr>
-                          <tr>
-                            <td>Name:</td>
-                            <td>{state.name}</td>
-                          </tr>
-                          <tr>
-                            <td>Abbreviation:</td>
-                            <td>{state.abbreviation}</td>
-                          </tr>
-                          <tr>
-                            <td>Created:</td>
-                            <td>{formatDate(state.createdAt)}</td>
-                          </tr>
-                          <tr>
-                            <td>Updated:</td>
-                            <td>{formatDate(state.updatedAt)}</td>
-                          </tr>
-                          <tr>
-                            <td>Type:</td>
-                            <td>{state.type}</td>
-                          </tr>
-                        </tbody>
-                      </Table>
-                    </Col>
-                    <Col md={6}>
-                      {state.geometry && state.geometry.coordinates.length > 0 && (
-                        <div style={{ height: '300px' }}>
+              {isEditing ? (
+                <StateEditForm 
+                  state={state} 
+                  onSubmit={handleUpdate} 
+                  onCancel={handleEditToggle} 
+                />
+              ) : (
+                <>
+                  <Tabs
+                    activeKey={activeTab}
+                    onSelect={handleTabChange}
+                    className="mb-3"
+                  >
+                    <Tab eventKey="overview" title="Overview" />
+                    <Tab eventKey="counties" title="Counties" />
+                    <Tab eventKey="controllers" title="Controllers" />
+                    <Tab eventKey="statistics" title="Statistics" />
+                  </Tabs>
+                  
+                  {/* Overview Tab */}
+                  <TabPanel activeKey={activeTab} eventKey="overview">
+                    <Row className="g-3">
+                      <Col xs={12} md={6}>
+                        <h5>State Details</h5>
+                        <p>Created: {new Date(state.createdAt).toLocaleDateString()}</p>
+                        <p>Last Updated: {new Date(state.updatedAt).toLocaleDateString()}</p>
+                      </Col>
+                      <Col xs={12} md={6}>
+                        <div style={{ height: '300px', width: '100%', backgroundColor: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {state.geometry ? (
+                            <span>Map will be displayed here once libraries are installed</span>
+                          ) : (
+                            <span>No geographic data available</span>
+                          )}
+                          {/* Uncomment when react-leaflet is installed
                           <MapContainer 
                             center={[39.8283, -98.5795]} 
                             zoom={4} 
@@ -358,173 +450,157 @@ const StateDetailView: React.FC = () => {
                               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                             />
-                            <GeoJSON 
-                              data={{
-                                type: 'Feature',
-                                properties: {},
-                                geometry: state.geometry
-                              } as any}
-                            />
+                            <GeoJSON data={state.geometry} />
                           </MapContainer>
+                          */}
                         </div>
-                      )}
-                    </Col>
-                  </Row>
-                </Card.Body>
-              </Card>
-            </Tab>
-            
-            <Tab eventKey="counties" title="Counties">
-              <Card>
-                <Card.Body>
-                  {countyLoading ? (
-                    <div className="text-center p-4">
-                      <Spinner animation="border" />
-                      <p>Loading counties...</p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="d-flex justify-content-between mb-3">
-                        <h4>Counties in {state.name}</h4>
-                        <Button
-                          variant="outline-primary"
-                          size="sm"
-                          onClick={() => navigate(`/inventory/states/${stateId}/counties/new`)}
-                        >
-                          Add County
-                        </Button>
-                      </div>
-                      
-                      {counties.length === 0 ? (
-                        <Alert variant="info">
-                          No counties found for this state. Add a county to get started.
-                        </Alert>
-                      ) : (
-                        <Table striped bordered hover responsive>
-                          <thead>
-                            <tr>
-                              <th>Name</th>
-                              <th>Properties</th>
-                              <th>Tax Liens</th>
-                              <th>Total Value</th>
-                              <th>Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {counties.map(county => (
-                              <tr key={county._id}>
-                                <td>{county.name}</td>
-                                <td>{county.metadata.totalProperties}</td>
-                                <td>{county.metadata.statistics.totalTaxLiens}</td>
-                                <td>{formatCurrency(county.metadata.statistics.totalValue)}</td>
-                                <td>
-                                  <Button
-                                    variant="link"
-                                    size="sm"
-                                    onClick={() => navigate(`/inventory/counties/${county._id}`)}
-                                  >
-                                    View
-                                  </Button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </Table>
-                      )}
-                    </>
-                  )}
-                </Card.Body>
-              </Card>
-            </Tab>
-            
-            <Tab eventKey="controllers" title="Controllers">
-              <Card>
-                <Card.Body>
-                  <div className="d-flex justify-content-between mb-3">
-                    <h4>Controllers</h4>
-                    <Button
-                      variant="outline-primary"
-                      size="sm"
-                      onClick={() => navigate(`/inventory/states/${stateId}/controllers/new`)}
-                    >
-                      Add Controller
-                    </Button>
-                  </div>
+                      </Col>
+                    </Row>
+                  </TabPanel>
                   
-                  {state.controllers.length === 0 ? (
-                    <Alert variant="info">
-                      No controllers configured for this state. Add a controller to automate data collection.
-                    </Alert>
-                  ) : (
-                    <Table striped bordered hover responsive>
-                      <thead>
-                        <tr>
-                          <th>ID</th>
-                          <th>Type</th>
-                          <th>Status</th>
-                          <th>Last Run</th>
-                          <th>Next Run</th>
-                          <th>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {state.controllers.map(controller => (
-                          <tr key={controller.controllerId}>
-                            <td>{controller.controllerId}</td>
-                            <td>{controller.controllerType}</td>
-                            <td>
-                              <Badge bg={controller.enabled ? 'success' : 'danger'}>
-                                {controller.enabled ? 'Enabled' : 'Disabled'}
-                              </Badge>
-                            </td>
-                            <td>
-                              {controller.lastRun ? formatDate(controller.lastRun) : 'Never'}
-                            </td>
-                            <td>
-                              {controller.nextScheduledRun ? formatDate(controller.nextScheduledRun) : 'Not scheduled'}
-                            </td>
-                            <td>
-                              <Button
-                                variant="link"
-                                size="sm"
-                                onClick={() => navigate(`/inventory/controllers/${controller.controllerId}`)}
-                              >
-                                Configure
-                              </Button>
-                            </td>
-                          </tr>
+                  {/* Counties Tab */}
+                  <TabPanel activeKey={activeTab} eventKey="counties">
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                      <h5 className="mb-0">Counties</h5>
+                      <Button variant="primary" size="sm">
+                        Add County
+                      </Button>
+                    </div>
+                    
+                    {counties && counties.length > 0 ? (
+                      <ListGroup>
+                        {counties.map(county => (
+                          <ListGroup.Item 
+                            key={county._id} 
+                            action
+                            className="d-flex justify-content-between align-items-center"
+                          >
+                            <div>
+                              <div className="fw-bold">{county.name}</div>
+                              <div className="text-muted small">
+                                Properties: {county.metadata?.totalProperties || 0}
+                              </div>
+                            </div>
+                            <Button 
+                              variant="outline-secondary" 
+                              size="sm"
+                              href={`/counties/${county._id}`}
+                            >
+                              View
+                            </Button>
+                          </ListGroup.Item>
                         ))}
-                      </tbody>
-                    </Table>
-                  )}
-                </Card.Body>
-              </Card>
-            </Tab>
-          </Tabs>
+                      </ListGroup>
+                    ) : (
+                      <Alert variant="info">No counties found for this state</Alert>
+                    )}
+                  </TabPanel>
+                  
+                  {/* Controllers Tab */}
+                  <TabPanel activeKey={activeTab} eventKey="controllers">
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                      <h5 className="mb-0">Controllers</h5>
+                      <Button 
+                        variant="primary" 
+                        size="sm"
+                        onClick={handleControllerModalOpen}
+                      >
+                        Add Controller
+                      </Button>
+                    </div>
+                    
+                    {state.controllers && state.controllers.length > 0 ? (
+                      <ListGroup>
+                        {state.controllers.map((controller: ControllerReference) => (
+                          <ListGroup.Item 
+                            key={controller.controllerId} 
+                            action
+                            className="d-flex justify-content-between align-items-center"
+                          >
+                            <div>
+                              <div className="fw-bold">
+                                Controller ID: {controller.controllerId}
+                              </div>
+                              <div className="text-muted small">
+                                Type: {controller.controllerType} | 
+                                Status: {controller.enabled ? 'Enabled' : 'Disabled'}
+                              </div>
+                            </div>
+                            <div>
+                              <Form.Check 
+                                type="switch"
+                                id={`controller-switch-${controller.controllerId}`}
+                                label=""
+                                checked={controller.enabled}
+                                onChange={() => {
+                                  // Toggle controller enabled status
+                                }}
+                              />
+                            </div>
+                          </ListGroup.Item>
+                        ))}
+                      </ListGroup>
+                    ) : (
+                      <Alert variant="info">No controllers attached to this state</Alert>
+                    )}
+                  </TabPanel>
+                  
+                  {/* Statistics Tab */}
+                  <TabPanel activeKey={activeTab} eventKey="statistics">
+                    <h5>Statistics</h5>
+                    <Row className="g-3 mt-2">
+                      <Col xs={12} md={6}>
+                        <Card className="bg-light h-100">
+                          <Card.Body className="text-center">
+                            <h6>Tax Liens</h6>
+                            <h3>{state.metadata?.statistics?.totalTaxLiens || 0}</h3>
+                          </Card.Body>
+                        </Card>
+                      </Col>
+                      <Col xs={12} md={6}>
+                        <Card className="bg-light h-100">
+                          <Card.Body className="text-center">
+                            <h6>Total Value</h6>
+                            <h3>
+                              ${(state.metadata?.statistics?.totalValue || 0).toLocaleString()}
+                            </h3>
+                          </Card.Body>
+                        </Card>
+                      </Col>
+                      <Col xs={12} md={6}>
+                        <Card className="bg-light h-100">
+                          <Card.Body className="text-center">
+                            <h6>Average Property Value</h6>
+                            <h3>
+                              ${(state.metadata?.statistics?.averagePropertyValue || 0).toLocaleString()}
+                            </h3>
+                          </Card.Body>
+                        </Card>
+                      </Col>
+                      <Col xs={12} md={6}>
+                        <Card className="bg-light h-100">
+                          <Card.Body className="text-center">
+                            <h6>Total Properties</h6>
+                            <h3>{state.metadata?.totalProperties || 0}</h3>
+                          </Card.Body>
+                        </Card>
+                      </Col>
+                    </Row>
+                  </TabPanel>
+                </>
+              )}
+            </Card.Body>
+          </Card>
         </Col>
       </Row>
-
-      {/* Delete Confirmation Modal */}
-      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Confirm Delete</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <p>Are you sure you want to delete <strong>{state.name}</strong>?</p>
-          <Alert variant="warning">
-            This action cannot be undone. All associated counties and properties will be orphaned.
-          </Alert>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={handleDeleteState}>
-            Delete
-          </Button>
-        </Modal.Footer>
-      </Modal>
-    </Container>
+      
+      {/* Controller Modal */}
+      <ControllerSelectionModal
+        open={isControllerModalOpen}
+        onClose={handleControllerModalClose}
+        stateId={stateId}
+      />
+    </div>
   );
 };
 
