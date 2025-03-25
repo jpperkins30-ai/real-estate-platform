@@ -43,6 +43,12 @@ const format = winston.format.combine(
   ),
 );
 
+// HTTP logging format for expressWinston
+export const httpLogFormat = winston.format.combine(
+  winston.format.timestamp(),
+  winston.format.json()
+);
+
 // Define transports
 const transports = [
   new winston.transports.Console(),
