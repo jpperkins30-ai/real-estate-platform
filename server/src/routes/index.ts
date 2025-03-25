@@ -1,10 +1,13 @@
 import express from 'express';
-import propertyRoutes from './property';
 import authRoutes from './auth';
 import userRoutes from './user';
+import propertyRoutes from './properties';
 import collectionRoutes from './collection';
 import dataSourceRoutes from './data-source';
 import healthRoutes from './health';
+import controllerRoutes from './controller.routes';
+import exportRoutes from './export.routes';
+import taxLienRoutes from './tax-lien.routes';
 
 const router = express.Router();
 
@@ -23,14 +26,21 @@ const router = express.Router();
  *     description: Data source management
  *   - name: Collection
  *     description: Data collection management
+ *   - name: TaxLien
+ *     description: Tax lien status checking
  */
 
-// Register route modules
+// Base routes
 router.use('/health', healthRoutes);
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/properties', propertyRoutes);
-router.use('/data-sources', dataSourceRoutes);
 router.use('/collections', collectionRoutes);
+router.use('/data-sources', dataSourceRoutes);
+router.use('/controllers', controllerRoutes.main);
+router.use('/controller-types', controllerRoutes.types);
+router.use('/collector-types', controllerRoutes.collectorTypes);
+router.use('/exports', exportRoutes);
+router.use('/tax-liens', taxLienRoutes);
 
 export default router; 
