@@ -96,7 +96,13 @@ The County collection contains documents representing counties, each linked to a
       lienUrl: String,        // URL for tax lien information
       enabled: Boolean,       // Whether search is enabled for this county
       lastRun: Date,          // Last search run timestamp
-      nextScheduledRun: Date  // Next scheduled search timestamp
+      nextScheduledRun: Date, // Next scheduled search timestamp
+      selectors: {            // CSS selectors for web scraping
+        ownerName: String,    // Selector for owner name field
+        propertyAddress: String, // Selector for property address field
+        marketValue: String,  // Selector for market value field
+        taxStatus: String     // Selector for tax status field
+      }
     }
   },
   createdAt: Date,         // Document creation timestamp

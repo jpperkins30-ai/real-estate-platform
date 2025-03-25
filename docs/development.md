@@ -101,6 +101,62 @@ When working with the hierarchical structure, you'll commonly need to:
      .populate('stateId');
    ```
 
+### Data Initialization Scripts
+
+The platform includes scripts for initializing hierarchical data:
+
+1. **Creating Initial States**:
+   ```bash
+   # Run from the server directory
+   npm run ts-node src/scripts/createInitialStates.ts
+   ```
+
+2. **Creating Initial Counties**:
+   ```bash
+   # Run from the server directory
+   npm run ts-node src/scripts/createInitialCounties.ts
+   ```
+
+These scripts populate the database with basic geographic data and metadata. The county initialization script creates sample counties with:
+- Geographic boundaries (GeoJSON)
+- County metadata including search configuration
+- Property search endpoints for county tax assessor websites
+- Statistics tracking
+
+To add new counties, edit the `initialCounties` array in `server/src/scripts/createInitialCounties.ts`:
+
+```typescript
+const initialCounties = [
+  {
+    name: "Your County Name",
+    state: 'CA',  // State abbreviation
+    metadata: {
+      searchConfig: {
+        lookupMethod: 'account_number',
+        searchUrl: 'https://county-assessor-url.gov/',
+        selectors: {
+          // Selectors for scraping property data
+          ownerName: '.selector-for-owner-name',
+          propertyAddress: '.selector-for-property-address',
+          marketValue: '.selector-for-market-value',
+          taxStatus: '.selector-for-tax-status'
+        },
+        lienUrl: 'https://tax-lien-url.gov/' // Optional
+      }
+    }
+  }
+];
+```
+
+For more comprehensive geographic data initialization, use:
+
+```bash
+# Run from the server directory
+npm run ts-node src/scripts/initGeoData.ts
+```
+
+This script initializes the complete hierarchy including the US Map, all states, and selected counties.
+
 ### Updating Statistics
 
 When properties are created, updated, or deleted, you need to update statistics in the parent entities:
