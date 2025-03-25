@@ -2,480 +2,255 @@
 
 ## Overview
 
-The Real Estate Platform uses MongoDB as its primary database. Below are the main collections and their schemas.
+The Real Estate Platform uses MongoDB as its primary database. The schema is designed around a hierarchical structure for the inventory system with States, Counties, and Properties forming a three-tier relationship.
 
 ## Collections
 
-### USMap Collection
+### USMap
 
-```typescript
-interface USMap {
-  _id: ObjectId;
-  name: string;
-  type: 'us_map';
-  createdAt: Date;
-  updatedAt: Date;
-  geometry: {
-    type: 'Polygon' | 'MultiPolygon';
-    coordinates: number[][][];
-  };
+The USMap collection contains a single document representing the United States map, which serves as the top-level container for all geographic data.
+
+```javascript
+{
+  _id: ObjectId,           // MongoDB ID
+  name: String,            // "US Map"
+  type: String,            // "us_map"
+  geometry: {              // GeoJSON representation of US boundaries
+    type: String,          // "MultiPolygon"
+    coordinates: Array     // Nested array of coordinates
+  },
   metadata: {
-    totalStates: number;
-    totalCounties: number;
-    totalProperties: number;
-    lastUpdated: Date;
-  };
-}
-```
-
-### States Collection
-
-```typescript
-interface State {
-  _id: ObjectId;
-  name: string;
-  abbreviation: string;
-  type: 'state';
-  parentId: ObjectId; // Reference to US Map Object
-  createdAt: Date;
-  updatedAt: Date;
-  geometry: {
-    type: 'Polygon' | 'MultiPolygon';
-    coordinates: number[][][];
-  };
-  metadata: {
-    totalCounties: number;
-    totalProperties: number;
+    totalStates: Number,      // Total number of states
+    totalCounties: Number,    // Total number of counties
+    totalProperties: Number,  // Total number of properties
     statistics: {
-      totalTaxLiens: number;
-      totalValue: number;
-      averagePropertyValue: number;
-      totalPropertiesWithLiens: number;
-      lastUpdated: Date;
-    };
-  };
-  controllers: ControllerReference[];
-}
-```
-
-### Counties Collection
-
-```typescript
-interface County {
-  _id: ObjectId;
-  name: string;
-  type: 'county';
-  parentId: ObjectId; // Reference to State Object
-  stateId: ObjectId; // Direct reference to state for quicker lookups
-  createdAt: Date;
-  updatedAt: Date;
-  geometry: {
-    type: 'Polygon' | 'MultiPolygon';
-    coordinates: number[][][];
-  };
-  metadata: {
-    totalProperties: number;
-    statistics: {
-      totalTaxLiens: number;
-      totalValue: number;
-      averagePropertyValue: number;
-    };
-    searchConfig?: {
-      lookupMethod: 'account_number' | 'parcel_id';
-      searchUrl: string;
-      lienUrl?: string;
-      selectors: {
-        ownerName: string;
-        propertyAddress: string;
-        marketValue: string;
-        taxStatus: string;
-        [key: string]: string;
-      }
+      totalTaxLiens: Number,   // Total tax liens across all properties
+      totalValue: Number       // Total value of all properties
     }
-  };
-  controllers: ControllerReference[];
+  },
+  createdAt: Date,         // Document creation timestamp
+  updatedAt: Date          // Document last update timestamp
 }
 ```
 
-### Properties Collection
+### State
 
-```typescript
-interface Property {
-  _id: ObjectId;
-  parcelId: string;
-  taxAccountNumber: string;
-  type: 'property';
-  parentId: ObjectId; // Reference to County Object
-  countyId: ObjectId; // Direct reference to county
-  stateId: ObjectId; // Direct reference to state
-  createdAt: Date;
-  updatedAt: Date;
-  ownerName: string;
-  propertyAddress: string;
-  city?: string;
-  zipCode?: string;
-  status: 'Available' | 'Under Contract' | 'Sold' | 'Off Market';
-  features: {
-    type: string;
-    condition: string;
-    yearBuilt?: number;
-    squareFeet?: number;
-    lotSize?: number;
-    bedrooms?: number;
-    bathrooms?: number;
-  };
-  taxStatus: {
-    assessedValue: number;
-    marketValue: number;
-    taxRate: number;
-    annualTaxAmount: number;
-    taxLienAmount: number;
-    taxLienStatus: 'None' | 'Active' | 'Paid';
-    lastUpdated: Date;
-  };
-  geometry?: {
-    type: 'Point';
-    coordinates: [number, number]; // [longitude, latitude]
-  };
+The State collection contains documents representing US states, each linked to the USMap as its parent.
+
+```javascript
+{
+  _id: ObjectId,           // MongoDB ID
+  name: String,            // State name (e.g., "Maryland")
+  abbreviation: String,    // State abbreviation (e.g., "MD")
+  type: String,            // "state"
+  parentId: ObjectId,      // Reference to USMap document
+  geometry: {              // GeoJSON representation of state boundaries
+    type: String,          // "MultiPolygon"
+    coordinates: Array     // Nested array of coordinates
+  },
   metadata: {
-    lastAssessmentDate?: Date;
-    lastSoldDate?: Date;
-    lastSoldPrice?: number;
-    zoning?: string;
-    history: {
-      date: Date;
-      event: string;
-      details: string;
-    }[];
-  };
-  controllers: ControllerReference[];
+    regionalInfo: {
+      region: String,      // Geographic region (e.g., "Northeast")
+      subregion: String    // Geographic subregion (e.g., "Mid-Atlantic")
+    },
+    totalCounties: Number,    // Number of counties in this state
+    totalProperties: Number,  // Number of properties in this state
+    statistics: {
+      totalTaxLiens: Number,  // Total tax liens in this state
+      totalValue: Number,     // Total property value in this state
+      averagePropertyValue: Number, // Average property value
+      lastUpdated: Date       // Last statistics update timestamp
+    }
+  },
+  createdAt: Date,         // Document creation timestamp
+  updatedAt: Date          // Document last update timestamp
 }
 ```
 
-### Controllers Collection
+### County
 
-```typescript
-interface Controller {
-  _id: ObjectId;
-  name: string;
-  type: 'controller';
-  controllerType: 'Tax Sale' | 'Map' | 'Property' | 'Demographics';
-  description: string;
-  configTemplate: {
-    requiredFields: string[];
-    optionalFields: Record<string, any>;
-  };
-  lastModified: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  attachedTo: {
-    objectId: ObjectId;
-    objectType: 'us_map' | 'state' | 'county' | 'property';
-  }[];
-}
-```
+The County collection contains documents representing counties, each linked to a parent State.
 
-### ControllerReference Schema
-
-```typescript
-interface ControllerReference {
-  controllerId: ObjectId;
-  controllerType: string;
-  enabled: boolean;
-  lastRun?: Date;
-  nextScheduledRun?: Date;
-  configuration: Record<string, any>;
-}
-```
-
-### Users Collection
-
-```typescript
-interface User {
-  _id: ObjectId;
-  email: string;
-  password: string; // Hashed
-  name: string;
-  role: 'user' | 'admin';
-  createdAt: Date;
-  updatedAt: Date;
-}
-```
-
-### Sessions Collection
-
-```typescript
-interface Session {
-  _id: ObjectId;
-  userId: ObjectId;
-  token: string;
-  expiresAt: Date;
-  createdAt: Date;
-  updatedAt: Date;
-}
-```
-
-### Search History Collection
-
-```typescript
-interface SearchHistory {
-  _id: ObjectId;
-  userId: ObjectId;
-  query: string;
-  filters: Record<string, any>;
-  results: number;
-  timestamp: Date;
-}
-```
-
-## Indexes
-
-### USMap Collection
 ```javascript
 {
-  type: 1
+  _id: ObjectId,           // MongoDB ID
+  name: String,            // County name (e.g., "Montgomery")
+  type: String,            // "county"
+  stateId: ObjectId,       // Reference to parent State document
+  geometry: {              // GeoJSON representation of county boundaries
+    type: String,          // "MultiPolygon"
+    coordinates: Array     // Nested array of coordinates
+  },
+  metadata: {
+    totalProperties: Number,  // Number of properties in this county
+    statistics: {
+      totalTaxLiens: Number,  // Total tax liens in this county
+      totalValue: Number,     // Total property value in this county
+      averagePropertyValue: Number, // Average property value
+      totalPropertiesWithLiens: Number, // Properties with tax liens
+      lastUpdated: Date       // Last statistics update timestamp
+    },
+    searchConfig: {
+      lookupMethod: String,   // Method used for property lookup (e.g., "web", "api")
+      searchUrl: String,      // URL for property searches
+      lienUrl: String,        // URL for tax lien information
+      enabled: Boolean,       // Whether search is enabled for this county
+      lastRun: Date,          // Last search run timestamp
+      nextScheduledRun: Date  // Next scheduled search timestamp
+    }
+  },
+  createdAt: Date,         // Document creation timestamp
+  updatedAt: Date          // Document last update timestamp
 }
 ```
 
-### States Collection
-```javascript
-{
-  name: 1,
-  abbreviation: 1,
-  parentId: 1,
-  type: 1
-}
-```
+### Property
 
-### Counties Collection
-```javascript
-{
-  name: 1,
-  stateId: 1,
-  parentId: 1,
-  type: 1
-}
-```
+The Property collection contains documents representing individual properties, each linked to a parent County and State.
 
-### Properties Collection
 ```javascript
 {
-  "parcelId": 1,
-  "taxAccountNumber": 1,
-  "stateId": 1,
-  "countyId": 1,
-  "parentId": 1,
-  "type": 1,
-  "propertyAddress": 1,
-  "ownerName": 1,
-  "status": 1,
-  "geometry": "2dsphere"
-}
-```
-
-### Controllers Collection
-```javascript
-{
-  "controllerType": 1,
-  "name": 1
-}
-```
-
-### Users Collection
-```javascript
-{
-  email: 1          // Unique index
-}
-```
-
-### Sessions Collection
-```javascript
-{
-  userId: 1,
-  expiresAt: 1 // TTL index
+  _id: ObjectId,              // MongoDB ID
+  parcelId: String,           // Unique parcel identifier
+  taxAccountNumber: String,   // Tax account number
+  ownerName: String,          // Property owner name
+  propertyAddress: String,    // Street address
+  city: String,               // City
+  stateId: ObjectId,          // Reference to State document
+  countyId: ObjectId,         // Reference to County document
+  zipCode: String,            // ZIP code
+  location: {
+    coordinates: {
+      latitude: Number,       // Latitude coordinate
+      longitude: Number       // Longitude coordinate
+    },
+    address: {
+      street: String,         // Street address
+      city: String,           // City
+      state: String,          // State abbreviation
+      county: String,         // County name
+      zipCode: String         // ZIP code
+    }
+  },
+  features: {
+    type: String,             // Property type (e.g., "Residential", "Commercial")
+    condition: String,        // Property condition
+    yearBuilt: Number,        // Year property was built
+    squareFeet: Number,       // Square footage
+    lotSize: Number,          // Lot size
+    bedrooms: Number,         // Number of bedrooms
+    bathrooms: Number         // Number of bathrooms
+  },
+  taxStatus: {
+    assessedValue: Number,    // Assessed value for tax purposes
+    marketValue: Number,      // Market value
+    taxRate: Number,          // Tax rate
+    annualTaxAmount: Number,  // Annual tax amount
+    taxLienAmount: Number,    // Tax lien amount (if any)
+    taxLienStatus: String     // Status of tax lien (e.g., "Active", "Paid")
+  },
+  metadata: {
+    propertyType: String,     // Property type
+    taxStatus: String,        // Tax status
+    assessedValue: Number,    // Assessed value
+    marketValue: Number,      // Market value
+    taxDue: Number,           // Tax due
+    saleType: String,         // Type of sale
+    saleAmount: Number,       // Sale amount
+    saleDate: Date,           // Date of sale
+    lastUpdated: Date         // Last update timestamp
+  },
+  status: String,             // Property status (e.g., "Active", "Sold")
+  images: [{
+    url: String,              // Image URL
+    caption: String,          // Image caption
+    isPrimary: Boolean        // Whether this is the primary image
+  }],
+  documents: [{
+    type: String,             // Document type
+    url: String,              // Document URL
+    name: String,             // Document name
+    uploadDate: Date          // Upload date
+  }],
+  createdAt: Date,            // Document creation timestamp
+  updatedAt: Date             // Document last update timestamp
 }
 ```
 
 ## Relationships
 
-1. **Hierarchical Structure**
-   - USMap → States → Counties → Properties (parent-child)
-   - Each level references its parent and may reference its grandparent for query optimization
+The inventory system follows a hierarchical relationship model:
 
-2. **Controllers → Inventory Objects**
-   - Controllers are attached to inventory objects (USMap, State, County, Property)
-   - Inventory objects store controller references for execution
+1. USMap (1) → States (Many)
+2. State (1) → Counties (Many)
+3. County (1) → Properties (Many)
 
-3. **Properties → Users**
-   - Properties can be associated with users via API-level logic
-   - No direct database relationship in the current schema
+These relationships are established through reference fields:
+- States have a `parentId` field referencing the USMap
+- Counties have a `stateId` field referencing their parent State
+- Properties have both `stateId` and `countyId` fields referencing their parent State and County
 
-4. **Search History → Users**
-   - One-to-many relationship
-   - SearchHistory document contains user reference
+## Export Schema Considerations
 
-5. **Sessions → Users**
-   - One-to-many relationship
-   - Session document contains user reference
+### Export Service Integration
 
-## Data Validation
+The Export Service interacts with these data models to generate CSV and Excel exports. Key schema considerations for export operations include:
 
-### State Validation
+1. **Field Mapping**: 
+   - The export service maps database fields to export columns
+   - Properties like `_id` are converted to string format
+   - Nested fields are flattened (e.g., `metadata.propertyType` becomes `propertyType`)
+   - References to other documents are resolved (e.g., `stateId` is resolved to state name)
+
+2. **Data Transformation**:
+   - Date fields are formatted as strings
+   - Numeric fields may be formatted with appropriate precision
+   - Empty or null values are replaced with empty strings or default values
+
+3. **Filter Queries**:
+   - Export filters map to MongoDB query conditions
+   - Range filters (e.g., `minValue`, `maxValue`) translate to `$gte` and `$lte` operators
+   - Text fields may use case-insensitive partial matching with `$regex`
+
+## Schema Evolution
+
+The schema is designed to be adaptable to changing requirements. Some considerations for schema evolution:
+
+1. **Backward Compatibility**:
+   - New fields can be added without breaking existing functionality
+   - Field renaming or removal should be handled carefully with migration scripts
+   - Export services may need updates when schema changes occur
+
+2. **Performance Optimization**:
+   - Indexes are created on frequently queried fields
+   - Denormalization is used for frequently accessed related data
+   - Export operations use projection to fetch only required fields
+
+3. **Data Validation**:
+   - Mongoose schema validation ensures data integrity
+   - Custom validators enforce business rules
+   - Export services include additional validation for data conversion
+
+## MongoDB Indexes
+
+The following indexes are created to optimize query performance:
+
 ```javascript
-{
-  name: {
-    type: String,
-    required: true
-  },
-  abbreviation: {
-    type: String,
-    required: true,
-    length: 2
-  },
-  type: {
-    type: String,
-    enum: ['state'],
-    required: true
-  },
-  parentId: {
-    type: ObjectId,
-    required: true
-  }
-}
-```
+// State indexes
+db.states.createIndex({ abbreviation: 1 }, { unique: true });
+db.states.createIndex({ name: 1 }, { unique: true });
+db.states.createIndex({ parentId: 1 });
 
-### County Validation
-```javascript
-{
-  name: {
-    type: String,
-    required: true
-  },
-  type: {
-    type: String,
-    enum: ['county'],
-    required: true
-  },
-  parentId: {
-    type: ObjectId,
-    required: true
-  },
-  stateId: {
-    type: ObjectId,
-    required: true
-  }
-}
-```
+// County indexes
+db.counties.createIndex({ name: 1, stateId: 1 }, { unique: true });
+db.counties.createIndex({ stateId: 1 });
 
-### Property Validation
-```javascript
-{
-  parcelId: {
-    type: String,
-    required: true
-  },
-  type: {
-    type: String,
-    enum: ['property'],
-    required: true
-  },
-  parentId: {
-    type: ObjectId,
-    required: true
-  },
-  countyId: {
-    type: ObjectId,
-    required: true
-  },
-  stateId: {
-    type: ObjectId,
-    required: true
-  },
-  propertyAddress: {
-    type: String,
-    required: true
-  }
-}
-```
-
-### Controller Validation
-```javascript
-{
-  name: {
-    type: String,
-    required: true
-  },
-  type: {
-    type: String,
-    enum: ['controller'],
-    required: true
-  },
-  controllerType: {
-    type: String,
-    enum: ['Tax Sale', 'Map', 'Property', 'Demographics'],
-    required: true
-  },
-  description: {
-    type: String,
-    required: true
-  }
-}
-```
-
-### User Validation
-```javascript
-{
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true,
-    lowercase: true
-  },
-  password: {
-    type: String,
-    required: true,
-    minlength: 6
-  },
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  role: {
-    type: String,
-    enum: ['user', 'admin'],
-    default: 'user'
-  }
-}
-```
-
-## Backup and Recovery
-
-- Daily automated backups using MongoDB Atlas
-- Point-in-time recovery with oplog
-- Manual backups using Git
-- Developer can create backup branches with timestamp
-- See `GIT-SETUP.md` for backup procedures and scripts
-
-## Performance Considerations
-
-1. **Hierarchical Indexes**
-   - Optimized for parent-child traversal (USMap → States → Counties → Properties)
-   - Direct references to ancestors for faster queries
-
-2. **Compound Indexes**
-   - Created for common query patterns (state + county)
-   - Optimized for property lookups by address and owner
-
-3. **Query Optimization**
-   - Field projection to return only necessary fields
-   - Pagination to limit result set size
-
-4. **Geospatial Indexes**
-   - 2dsphere index for location-based searches
-   - Optimized for proximity queries
-
-5. **TTL Indexes**
-   - Automatic cleanup of expired sessions
-   - Automatic cleanup of password reset tokens 
+// Property indexes
+db.properties.createIndex({ parcelId: 1, countyId: 1 }, { unique: true });
+db.properties.createIndex({ stateId: 1 });
+db.properties.createIndex({ countyId: 1 });
+db.properties.createIndex({ "metadata.propertyType": 1 });
+db.properties.createIndex({ "metadata.taxStatus": 1 });
+db.properties.createIndex({ "metadata.marketValue": 1 });
+db.properties.createIndex({ "location.coordinates": "2dsphere" });
+``` 

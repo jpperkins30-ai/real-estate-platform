@@ -289,3 +289,291 @@ graph LR
 ```
 
 This deployment architecture is designed to be simple and efficient, allowing for rapid iterations and continuous delivery of new features. 
+
+# Real Estate Platform Architecture
+
+## Overview
+
+The Real Estate Platform is a comprehensive system designed to manage real estate inventory, including properties, tax liens, and related data. The system is built with a modular architecture centered around a hierarchical data model and various services for data management and export.
+
+## Component Architecture
+
+### Core Components
+
+```
+┌─────────────────────────┐       ┌──────────────────────────┐
+│                         │       │                          │
+│    Client Application   │◄─────►│     API Gateway         │
+│                         │       │                          │
+└─────────────────────────┘       └──────────┬───────────────┘
+                                             │
+                                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                                                                 │
+│                     Backend Services                            │
+│                                                                 │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  │
+│  │                 │  │                 │  │                 │  │
+│  │ Authentication  │  │  Inventory      │  │  Export         │  │
+│  │    Service      │  │    Service      │  │   Service       │  │
+│  │                 │  │                 │  │                 │  │
+│  └─────────────────┘  └────────┬────────┘  └────────┬────────┘  │
+│                                │                     │           │
+│  ┌─────────────────┐  ┌────────▼────────┐  ┌────────▼────────┐  │
+│  │                 │  │                 │  │                 │  │
+│  │  User           │  │  Data           │  │  File           │  │
+│  │   Management    │  │   Processing    │  │   Generation    │  │
+│  │                 │  │                 │  │                 │  │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘  │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                                                                 │
+│                      Database Layer                             │
+│                                                                 │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  │
+│  │                 │  │                 │  │                 │  │
+│  │   User Data     │  │   Inventory     │  │   Metadata      │  │
+│  │                 │  │     Data        │  │                 │  │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘  │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Hierarchical Inventory Structure
+
+The inventory system follows a three-tier hierarchical model:
+
+```
+┌───────────────────┐
+│                   │
+│      US Map       │
+│                   │
+└─────────┬─────────┘
+          │
+          ▼
+┌───────────────────┐
+│                   │
+│      States       │
+│                   │
+└─────────┬─────────┘
+          │
+          ▼
+┌───────────────────┐
+│                   │
+│     Counties      │
+│                   │
+└─────────┬─────────┘
+          │
+          ▼
+┌───────────────────┐
+│                   │
+│    Properties     │
+│                   │
+└───────────────────┘
+```
+
+## Data Flow
+
+### Inventory Data Flow
+
+The inventory data follows a hierarchical flow, where each level contains references to its parent and can have multiple children:
+
+1. **US Map** - The top-level container for all geographic data
+2. **State** - Belongs to the US Map and contains counties
+3. **County** - Belongs to a state and contains properties
+4. **Property** - Belongs to a county and can have multiple tax liens
+
+### Export Data Flow
+
+The export functionality provides data extraction capabilities for the inventory hierarchy:
+
+```
+┌─────────────────┐     ┌──────────────────┐     ┌───────────────────┐
+│                 │     │                  │     │                   │
+│ User Interface  │────►│  Export Service  │────►│  Format Service   │
+│                 │     │                  │     │                   │
+└─────────────────┘     └────────┬─────────┘     └─────────┬─────────┘
+                                 │                          │
+                                 ▼                          ▼
+                        ┌─────────────────┐      ┌───────────────────┐
+                        │                 │      │                   │
+                        │ Database Query  │      │  File Generation  │
+                        │                 │      │                   │
+                        └─────────────────┘      └───────────────────┘
+```
+
+## Export Service Architecture
+
+The Export Service is responsible for generating formatted data exports from the inventory hierarchy. It supports multiple export formats and filtering capabilities:
+
+```
+┌─────────────────────────┐
+│                         │
+│     Export Service      │
+│                         │
+└───────────┬─────────────┘
+            │
+            ▼
+┌─────────────────────────────────────────────────────┐
+│                                                     │
+│                Export Endpoints                     │
+│                                                     │
+│  ┌─────────────────┐      ┌─────────────────────┐  │
+│  │                 │      │                     │  │
+│  │ Properties API  │      │    Counties API     │  │
+│  │                 │      │                     │  │
+│  └────────┬────────┘      └──────────┬──────────┘  │
+│           │                           │             │
+│           ▼                           ▼             │
+│  ┌─────────────────┐      ┌─────────────────────┐  │
+│  │                 │      │                     │  │
+│  │ CSV Generation  │      │  Excel Generation   │  │
+│  │                 │      │                     │  │
+│  └─────────────────┘      └─────────────────────┘  │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
+
+## Security Architecture
+
+### Access Control
+
+The platform implements object-level permissions based on the hierarchical structure:
+
+1. **Administrator**: Full access to all levels of the hierarchy
+2. **State Manager**: Access to assigned states and all child counties and properties
+3. **County Manager**: Access to assigned counties and all child properties
+4. **Property Manager**: Access to assigned properties only
+
+### Export Permissions
+
+Export functionality respects the hierarchical access control:
+
+- Users can only export data they have access to
+- Exports are filtered based on user permissions
+- Export activity is logged for audit purposes
+
+## Technology Stack
+
+- **Frontend**: React with Material UI
+- **Backend**: Node.js with Express
+- **Database**: MongoDB
+- **Export Formats**: CSV, Excel
+- **API Documentation**: Swagger
+- **Authentication**: JWT
+
+## Integration Points
+
+The platform provides integration with external systems through:
+
+1. **API Endpoints**: RESTful APIs for all functionality
+2. **Data Export**: CSV and Excel exports for integration with external tools
+3. **Import Services**: Data import capabilities from various sources
+
+## Deployment Architecture
+
+The application is containerized using Docker and can be deployed in various configurations:
+
+- **Development**: Local containers with hot reload
+- **Testing**: CI/CD pipeline with automated testing
+- **Production**: Kubernetes cluster with load balancing and auto-scaling
+
+## Data Architecture
+
+### State Object
+
+```json
+{
+  "_id": "ObjectId",
+  "name": "State Name",
+  "abbreviation": "ST",
+  "type": "state",
+  "parentId": "USMap ObjectId",
+  "geometry": {
+    "type": "MultiPolygon",
+    "coordinates": [...]
+  },
+  "metadata": {
+    "regionalInfo": {
+      "region": "Region Name",
+      "subregion": "Subregion Name"
+    },
+    "totalCounties": 0,
+    "totalProperties": 0,
+    "statistics": {
+      "totalTaxLiens": 0,
+      "totalValue": 0
+    }
+  }
+}
+```
+
+### County Object
+
+```json
+{
+  "_id": "ObjectId",
+  "name": "County Name",
+  "type": "county",
+  "stateId": "State ObjectId",
+  "geometry": {
+    "type": "MultiPolygon",
+    "coordinates": [...]
+  },
+  "metadata": {
+    "totalProperties": 0,
+    "statistics": {
+      "totalTaxLiens": 0,
+      "totalValue": 0
+    },
+    "searchConfig": {
+      "lookupMethod": "web",
+      "searchUrl": "https://example.com/search",
+      "lienUrl": "https://example.com/liens"
+    }
+  }
+}
+```
+
+### Property Object
+
+```json
+{
+  "_id": "ObjectId",
+  "parcelId": "123456",
+  "taxAccountNumber": "TAX-123-456",
+  "ownerName": "Property Owner",
+  "propertyAddress": "123 Main St",
+  "city": "Cityville",
+  "stateId": "State ObjectId",
+  "countyId": "County ObjectId",
+  "zipCode": "12345",
+  "location": {
+    "coordinates": {
+      "latitude": 38.9072,
+      "longitude": -77.0369
+    },
+    "address": {
+      "street": "123 Main St",
+      "city": "Cityville",
+      "state": "ST",
+      "county": "County Name",
+      "zipCode": "12345"
+    }
+  },
+  "metadata": {
+    "propertyType": "Residential",
+    "taxStatus": "Current",
+    "assessedValue": 250000,
+    "marketValue": 300000,
+    "taxDue": 3500,
+    "saleType": "Tax Sale",
+    "saleAmount": 175000,
+    "saleDate": "2023-06-15",
+    "lastUpdated": "2023-10-01"
+  }
+}
+``` 
