@@ -32,6 +32,29 @@ Authorization: Bearer <your-token>
 }
 ```
 
+## Error Response Formats
+
+### Standard Error Response
+```json
+{
+  "message": "Error message",
+  "error": "Error details"
+}
+```
+
+### Geographic Data API Error Response
+```json
+{
+  "message": "Error message",
+  "error": "Detailed error message that's safe for client consumption"
+}
+```
+
+Geographic data endpoints (States, Counties, US Map) use consistent error handling with:
+- Appropriate HTTP status codes (404 for not found, 400 for bad requests, 500 for server errors)
+- Sanitized error messages that don't expose server internals
+- Contextual information preserved in server logs but not exposed to clients
+
 ## Rate Limiting
 
 No rate limiting is currently implemented in the base application. Implement custom middleware if needed.
@@ -193,6 +216,9 @@ Response:
   ]
 }
 ```
+
+Error responses:
+- `500` - Server error with sanitized error message
 
 ### Get State Counties
 ```
@@ -464,3 +490,71 @@ GET /api/logs/download/:filename
 Response: The file will be downloaded with appropriate Content-Type and Content-Disposition headers.
 
 Note: This endpoint includes security measures to prevent path traversal attacks and ensure only valid log files can be downloaded. 
+
+## County API Endpoints
+
+### Get County as GeoJSON
+```
+GET /api/counties/:id/geojson
+```
+
+Path parameters:
+- `id`: County ID
+
+Response:
+```json
+{
+  "type": "Feature",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [[[lng1, lat1], [lng2, lat2], ...]]
+  },
+  "properties": {
+    "id": "60a1b2c3d4e5f6g7h8i9j1",
+    "name": "Montgomery",
+    "state": "MD",
+    "stateName": "Maryland",
+    "countyName": "Montgomery County",
+    "totalProperties": 500,
+    "totalTaxLiens": 25,
+    "totalValue": 5000000
+  }
+}
+```
+
+Error responses:
+- `404` - County not found
+- `404` - County geometry not found
+- `500` - Server error with sanitized error message
+
+## US Map API Endpoints
+
+### Get US Map
+```
+GET /api/usmap
+```
+
+Response:
+```json
+{
+  "_id": "60a1b2c3d4e5f6g7h8i9j3",
+  "name": "United States",
+  "type": "us_map",
+  "geometry": {
+    "type": "MultiPolygon",
+    "coordinates": [[[[lng1, lat1], [lng2, lat2], ...], ...]]
+  },
+  "metadata": {
+    "totalStates": 51,
+    "totalCounties": 3142,
+    "totalProperties": 125000,
+    "lastUpdated": "2023-07-01T12:00:00Z"
+  },
+  "createdAt": "2023-01-01T00:00:00Z",
+  "updatedAt": "2023-07-01T12:00:00Z"
+}
+```
+
+Error responses:
+- `404` - US Map not found
+- `500` - Server error with sanitized error message 

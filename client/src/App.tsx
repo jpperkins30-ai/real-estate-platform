@@ -23,6 +23,7 @@ const App: React.FC = () => {
             <Route path="/inventory/*" element={<InventoryModule />} />
             <Route path="/controller-wizard" element={<ControllerWizard />} />
             <Route path="/property-valuation" element={<PropertyValuationPage />} />
+            <Route path="/geographic-dashboard" element={<div>Geographic Dashboard - Coming Soon</div>} />
           </Routes>
         </Router>
       </InventoryProvider>

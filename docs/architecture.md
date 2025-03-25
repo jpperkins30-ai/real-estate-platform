@@ -248,13 +248,35 @@ graph TD
     B -- State --> C{Has State Access?}
     B -- County --> D{Has County Access?}
     B -- Property --> E{Has Property Access?}
-    C -- Yes --> F[Allow State Operation]
-    C -- No --> G[Reject]
-    D -- Yes --> H[Allow County Operation]
+    C -- Yes --> F[Allow Access]
+    C -- No --> G[Return 403]
+    D -- Yes --> F
     D -- No --> G
-    E -- Yes --> I[Allow Property Operation]
+    E -- Yes --> F
     E -- No --> G
 ```
+
+### Error Handling Flow
+```mermaid
+graph TD
+    A[API Request] --> B[Route Handler]
+    B --> C{Try Block}
+    C -- Success --> D[Format Response]
+    C -- Error --> E{Error Type?}
+    E -- Known Error --> F[Log with Context]
+    E -- Unknown Error --> G[Log as Unknown]
+    F --> H[Format Error Response]
+    G --> H
+    H --> I[Return Error Status]
+    D --> J[Return Success Status]
+```
+
+The error handling system implements consistent patterns across all geographic data routes:
+1. All errors are caught and properly typed as `unknown`
+2. Errors are checked with `instanceof Error` for proper handling
+3. Contextual information is preserved in logs
+4. User-facing error messages are sanitized for security
+5. Appropriate HTTP status codes are used based on error type
 
 ## Deployment Architecture
 

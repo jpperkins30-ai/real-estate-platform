@@ -144,6 +144,53 @@ try {
 }
 ```
 
+4. **TypeScript Error Handling Best Practices**
+```typescript
+// Use unknown type for caught errors
+try {
+  // Code that might throw
+} catch (error: unknown) {
+  // Type-guard the error
+  if (error instanceof Error) {
+    // Now it's safe to access error.message
+    logger.error(`Operation failed: ${error.message}`);
+    
+    // Check for specific error subtypes
+    if ('code' in error && error.code === 11000) {
+      // Handle MongoDB duplicate key error
+      return res.status(400).json({ 
+        message: 'Duplicate entry', 
+        error: sanitizeError(error.message) 
+      });
+    }
+  } else {
+    // Handle truly unknown errors
+    logger.error('Unknown error occurred', { error });
+  }
+  
+  // Always provide safe error messages to clients
+  return res.status(500).json({ 
+    message: 'Server error', 
+    error: 'An unexpected error occurred' 
+  });
+}
+```
+
+5. **Logging**
+```typescript
+// Use the logger utility for all logging
+import logger, { logError } from '../utils/logger';
+
+// Log errors with context
+logError('Failed to retrieve resource', error, { 
+  resourceId, 
+  userId: req.user?.id 
+});
+
+// Regular informational logging
+logger.info('Resource created', { resourceId });
+```
+
 ### API Design Guidelines
 
 1. **Route Structure**

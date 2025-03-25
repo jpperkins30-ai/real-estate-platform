@@ -727,4 +727,206 @@ router.post('/:dataType/json', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/export/properties/enhanced/csv:
+ *   post:
+ *     summary: Export properties with enhanced fields to CSV format
+ *     tags: [Exports]
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               stateId:
+ *                 type: string
+ *                 description: Filter by state ID
+ *               countyId:
+ *                 type: string
+ *                 description: Filter by county ID
+ *               propertyType:
+ *                 type: string
+ *                 description: Filter by property type
+ *               taxStatus:
+ *                 type: string
+ *                 description: Filter by tax status
+ *               minValue:
+ *                 type: number
+ *                 description: Filter by minimum market value
+ *               maxValue:
+ *                 type: number
+ *                 description: Filter by maximum market value
+ *     responses:
+ *       200:
+ *         description: CSV file of properties with enhanced fields
+ *         content:
+ *           text/csv:
+ *             schema:
+ *               type: string
+ *       500:
+ *         description: Server error
+ */
+router.post('/properties/enhanced/csv', async (req, res) => {
+  try {
+    const filters = req.body;
+    
+    const csvData = await exportService.exportPropertiesToCsv([], filters);
+    
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=properties_export_${new Date().toISOString().split('T')[0]}.csv`);
+    res.send(csvData);
+  } catch (error: any) {
+    console.error('Enhanced CSV export error:', error);
+    res.status(500).json({ message: error.message || 'Failed to export properties to CSV' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/export/properties/enhanced/excel:
+ *   post:
+ *     summary: Export properties with enhanced fields to Excel format
+ *     tags: [Exports]
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               stateId:
+ *                 type: string
+ *                 description: Filter by state ID
+ *               countyId:
+ *                 type: string
+ *                 description: Filter by county ID
+ *               propertyType:
+ *                 type: string
+ *                 description: Filter by property type
+ *               taxStatus:
+ *                 type: string
+ *                 description: Filter by tax status
+ *               minValue:
+ *                 type: number
+ *                 description: Filter by minimum market value
+ *               maxValue:
+ *                 type: number
+ *                 description: Filter by maximum market value
+ *     responses:
+ *       200:
+ *         description: Excel file of properties with enhanced fields
+ *         content:
+ *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       500:
+ *         description: Server error
+ */
+router.post('/properties/enhanced/excel', async (req, res) => {
+  try {
+    const filters = req.body;
+    
+    const excelBuffer = await exportService.exportPropertiesToExcel([], filters);
+    
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=properties_export_${new Date().toISOString().split('T')[0]}.xlsx`);
+    res.send(excelBuffer);
+  } catch (error: any) {
+    console.error('Enhanced Excel export error:', error);
+    res.status(500).json({ message: error.message || 'Failed to export properties to Excel' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/export/counties/enhanced/csv:
+ *   post:
+ *     summary: Export counties with enhanced fields to CSV format
+ *     tags: [Exports]
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               stateId:
+ *                 type: string
+ *                 description: Filter by state ID
+ *               name:
+ *                 type: string
+ *                 description: Filter by county name (partial match)
+ *     responses:
+ *       200:
+ *         description: CSV file of counties with enhanced fields
+ *         content:
+ *           text/csv:
+ *             schema:
+ *               type: string
+ *       500:
+ *         description: Server error
+ */
+router.post('/counties/enhanced/csv', async (req, res) => {
+  try {
+    const filters = req.body;
+    
+    const csvData = await exportService.exportCountiesToCsv([], filters);
+    
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=counties_export_${new Date().toISOString().split('T')[0]}.csv`);
+    res.send(csvData);
+  } catch (error: any) {
+    console.error('Enhanced CSV export error:', error);
+    res.status(500).json({ message: error.message || 'Failed to export counties to CSV' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/export/counties/enhanced/excel:
+ *   post:
+ *     summary: Export counties with enhanced fields to Excel format
+ *     tags: [Exports]
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               stateId:
+ *                 type: string
+ *                 description: Filter by state ID
+ *               name:
+ *                 type: string
+ *                 description: Filter by county name (partial match)
+ *     responses:
+ *       200:
+ *         description: Excel file of counties with enhanced fields
+ *         content:
+ *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       500:
+ *         description: Server error
+ */
+router.post('/counties/enhanced/excel', async (req, res) => {
+  try {
+    const filters = req.body;
+    
+    const excelBuffer = await exportService.exportCountiesToExcel([], filters);
+    
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=counties_export_${new Date().toISOString().split('T')[0]}.xlsx`);
+    res.send(excelBuffer);
+  } catch (error: any) {
+    console.error('Enhanced Excel export error:', error);
+    res.status(500).json({ message: error.message || 'Failed to export counties to Excel' });
+  }
+});
+
 export default router; 

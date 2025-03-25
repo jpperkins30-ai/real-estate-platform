@@ -22,6 +22,7 @@ import config from './config';
 import controllerRoutes from './routes/controller.routes';
 import collectionRoutes from './routes/collection.routes';
 import exportRoutes from './routes/export.routes';
+import initializeGeoData from './scripts/initGeoData';
 
 // Load environment variables
 dotenv.config();
@@ -64,8 +65,19 @@ app.use(requestLogger);
 
 // Connect to MongoDB
 mongoose.connect(config.database.uri)
-  .then(() => {
+  .then(async () => {
     logInfo(`Connected to MongoDB at ${config.database.uri}`);
+    
+    // Initialize geographic data
+    if (process.env.INIT_GEO_DATA === 'true') {
+      try {
+        logInfo('Initializing geographic data...');
+        await initializeGeoData();
+        logInfo('Geographic data initialization complete');
+      } catch (error) {
+        logError('Error initializing geographic data:', error);
+      }
+    }
     
     // Start server
     const server = app.listen(config.server.port, () => {

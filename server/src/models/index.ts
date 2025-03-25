@@ -1,9 +1,19 @@
-import Property from './Property';
-import DataSource from './DataSource';
-import Collection from './Collection';
+/**
+ * Model exports
+ */
 
+import USMap from './USMap';
+import State from './State';
+import County from './County';
+
+// Export all models
 export {
-  Property,
-  DataSource,
-  Collection
-}; 
+  USMap,
+  State,
+  County
+};
+
+// Export model interfaces
+export type { USMapDocument } from './USMap';
+export type { StateDocument } from './State';
+export type { CountyDocument } from './County'; 

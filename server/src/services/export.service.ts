@@ -10,24 +10,43 @@ import { StateObject, CountyObject, PropertyObject } from '../types/inventory';
  */
 export class ExportService {
   /**
-   * Export properties to CSV format
+   * Export properties to CSV format with enhanced fields
    * @param properties Array of property objects to export
+   * @param filters Optional filters to apply before export
    * @returns CSV formatted string
    */
-  async exportPropertiesToCsv(properties: any[]): Promise<string> {
+  async exportPropertiesToCsv(properties: any[], filters: any = {}): Promise<string> {
+    // If properties not provided, fetch them using filters
+    if (!properties || properties.length === 0) {
+      properties = await this.getPropertiesWithFilters(filters);
+      
+      if (properties.length === 0) {
+        return 'No properties found matching the specified filters';
+      }
+    }
+    
     const headers = [
       { id: 'id', title: 'ID' },
-      { id: 'name', title: 'Name' },
-      { id: 'address', title: 'Address' },
+      { id: 'parcelId', title: 'Parcel ID' },
+      { id: 'taxAccountNumber', title: 'Tax Account Number' },
+      { id: 'ownerName', title: 'Owner Name' },
+      { id: 'propertyAddress', title: 'Property Address' },
       { id: 'city', title: 'City' },
       { id: 'state', title: 'State' },
-      { id: 'zipCode', title: 'Zip Code' },
       { id: 'county', title: 'County' },
-      { id: 'status', title: 'Status' },
-      { id: 'type', title: 'Type' },
-      { id: 'condition', title: 'Condition' },
+      { id: 'zipCode', title: 'ZIP Code' },
+      { id: 'propertyType', title: 'Property Type' },
+      { id: 'taxStatus', title: 'Tax Status' },
       { id: 'assessedValue', title: 'Assessed Value' },
       { id: 'marketValue', title: 'Market Value' },
+      { id: 'taxDue', title: 'Tax Due' },
+      { id: 'saleType', title: 'Sale Type' },
+      { id: 'saleAmount', title: 'Sale Amount' },
+      { id: 'saleDate', title: 'Sale Date' },
+      { id: 'lastUpdated', title: 'Last Updated' },
+      { id: 'name', title: 'Name' },
+      { id: 'status', title: 'Status' },
+      { id: 'condition', title: 'Condition' },
       { id: 'taxLienAmount', title: 'Tax Lien Amount' },
       { id: 'taxLienStatus', title: 'Tax Lien Status' },
       { id: 'yearBuilt', title: 'Year Built' },
@@ -46,18 +65,28 @@ export class ExportService {
 
     const formattedProperties = properties.map(property => {
       return {
-        id: property.id,
-        name: property.name,
-        address: property.location?.address?.street || '',
-        city: property.location?.address?.city || '',
-        state: property.location?.address?.state || '',
-        zipCode: property.location?.address?.zipCode || '',
-        county: property.location?.address?.county || '',
+        id: property._id?.toString() || property.id,
+        parcelId: property.parcelId || '',
+        taxAccountNumber: property.taxAccountNumber || '',
+        ownerName: property.ownerName || '',
+        propertyAddress: property.propertyAddress || property.location?.address?.street || '',
+        city: property.city || property.location?.address?.city || '',
+        state: property.stateId?.abbreviation || property.location?.address?.state || '',
+        county: property.countyId?.name || property.location?.address?.county || '',
+        zipCode: property.zipCode || property.location?.address?.zipCode || '',
+        propertyType: property.metadata?.propertyType || property.features?.type || '',
+        taxStatus: property.metadata?.taxStatus || '',
+        assessedValue: property.metadata?.assessedValue || property.taxStatus?.assessedValue || '',
+        marketValue: property.metadata?.marketValue || property.taxStatus?.marketValue || '',
+        taxDue: property.metadata?.taxDue || property.taxStatus?.annualTaxAmount || '',
+        saleType: property.metadata?.saleType || '',
+        saleAmount: property.metadata?.saleAmount || '',
+        saleDate: property.metadata?.saleDate ? new Date(property.metadata.saleDate).toISOString().split('T')[0] : '',
+        lastUpdated: property.metadata?.lastUpdated ? new Date(property.metadata.lastUpdated).toISOString().split('T')[0] : '',
+        // Include existing fields to maintain compatibility
+        name: property.name || '',
         status: property.status || '',
-        type: property.features?.type || '',
         condition: property.features?.condition || '',
-        assessedValue: property.taxStatus?.assessedValue || '',
-        marketValue: property.taxStatus?.marketValue || '',
         taxLienAmount: property.taxStatus?.taxLienAmount || '',
         taxLienStatus: property.taxStatus?.taxLienStatus || '',
         yearBuilt: property.features?.yearBuilt || '',
@@ -75,27 +104,48 @@ export class ExportService {
   }
 
   /**
-   * Export properties to Excel format
+   * Export properties to Excel format with enhanced fields
    * @param properties Array of property objects to export
+   * @param filters Optional filters to apply before export
    * @returns Buffer containing Excel file data
    */
-  async exportPropertiesToExcel(properties: any[]): Promise<Uint8Array> {
+  async exportPropertiesToExcel(properties: any[], filters: any = {}): Promise<any> {
+    // If properties not provided, fetch them using filters
+    if (!properties || properties.length === 0) {
+      properties = await this.getPropertiesWithFilters(filters);
+      
+      if (properties.length === 0) {
+        throw new Error('No properties found matching the specified filters');
+      }
+    }
+    
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Properties');
 
     worksheet.columns = [
-      { header: 'ID', key: 'id', width: 20 },
-      { header: 'Name', key: 'name', width: 30 },
-      { header: 'Address', key: 'address', width: 30 },
+      { header: 'ID', key: 'id', width: 28 },
+      { header: 'Parcel ID', key: 'parcelId', width: 15 },
+      { header: 'Tax Account Number', key: 'taxAccountNumber', width: 20 },
+      { header: 'Owner Name', key: 'ownerName', width: 30 },
+      { header: 'Property Address', key: 'propertyAddress', width: 40 },
       { header: 'City', key: 'city', width: 20 },
       { header: 'State', key: 'state', width: 10 },
-      { header: 'Zip Code', key: 'zipCode', width: 10 },
       { header: 'County', key: 'county', width: 20 },
+      { header: 'ZIP Code', key: 'zipCode', width: 10 },
+      { header: 'Property Type', key: 'propertyType', width: 15 },
+      { header: 'Tax Status', key: 'taxStatus', width: 15 },
+      { header: 'Assessed Value', key: 'assessedValue', width: 15 },
+      { header: 'Market Value', key: 'marketValue', width: 15 },
+      { header: 'Tax Due', key: 'taxDue', width: 15 },
+      { header: 'Sale Type', key: 'saleType', width: 15 },
+      { header: 'Sale Amount', key: 'saleAmount', width: 15 },
+      { header: 'Sale Date', key: 'saleDate', width: 12 },
+      { header: 'Last Updated', key: 'lastUpdated', width: 12 },
+      // Include original columns
+      { header: 'Name', key: 'name', width: 30 },
       { header: 'Status', key: 'status', width: 15 },
       { header: 'Type', key: 'type', width: 15 },
       { header: 'Condition', key: 'condition', width: 15 },
-      { header: 'Assessed Value', key: 'assessedValue', width: 15 },
-      { header: 'Market Value', key: 'marketValue', width: 15 },
       { header: 'Tax Lien Amount', key: 'taxLienAmount', width: 15 },
       { header: 'Tax Lien Status', key: 'taxLienStatus', width: 15 },
       { header: 'Year Built', key: 'yearBuilt', width: 10 },
@@ -115,22 +165,34 @@ export class ExportService {
       pattern: 'solid',
       fgColor: { argb: 'FFE0E0E0' }
     };
+    worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
 
     // Add property data rows
     properties.forEach(property => {
       worksheet.addRow({
-        id: property.id,
-        name: property.name,
-        address: property.location?.address?.street || '',
-        city: property.location?.address?.city || '',
-        state: property.location?.address?.state || '',
-        zipCode: property.location?.address?.zipCode || '',
-        county: property.location?.address?.county || '',
+        id: property._id?.toString() || property.id,
+        parcelId: property.parcelId || '',
+        taxAccountNumber: property.taxAccountNumber || '',
+        ownerName: property.ownerName || '',
+        propertyAddress: property.propertyAddress || property.location?.address?.street || '',
+        city: property.city || property.location?.address?.city || '',
+        state: property.stateId?.abbreviation || property.location?.address?.state || '',
+        county: property.countyId?.name || property.location?.address?.county || '',
+        zipCode: property.zipCode || property.location?.address?.zipCode || '',
+        propertyType: property.metadata?.propertyType || property.features?.type || '',
+        taxStatus: property.metadata?.taxStatus || '',
+        assessedValue: property.metadata?.assessedValue || property.taxStatus?.assessedValue || '',
+        marketValue: property.metadata?.marketValue || property.taxStatus?.marketValue || '',
+        taxDue: property.metadata?.taxDue || property.taxStatus?.annualTaxAmount || '',
+        saleType: property.metadata?.saleType || '',
+        saleAmount: property.metadata?.saleAmount || '',
+        saleDate: property.metadata?.saleDate ? new Date(property.metadata.saleDate) : '',
+        lastUpdated: property.metadata?.lastUpdated ? new Date(property.metadata.lastUpdated) : '',
+        // Include original fields
+        name: property.name || '',
         status: property.status || '',
         type: property.features?.type || '',
         condition: property.features?.condition || '',
-        assessedValue: property.taxStatus?.assessedValue || '',
-        marketValue: property.taxStatus?.marketValue || '',
         taxLienAmount: property.taxStatus?.taxLienAmount || '',
         taxLienStatus: property.taxStatus?.taxLienStatus || '',
         yearBuilt: property.features?.yearBuilt || '',
@@ -146,8 +208,8 @@ export class ExportService {
 
     // Style number columns
     const numberColumns = [
-      'assessedValue', 'marketValue', 'taxLienAmount', 
-      'yearBuilt', 'squareFeet', 'bedrooms', 'bathrooms',
+      'assessedValue', 'marketValue', 'taxDue', 'saleAmount',
+      'taxLienAmount', 'yearBuilt', 'squareFeet', 'bedrooms', 'bathrooms',
       'latitude', 'longitude'
     ];
     
@@ -156,27 +218,41 @@ export class ExportService {
     });
 
     // Style date columns
-    const dateColumns = ['createdAt', 'updatedAt'];
+    const dateColumns = ['saleDate', 'lastUpdated', 'createdAt', 'updatedAt'];
     dateColumns.forEach(colName => {
-      worksheet.getColumn(colName).numFmt = 'yyyy-mm-dd hh:mm:ss';
+      worksheet.getColumn(colName).numFmt = 'yyyy-mm-dd';
     });
 
     return await workbook.xlsx.writeBuffer();
   }
 
   /**
-   * Export county data to CSV format
+   * Export county data to CSV format with enhanced fields
    * @param counties Array of county objects to export
+   * @param filters Optional filters to apply before export 
    * @returns CSV formatted string
    */
-  async exportCountiesToCsv(counties: any[]): Promise<string> {
+  async exportCountiesToCsv(counties: any[], filters: any = {}): Promise<string> {
+    // If counties not provided, fetch them using filters
+    if (!counties || counties.length === 0) {
+      counties = await this.getCountiesWithFilters(filters);
+      
+      if (counties.length === 0) {
+        return 'No counties found matching the specified filters';
+      }
+    }
+    
     const headers = [
       { id: 'id', title: 'ID' },
-      { id: 'name', title: 'Name' },
+      { id: 'name', title: 'County Name' },
       { id: 'state', title: 'State' },
+      { id: 'stateAbbreviation', title: 'State Abbreviation' },
       { id: 'totalProperties', title: 'Total Properties' },
       { id: 'totalTaxLiens', title: 'Total Tax Liens' },
       { id: 'totalValue', title: 'Total Value' },
+      { id: 'lookupMethod', title: 'Lookup Method' },
+      { id: 'searchUrl', title: 'Search URL' },
+      { id: 'lienUrl', title: 'Lien URL' },
       { id: 'averagePropertyValue', title: 'Average Property Value' },
       { id: 'searchEnabled', title: 'Search Enabled' },
       { id: 'lastRun', title: 'Last Search Run' },
@@ -188,22 +264,38 @@ export class ExportService {
       header: headers
     });
 
-    // Get parent state names
-    const stateIds = [...new Set(counties.map(county => county.parentId))];
-    const states = await State.find({ _id: { $in: stateIds } }).select('_id name').lean();
-    const stateMap = new Map(states.map(state => [state._id.toString(), state.name]));
+    // Get parent state names if not already populated
+    const stateIds = counties.filter(county => county.stateId || county.parentId)
+                           .map(county => county.stateId || county.parentId);
+    
+    const uniqueStateIds = [...new Set(stateIds.map(id => id?.toString()))].filter(Boolean);
+    const states = await State.find({ _id: { $in: uniqueStateIds } }).select('_id name abbreviation').lean();
+    const stateMap = new Map(states.map(state => [state._id.toString(), state]));
+
+    interface StateInfo {
+      name: string;
+      abbreviation: string;
+    }
 
     const formattedCounties = counties.map(county => {
+      const stateId = county.stateId?.toString() || county.parentId?.toString();
+      const stateInfo = stateMap.get(stateId) || { name: '', abbreviation: '' } as StateInfo;
+      
       return {
-        id: county.id,
+        id: county._id?.toString() || county.id,
         name: county.name,
-        state: stateMap.get(county.parentId.toString()) || county.parentId,
-        totalProperties: county.metadata?.totalProperties || 0,
-        totalTaxLiens: county.metadata?.statistics?.totalTaxLiens || 0,
-        totalValue: county.metadata?.statistics?.totalValue || 0,
-        averagePropertyValue: county.metadata?.statistics?.averagePropertyValue || 0,
-        searchEnabled: county.searchConfig?.enabled ? 'Yes' : 'No',
-        lastRun: county.searchConfig?.lastRun ? new Date(county.searchConfig.lastRun).toISOString() : '',
+        state: stateInfo.name || county.state || '',
+        stateAbbreviation: stateInfo.abbreviation || '',
+        totalProperties: county.metadata?.totalProperties || county.totalProperties || 0,
+        totalTaxLiens: county.metadata?.statistics?.totalTaxLiens || county.totalTaxLiens || 0,
+        totalValue: county.metadata?.statistics?.totalValue || county.totalValue || 0,
+        lookupMethod: county.metadata?.searchConfig?.lookupMethod || '',
+        searchUrl: county.metadata?.searchConfig?.searchUrl || '',
+        lienUrl: county.metadata?.searchConfig?.lienUrl || '',
+        // Include original fields
+        averagePropertyValue: county.averagePropertyValue || 0,
+        searchEnabled: county.searchEnabled || false,
+        lastRun: county.lastRun ? new Date(county.lastRun).toISOString() : '',
         createdAt: county.createdAt ? new Date(county.createdAt).toISOString() : '',
         updatedAt: county.updatedAt ? new Date(county.updatedAt).toISOString() : ''
       };
@@ -213,73 +305,101 @@ export class ExportService {
   }
 
   /**
-   * Export county data to Excel format
+   * Export county data to Excel format with enhanced fields
    * @param counties Array of county objects to export
+   * @param filters Optional filters to apply before export
    * @returns Buffer containing Excel file data
    */
-  async exportCountiesToExcel(counties: any[]): Promise<Uint8Array> {
+  async exportCountiesToExcel(counties: any[], filters: any = {}): Promise<any> {
+    // If counties not provided, fetch them using filters
+    if (!counties || counties.length === 0) {
+      counties = await this.getCountiesWithFilters(filters);
+      
+      if (counties.length === 0) {
+        throw new Error('No counties found matching the specified filters');
+      }
+    }
+    
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Counties');
-
+    
     worksheet.columns = [
-      { header: 'ID', key: 'id', width: 20 },
-      { header: 'Name', key: 'name', width: 30 },
+      { header: 'ID', key: 'id', width: 28 },
+      { header: 'County Name', key: 'name', width: 30 },
       { header: 'State', key: 'state', width: 20 },
+      { header: 'State Abbreviation', key: 'stateAbbreviation', width: 10 },
       { header: 'Total Properties', key: 'totalProperties', width: 15 },
       { header: 'Total Tax Liens', key: 'totalTaxLiens', width: 15 },
-      { header: 'Total Value', key: 'totalValue', width: 20 },
+      { header: 'Total Value', key: 'totalValue', width: 15 },
+      { header: 'Lookup Method', key: 'lookupMethod', width: 15 },
+      { header: 'Search URL', key: 'searchUrl', width: 40 },
+      { header: 'Lien URL', key: 'lienUrl', width: 40 },
       { header: 'Average Property Value', key: 'averagePropertyValue', width: 20 },
       { header: 'Search Enabled', key: 'searchEnabled', width: 15 },
-      { header: 'Last Search Run', key: 'lastRun', width: 20 },
+      { header: 'Last Run', key: 'lastRun', width: 20 },
       { header: 'Created At', key: 'createdAt', width: 20 },
       { header: 'Updated At', key: 'updatedAt', width: 20 }
     ];
-
-    // Add header styling
+    
+    // Apply header styling
     worksheet.getRow(1).font = { bold: true };
     worksheet.getRow(1).fill = {
       type: 'pattern',
       pattern: 'solid',
       fgColor: { argb: 'FFE0E0E0' }
     };
-
-    // Get parent state names
-    const stateIds = [...new Set(counties.map(county => county.parentId))];
-    const states = await State.find({ _id: { $in: stateIds } }).select('_id name').lean();
-    const stateMap = new Map(states.map(state => [state._id.toString(), state.name]));
-
-    // Add county data rows
+    worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+    
+    // Get parent state names if not already populated
+    const stateIds = counties.filter(county => county.stateId || county.parentId)
+                           .map(county => county.stateId || county.parentId);
+    
+    const uniqueStateIds = [...new Set(stateIds.map(id => id?.toString()))].filter(Boolean);
+    const states = await State.find({ _id: { $in: uniqueStateIds } }).select('_id name abbreviation').lean();
+    const stateMap = new Map(states.map(state => [state._id.toString(), state]));
+    
+    interface StateInfo {
+      name: string;
+      abbreviation: string;
+    }
+    
+    // Add data rows
     counties.forEach(county => {
+      const stateId = county.stateId?.toString() || county.parentId?.toString();
+      const stateInfo = stateMap.get(stateId) || { name: '', abbreviation: '' } as StateInfo;
+      
       worksheet.addRow({
-        id: county.id,
+        id: county._id?.toString() || county.id,
         name: county.name,
-        state: stateMap.get(county.parentId.toString()) || county.parentId,
-        totalProperties: county.metadata?.totalProperties || 0,
-        totalTaxLiens: county.metadata?.statistics?.totalTaxLiens || 0,
-        totalValue: county.metadata?.statistics?.totalValue || 0,
-        averagePropertyValue: county.metadata?.statistics?.averagePropertyValue || 0,
-        searchEnabled: county.searchConfig?.enabled ? 'Yes' : 'No',
-        lastRun: county.searchConfig?.lastRun ? new Date(county.searchConfig.lastRun) : '',
+        state: stateInfo.name || county.state || '',
+        stateAbbreviation: stateInfo.abbreviation || '',
+        totalProperties: county.metadata?.totalProperties || county.totalProperties || 0,
+        totalTaxLiens: county.metadata?.statistics?.totalTaxLiens || county.totalTaxLiens || 0,
+        totalValue: county.metadata?.statistics?.totalValue || county.totalValue || 0,
+        lookupMethod: county.metadata?.searchConfig?.lookupMethod || '',
+        searchUrl: county.metadata?.searchConfig?.searchUrl || '',
+        lienUrl: county.metadata?.searchConfig?.lienUrl || '',
+        // Include original fields
+        averagePropertyValue: county.averagePropertyValue || 0,
+        searchEnabled: county.searchEnabled || false,
+        lastRun: county.lastRun ? new Date(county.lastRun) : '',
         createdAt: county.createdAt ? new Date(county.createdAt) : '',
         updatedAt: county.updatedAt ? new Date(county.updatedAt) : ''
       });
     });
-
-    // Style number columns
-    const numberColumns = [
-      'totalProperties', 'totalTaxLiens', 'totalValue', 'averagePropertyValue'
-    ];
     
-    numberColumns.forEach(colName => {
-      worksheet.getColumn(colName).numFmt = '#,##0.00';
+    // Apply number formatting
+    const numberColumns = ['totalProperties', 'totalTaxLiens', 'totalValue', 'averagePropertyValue'];
+    numberColumns.forEach(column => {
+      worksheet.getColumn(column).numFmt = '#,##0';
     });
-
-    // Style date columns
+    
+    // Format date columns
     const dateColumns = ['lastRun', 'createdAt', 'updatedAt'];
-    dateColumns.forEach(colName => {
-      worksheet.getColumn(colName).numFmt = 'yyyy-mm-dd hh:mm:ss';
+    dateColumns.forEach(column => {
+      worksheet.getColumn(column).numFmt = 'yyyy-mm-dd hh:mm:ss';
     });
-
+    
     return await workbook.xlsx.writeBuffer();
   }
 
@@ -329,7 +449,7 @@ export class ExportService {
    * @param states Array of state objects to export
    * @returns Buffer containing Excel file data
    */
-  async exportStatesToExcel(states: any[]): Promise<Uint8Array> {
+  async exportStatesToExcel(states: any[]): Promise<any> {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('States');
 
@@ -386,6 +506,91 @@ export class ExportService {
     });
 
     return await workbook.xlsx.writeBuffer();
+  }
+
+  /**
+   * Get properties with filters applied
+   * @param filters The filters to apply
+   * @returns Array of filtered properties
+   */
+  async getPropertiesWithFilters(filters: any): Promise<any[]> {
+    const query = this.buildPropertyFilterQuery(filters);
+    
+    return await Property.find(query)
+      .populate('countyId', 'name')
+      .populate('stateId', 'name abbreviation')
+      .lean();
+  }
+  
+  /**
+   * Get counties with filters applied
+   * @param filters The filters to apply
+   * @returns Array of filtered counties
+   */
+  async getCountiesWithFilters(filters: any): Promise<any[]> {
+    const query = this.buildCountyFilterQuery(filters);
+    
+    return await County.find(query)
+      .populate('stateId', 'name abbreviation')
+      .lean();
+  }
+  
+  /**
+   * Build query object for property filters
+   * @param filters The filters to apply
+   * @returns Mongoose query object
+   */
+  private buildPropertyFilterQuery(filters: any): any {
+    const query: any = {};
+    
+    if (filters.stateId) {
+      query.stateId = filters.stateId;
+    }
+    
+    if (filters.countyId) {
+      query.countyId = filters.countyId;
+    }
+    
+    if (filters.propertyType) {
+      query['metadata.propertyType'] = filters.propertyType;
+    }
+    
+    if (filters.taxStatus) {
+      query['metadata.taxStatus'] = filters.taxStatus;
+    }
+    
+    if (filters.minValue || filters.maxValue) {
+      query['metadata.marketValue'] = {};
+      
+      if (filters.minValue) {
+        query['metadata.marketValue'].$gte = Number(filters.minValue);
+      }
+      
+      if (filters.maxValue) {
+        query['metadata.marketValue'].$lte = Number(filters.maxValue);
+      }
+    }
+    
+    return query;
+  }
+  
+  /**
+   * Build query object for county filters
+   * @param filters The filters to apply
+   * @returns Mongoose query object
+   */
+  private buildCountyFilterQuery(filters: any): any {
+    const query: any = {};
+    
+    if (filters.stateId) {
+      query.stateId = filters.stateId;
+    }
+    
+    if (filters.name) {
+      query.name = { $regex: filters.name, $options: 'i' };
+    }
+    
+    return query;
   }
 
   /**
