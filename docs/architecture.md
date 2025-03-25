@@ -10,6 +10,7 @@ graph TB
     API[Express API]
     Auth[Auth Module]
     Prop[Property Module]
+    Inventory[Inventory Module]
     Search[Search Module]
     DB[(MongoDB)]
     Static[Static File Storage]
@@ -17,11 +18,14 @@ graph TB
     Client --> API
     API --> Auth
     API --> Prop
+    API --> Inventory
     API --> Search
     Auth --> DB
     Prop --> DB
+    Inventory --> DB
     Search --> DB
     Prop --> Static
+    Inventory --> Static
 ```
 
 This modular monolithic approach allows for simpler deployment while maintaining separation of concerns through well-defined modules.
@@ -63,6 +67,32 @@ sequenceDiagram
     API-->>C: Final Response
 ```
 
+### Inventory Hierarchical Structure
+
+```mermaid
+graph TD
+    USMap[US Map]
+    State1[State]
+    State2[State]
+    County1[County]
+    County2[County]
+    County3[County]
+    Prop1[Property]
+    Prop2[Property]
+    Prop3[Property]
+    Prop4[Property]
+    
+    USMap --> State1
+    USMap --> State2
+    State1 --> County1
+    State1 --> County2
+    State2 --> County3
+    County1 --> Prop1
+    County1 --> Prop2
+    County2 --> Prop3
+    County3 --> Prop4
+```
+
 ### Search Flow
 
 ```mermaid
@@ -102,6 +132,17 @@ graph LR
     A --> E[Pagination]
 ```
 
+### Inventory Module
+```mermaid
+graph LR
+    A[Inventory Module] --> B[State Management]
+    A --> C[County Management]
+    A --> D[Property Management]
+    A --> E[Controller Management]
+    A --> F[GeoJSON Processing]
+    A --> G[Export Services]
+```
+
 ### Search Module
 ```mermaid
 graph LR
@@ -129,6 +170,24 @@ graph TD
     A[Upload Property Data] --> B[Validate Data]
     B --> C[Store Property Data]
     C --> D[Return Response]
+```
+
+### State/County/Property Relationship Flow
+```mermaid
+graph TD
+    A[Create State] --> B[Validate State Data]
+    B --> C[Store State Data]
+    C --> D[Update US Map]
+    
+    E[Create County] --> F[Validate County Data]
+    F --> G[Verify State Exists]
+    G --> H[Store County Data]
+    H --> I[Update State Metadata]
+    
+    J[Create Property] --> K[Validate Property Data]
+    K --> L[Verify County Exists]
+    L --> M[Store Property Data]
+    M --> N[Update County Metadata]
 ```
 
 ## Infrastructure
@@ -180,6 +239,21 @@ graph TD
     C -- No --> D
     E -- Yes --> F[Allow]
     E -- No --> D
+```
+
+### Object-Level Permissions
+```mermaid
+graph TD
+    A[Request] --> B{Object Type?}
+    B -- State --> C{Has State Access?}
+    B -- County --> D{Has County Access?}
+    B -- Property --> E{Has Property Access?}
+    C -- Yes --> F[Allow State Operation]
+    C -- No --> G[Reject]
+    D -- Yes --> H[Allow County Operation]
+    D -- No --> G
+    E -- Yes --> I[Allow Property Operation]
+    E -- No --> G
 ```
 
 ## Deployment Architecture
