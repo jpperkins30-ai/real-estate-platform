@@ -24,95 +24,152 @@ const options: swaggerJSDoc.Options = {
       schemas: {
         Property: {
           type: 'object',
-          required: ['title', 'propertyType', 'price', 'address', 'city', 'country'],
+          required: ['parcelId', 'taxAccountNumber', 'type', 'parentId', 'countyId', 'stateId', 'ownerName', 'propertyAddress', 'metadata'],
           properties: {
             _id: {
               type: 'string',
               description: 'Automatically generated MongoDB ID'
             },
-            title: {
+            parcelId: {
               type: 'string',
-              description: 'Property title'
+              description: 'Unique parcel identifier'
             },
-            description: {
+            taxAccountNumber: {
               type: 'string',
-              description: 'Detailed property description'
+              description: 'Tax account number'
             },
-            propertyType: {
+            type: {
               type: 'string',
-              enum: ['APARTMENT', 'HOUSE', 'COMMERCIAL', 'LAND', 'OTHER'],
-              description: 'Type of property'
+              enum: ['property'],
+              description: 'Object type'
             },
-            status: {
+            parentId: {
               type: 'string',
-              enum: ['FOR_SALE', 'FOR_RENT', 'SOLD', 'RENTED'],
-              description: 'Current status of the property'
+              description: 'Reference to the parent county object ID'
             },
-            price: {
-              type: 'number',
-              description: 'Property price'
-            },
-            area: {
-              type: 'number',
-              description: 'Property area in square meters'
-            },
-            bedrooms: {
-              type: 'number',
-              description: 'Number of bedrooms'
-            },
-            bathrooms: {
-              type: 'number',
-              description: 'Number of bathrooms'
-            },
-            address: {
+            countyId: {
               type: 'string',
-              description: 'Street address'
+              description: 'Reference to the county object ID'
+            },
+            stateId: {
+              type: 'string',
+              description: 'Reference to the state object ID'
+            },
+            ownerName: {
+              type: 'string',
+              description: 'Property owner name'
+            },
+            propertyAddress: {
+              type: 'string',
+              description: 'Property street address'
             },
             city: {
               type: 'string',
               description: 'City'
             },
-            state: {
-              type: 'string',
-              description: 'State or province'
-            },
             zipCode: {
               type: 'string',
               description: 'Postal or ZIP code'
             },
-            country: {
-              type: 'string',
-              description: 'Country'
+            geometry: {
+              type: 'object',
+              properties: {
+                type: {
+                  type: 'string',
+                  enum: ['Point', 'Polygon'],
+                  description: 'GeoJSON geometry type'
+                },
+                coordinates: {
+                  type: 'array',
+                  description: 'GeoJSON coordinates'
+                }
+              }
             },
-            latitude: {
-              type: 'number',
-              description: 'Latitude coordinate'
+            metadata: {
+              type: 'object',
+              required: ['propertyType', 'taxStatus'],
+              properties: {
+                propertyType: {
+                  type: 'string',
+                  description: 'Type of property'
+                },
+                yearBuilt: {
+                  type: 'number',
+                  description: 'Year the property was built'
+                },
+                landArea: {
+                  type: 'number',
+                  description: 'Land area size'
+                },
+                landAreaUnit: {
+                  type: 'string',
+                  description: 'Unit of land area measurement (e.g., sqft, acres)'
+                },
+                buildingArea: {
+                  type: 'number',
+                  description: 'Building area size'
+                },
+                buildingAreaUnit: {
+                  type: 'string',
+                  description: 'Unit of building area measurement (e.g., sqft)'
+                },
+                taxStatus: {
+                  type: 'string',
+                  enum: ['Paid', 'Delinquent', 'Unknown'],
+                  description: 'Property tax payment status'
+                },
+                assessedValue: {
+                  type: 'number',
+                  description: 'Property assessed value for tax purposes'
+                },
+                marketValue: {
+                  type: 'number',
+                  description: 'Estimated market value'
+                },
+                taxDue: {
+                  type: 'number',
+                  description: 'Amount of taxes due'
+                },
+                saleType: {
+                  type: 'string',
+                  enum: ['Tax Lien', 'Deed', 'Conventional', 'Other'],
+                  description: 'Type of property sale'
+                },
+                saleAmount: {
+                  type: 'number',
+                  description: 'Amount of last sale'
+                },
+                saleDate: {
+                  type: 'string',
+                  format: 'date-time',
+                  description: 'Date of last sale'
+                },
+                lastUpdated: {
+                  type: 'string',
+                  format: 'date-time',
+                  description: 'Last data update timestamp'
+                },
+                dataSource: {
+                  type: 'string',
+                  description: 'Source of the property data'
+                },
+                lookupMethod: {
+                  type: 'string',
+                  enum: ['account_number', 'parcel_id'],
+                  description: 'Method used to look up property data'
+                },
+                rawData: {
+                  type: 'object',
+                  description: 'Raw data collected from source'
+                }
+              }
             },
-            longitude: {
-              type: 'number',
-              description: 'Longitude coordinate'
-            },
-            features: {
+            controllers: {
               type: 'array',
               items: {
-                type: 'string'
+                $ref: '#/components/schemas/ControllerReference'
               },
-              description: 'Property features and amenities'
-            },
-            images: {
-              type: 'array',
-              items: {
-                type: 'string'
-              },
-              description: 'URLs to property images'
-            },
-            agent: {
-              type: 'string',
-              description: 'Reference to the agent user ID'
-            },
-            sourceId: {
-              type: 'string',
-              description: 'Reference to the data source if imported'
+              description: 'Controllers attached to this property'
             },
             createdAt: {
               type: 'string',
@@ -123,11 +180,364 @@ const options: swaggerJSDoc.Options = {
               type: 'string',
               format: 'date-time',
               description: 'Last update timestamp'
+            }
+          }
+        },
+        ControllerReference: {
+          type: 'object',
+          required: ['controllerId', 'controllerType', 'enabled'],
+          properties: {
+            controllerId: {
+              type: 'string',
+              description: 'Reference to the controller ID'
             },
-            soldDate: {
+            controllerType: {
+              type: 'string',
+              enum: ['Tax Sale', 'Map', 'Property', 'Demographics'],
+              description: 'Type of controller'
+            },
+            enabled: {
+              type: 'boolean',
+              description: 'Whether the controller is enabled'
+            },
+            lastRun: {
               type: 'string',
               format: 'date-time',
-              description: 'Date when property was sold (if status is SOLD)'
+              description: 'Last run timestamp'
+            },
+            nextScheduledRun: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Next scheduled run timestamp'
+            },
+            configuration: {
+              type: 'object',
+              description: 'Controller configuration'
+            }
+          }
+        },
+        Controller: {
+          type: 'object',
+          required: ['name', 'controllerType'],
+          properties: {
+            _id: {
+              type: 'string',
+              description: 'Automatically generated MongoDB ID'
+            },
+            name: {
+              type: 'string',
+              description: 'Controller name'
+            },
+            type: {
+              type: 'string',
+              enum: ['controller'],
+              description: 'Object type'
+            },
+            controllerType: {
+              type: 'string',
+              enum: ['Tax Sale', 'Map', 'Property', 'Demographics'],
+              description: 'Type of controller'
+            },
+            description: {
+              type: 'string',
+              description: 'Controller description'
+            },
+            configTemplate: {
+              type: 'object',
+              properties: {
+                requiredFields: {
+                  type: 'array',
+                  items: {
+                    type: 'string'
+                  },
+                  description: 'Required configuration fields'
+                },
+                optionalFields: {
+                  type: 'object',
+                  description: 'Optional configuration fields with default values'
+                }
+              }
+            },
+            attachedTo: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  objectId: {
+                    type: 'string',
+                    description: 'ID of attached object'
+                  },
+                  objectType: {
+                    type: 'string',
+                    enum: ['us_map', 'state', 'county', 'property'],
+                    description: 'Type of attached object'
+                  }
+                }
+              },
+              description: 'Objects this controller is attached to'
+            },
+            implementation: {
+              type: 'object',
+              properties: {
+                collectorType: {
+                  type: 'string',
+                  description: 'Type of data collector to use'
+                },
+                supportedSourceTypes: {
+                  type: 'array',
+                  items: {
+                    type: 'string'
+                  },
+                  description: 'Supported source data types'
+                },
+                additionalConfig: {
+                  type: 'object',
+                  description: 'Additional implementation configuration'
+                }
+              }
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Creation timestamp'
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Last update timestamp'
+            }
+          }
+        },
+        County: {
+          type: 'object',
+          required: ['name', 'stateId', 'type', 'parentId'],
+          properties: {
+            _id: {
+              type: 'string',
+              description: 'Automatically generated MongoDB ID'
+            },
+            name: {
+              type: 'string',
+              description: 'County name'
+            },
+            stateId: {
+              type: 'string',
+              description: 'Reference to the state ID'
+            },
+            type: {
+              type: 'string',
+              enum: ['county'],
+              description: 'Object type'
+            },
+            parentId: {
+              type: 'string',
+              description: 'Reference to the parent state ID'
+            },
+            fips: {
+              type: 'string',
+              description: 'FIPS code'
+            },
+            population: {
+              type: 'number',
+              description: 'County population'
+            },
+            area: {
+              type: 'number',
+              description: 'County area in square miles'
+            },
+            geometry: {
+              type: 'object',
+              properties: {
+                type: {
+                  type: 'string',
+                  enum: ['Polygon', 'MultiPolygon'],
+                  description: 'GeoJSON geometry type'
+                },
+                coordinates: {
+                  type: 'array',
+                  description: 'GeoJSON coordinates'
+                }
+              }
+            },
+            metadata: {
+              type: 'object',
+              properties: {
+                totalProperties: {
+                  type: 'number',
+                  description: 'Total number of properties in the county'
+                },
+                statistics: {
+                  type: 'object',
+                  properties: {
+                    totalTaxLiens: {
+                      type: 'number',
+                      description: 'Total number of tax liens'
+                    },
+                    totalValue: {
+                      type: 'number',
+                      description: 'Total property value'
+                    },
+                    averagePropertyValue: {
+                      type: 'number',
+                      description: 'Average property value'
+                    },
+                    totalPropertiesWithLiens: {
+                      type: 'number',
+                      description: 'Total number of properties with tax liens'
+                    },
+                    lastUpdated: {
+                      type: 'string',
+                      format: 'date-time',
+                      description: 'Last update timestamp'
+                    }
+                  }
+                },
+                searchConfig: {
+                  type: 'object',
+                  properties: {
+                    searchUrl: {
+                      type: 'string',
+                      description: 'URL for property searches'
+                    },
+                    lookupMethod: {
+                      type: 'string',
+                      enum: ['account_number', 'parcel_id'],
+                      description: 'Method used for property lookups'
+                    },
+                    selectors: {
+                      type: 'object',
+                      description: 'CSS selectors for data extraction'
+                    },
+                    lienUrl: {
+                      type: 'string',
+                      description: 'URL for tax lien searches'
+                    }
+                  }
+                }
+              }
+            },
+            controllers: {
+              type: 'array',
+              items: {
+                $ref: '#/components/schemas/ControllerReference'
+              },
+              description: 'Controllers attached to this county'
+            },
+            dataLastUpdated: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Last data update timestamp'
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Creation timestamp'
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Last update timestamp'
+            }
+          }
+        },
+        State: {
+          type: 'object',
+          required: ['name', 'abbreviation', 'type'],
+          properties: {
+            _id: {
+              type: 'string',
+              description: 'Automatically generated MongoDB ID'
+            },
+            name: {
+              type: 'string',
+              description: 'State name'
+            },
+            abbreviation: {
+              type: 'string',
+              description: 'State abbreviation'
+            },
+            type: {
+              type: 'string',
+              enum: ['state'],
+              description: 'Object type'
+            },
+            parentId: {
+              type: 'string',
+              description: 'Reference to the parent US map ID'
+            },
+            region: {
+              type: 'string',
+              description: 'Geographic region'
+            },
+            geometry: {
+              type: 'object',
+              properties: {
+                type: {
+                  type: 'string',
+                  enum: ['Polygon', 'MultiPolygon'],
+                  description: 'GeoJSON geometry type'
+                },
+                coordinates: {
+                  type: 'array',
+                  description: 'GeoJSON coordinates'
+                }
+              }
+            },
+            metadata: {
+              type: 'object',
+              properties: {
+                totalCounties: {
+                  type: 'number',
+                  description: 'Total number of counties in the state'
+                },
+                totalProperties: {
+                  type: 'number',
+                  description: 'Total number of properties in the state'
+                },
+                statistics: {
+                  type: 'object',
+                  properties: {
+                    totalTaxLiens: {
+                      type: 'number',
+                      description: 'Total number of tax liens'
+                    },
+                    totalValue: {
+                      type: 'number',
+                      description: 'Total property value'
+                    },
+                    averagePropertyValue: {
+                      type: 'number',
+                      description: 'Average property value'
+                    },
+                    totalPropertiesWithLiens: {
+                      type: 'number',
+                      description: 'Total number of properties with tax liens'
+                    },
+                    lastUpdated: {
+                      type: 'string',
+                      format: 'date-time',
+                      description: 'Last update timestamp'
+                    }
+                  }
+                }
+              }
+            },
+            controllers: {
+              type: 'array',
+              items: {
+                $ref: '#/components/schemas/ControllerReference'
+              },
+              description: 'Controllers attached to this state'
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Creation timestamp'
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Last update timestamp'
             }
           }
         },
@@ -254,4 +664,4 @@ const options: swaggerJSDoc.Options = {
   apis: ['./src/routes/*.ts']
 };
 
-export const specs = swaggerJSDoc(options); 
+export default swaggerJSDoc(options); 
