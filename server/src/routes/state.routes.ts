@@ -1,8 +1,13 @@
 import { Router } from 'express';
 import { StateService } from '../services/state.service';
 import { StateObject } from '../types/inventory';
+import { State } from '../models';
+import { getSimplifiedStateGeometry, getCountyFeatureCollection } from '../utils/geoDataUtils';
+import logger, { logError } from '../utils/logger';
+import { objectToGeoJSONFeature, objectsToGeoJSONFeatureCollection } from '../utils/geoJSONUtils';
 
 const router = Router();
+
 const stateService = new StateService();
 
 /**
@@ -10,53 +15,225 @@ const stateService = new StateService();
  * /api/states:
  *   get:
  *     summary: Get all states
- *     description: Returns a list of all states
+ *     description: Returns a list of all states with optional filters
+ *     tags: [Geographic]
  *     parameters:
  *       - in: query
  *         name: includeGeometry
  *         schema:
  *           type: boolean
- *         description: Include geometry information in response
+ *         description: Whether to include geometry in the response
  *     responses:
  *       200:
  *         description: List of states
+ *       500:
+ *         description: Server error
  */
 router.get('/', async (req, res) => {
   try {
-    const includeGeometry = req.query.includeGeometry === 'true';
-    const states = await stateService.getAllStates(includeGeometry);
+    const { includeGeometry } = req.query;
+    
+    // Create projection based on whether to include geometry
+    const projection = includeGeometry === 'true' ? {} : { geometry: 0 };
+    
+    const states = await State.find({}, projection).sort({ name: 1 });
+    
     res.json(states);
   } catch (error: any) {
-    res.status(500).json({ message: 'Error fetching states', error: error.message });
+    logger.error('Error fetching states:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
 /**
  * @swagger
- * /api/states/{id}:
+ * /api/states/{abbreviation}:
  *   get:
- *     summary: Get a state by ID
+ *     summary: Get state by abbreviation
+ *     description: Returns a state by its abbreviation
+ *     tags: [Geographic]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: abbreviation
  *         required: true
  *         schema:
  *           type: string
+ *         description: State abbreviation (e.g., 'CA', 'TX')
  *     responses:
  *       200:
- *         description: The state object
+ *         description: State object
  *       404:
  *         description: State not found
+ *       500:
+ *         description: Server error
  */
-router.get('/:id', async (req, res) => {
+router.get('/:abbreviation', async (req, res) => {
   try {
-    const state = await stateService.getStateById(req.params.id);
+    const { abbreviation } = req.params;
+    
+    const state = await State.findOne({ abbreviation: abbreviation.toUpperCase() });
+    
     if (!state) {
-      return res.status(404).json({ message: 'State not found' });
+      return res.status(404).json({ message: `State ${abbreviation} not found` });
     }
+    
     res.json(state);
   } catch (error: any) {
-    res.status(500).json({ message: 'Error fetching state', error: error.message });
+    logger.error(`Error fetching state ${req.params.abbreviation}:`, error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /api/states/{abbreviation}/simplified:
+ *   get:
+ *     summary: Get simplified geometry for a state
+ *     description: Returns a simplified version of the state geometry
+ *     tags: [Geographic]
+ *     parameters:
+ *       - in: path
+ *         name: abbreviation
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: State abbreviation (e.g., 'CA', 'TX')
+ *     responses:
+ *       200:
+ *         description: Simplified state geometry
+ *       404:
+ *         description: State not found
+ *       500:
+ *         description: Server error
+ */
+router.get('/:abbreviation/simplified', async (req, res) => {
+  try {
+    const { abbreviation } = req.params;
+    
+    const simplifiedGeometry = await getSimplifiedStateGeometry(abbreviation.toUpperCase());
+    
+    res.json(simplifiedGeometry);
+  } catch (error: any) {
+    logger.error(`Error fetching simplified geometry for state ${req.params.abbreviation}:`, error);
+    
+    if (error.message && error.message.includes('not found')) {
+      return res.status(404).json({ message: error.message });
+    }
+    
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /api/states/{abbreviation}/counties:
+ *   get:
+ *     summary: Get counties for a state
+ *     description: Returns a list of counties for a state
+ *     tags: [Geographic]
+ *     parameters:
+ *       - in: path
+ *         name: abbreviation
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: State abbreviation (e.g., 'CA', 'TX')
+ *       - in: query
+ *         name: format
+ *         schema:
+ *           type: string
+ *           enum: [json, geojson]
+ *         description: Format to return data in
+ *     responses:
+ *       200:
+ *         description: List of counties or GeoJSON FeatureCollection
+ *       404:
+ *         description: State not found
+ *       500:
+ *         description: Server error
+ */
+router.get('/:abbreviation/counties', async (req, res) => {
+  try {
+    const { abbreviation } = req.params;
+    const { format } = req.query;
+    
+    const state = await State.findOne({ abbreviation: abbreviation.toUpperCase() });
+    
+    if (!state) {
+      return res.status(404).json({ message: `State ${abbreviation} not found` });
+    }
+    
+    if (format === 'geojson') {
+      // Return counties as GeoJSON FeatureCollection
+      const featureCollection = await getCountyFeatureCollection(abbreviation.toUpperCase());
+      return res.json(featureCollection);
+    }
+    
+    // Return counties as JSON array
+    const counties = await State.aggregate([
+      { $match: { abbreviation: abbreviation.toUpperCase() } },
+      { 
+        $lookup: {
+          from: 'counties',
+          localField: '_id',
+          foreignField: 'stateId',
+          as: 'counties'
+        }
+      },
+      { $unwind: '$counties' },
+      { $replaceRoot: { newRoot: '$counties' } },
+      { $project: { geometry: 0 } },
+      { $sort: { name: 1 } }
+    ]);
+    
+    res.json(counties);
+  } catch (error: any) {
+    logger.error(`Error fetching counties for state ${req.params.abbreviation}:`, error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /api/states/{abbreviation}/statistics:
+ *   get:
+ *     summary: Get statistics for a state
+ *     description: Returns statistics for a state
+ *     tags: [Geographic]
+ *     parameters:
+ *       - in: path
+ *         name: abbreviation
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: State abbreviation (e.g., 'CA', 'TX')
+ *     responses:
+ *       200:
+ *         description: State statistics
+ *       404:
+ *         description: State not found
+ *       500:
+ *         description: Server error
+ */
+router.get('/:abbreviation/statistics', async (req, res) => {
+  try {
+    const { abbreviation } = req.params;
+    
+    const state = await State.findOne({ abbreviation: abbreviation.toUpperCase() });
+    
+    if (!state) {
+      return res.status(404).json({ message: `State ${abbreviation} not found` });
+    }
+    
+    res.json({
+      totalCounties: state.metadata.totalCounties,
+      totalProperties: state.metadata.totalProperties,
+      totalTaxLiens: state.metadata.statistics.totalTaxLiens,
+      totalValue: state.metadata.statistics.totalValue
+    });
+  } catch (error: any) {
+    logger.error(`Error fetching statistics for state ${req.params.abbreviation}:`, error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -83,11 +260,15 @@ router.post('/', async (req, res) => {
   try {
     const state = await stateService.createState(req.body);
     res.status(201).json(state);
-  } catch (error: any) {
-    if (error.code === 11000) {
-      return res.status(400).json({ message: 'State with this name or abbreviation already exists', error: error.message });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if ('code' in error && error.code === 11000) {
+        return res.status(400).json({ message: 'State with this name or abbreviation already exists', error: error.message });
+      }
+      res.status(400).json({ message: 'Error creating state', error: error.message });
+    } else {
+      res.status(400).json({ message: 'Error creating state', error: 'Unknown error occurred' });
     }
-    res.status(400).json({ message: 'Error creating state', error: error.message });
   }
 });
 
@@ -121,8 +302,9 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ message: 'State not found' });
     }
     res.json(state);
-  } catch (error: any) {
-    res.status(400).json({ message: 'Error updating state', error: error.message });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    res.status(400).json({ message: 'Error updating state', error: errorMessage });
   }
 });
 
@@ -152,11 +334,15 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ message: 'State not found' });
     }
     res.json({ message: 'State deleted successfully' });
-  } catch (error: any) {
-    if (error.message.includes('Cannot delete state with counties')) {
-      return res.status(400).json({ message: error.message });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (error.message.includes('Cannot delete state with counties')) {
+        return res.status(400).json({ message: error.message });
+      }
+      res.status(500).json({ message: 'Error deleting state', error: error.message });
+    } else {
+      res.status(500).json({ message: 'Error deleting state', error: 'Unknown error occurred' });
     }
-    res.status(500).json({ message: 'Error deleting state', error: error.message });
   }
 });
 
@@ -187,11 +373,15 @@ router.get('/:id/counties', async (req, res) => {
     const includeGeometry = req.query.includeGeometry === 'true';
     const counties = await stateService.getStateCounties(req.params.id, includeGeometry);
     res.json(counties);
-  } catch (error: any) {
-    if (error.message === 'State not found') {
-      return res.status(404).json({ message: 'State not found' });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (error.message === 'State not found') {
+        return res.status(404).json({ message: 'State not found' });
+      }
+      res.status(500).json({ message: 'Error fetching counties', error: error.message });
+    } else {
+      res.status(500).json({ message: 'Error fetching counties', error: 'Unknown error occurred' });
     }
-    res.status(500).json({ message: 'Error fetching counties', error: error.message });
   }
 });
 
@@ -216,11 +406,15 @@ router.get('/:id/statistics', async (req, res) => {
   try {
     const statistics = await stateService.getStateStatistics(req.params.id);
     res.json(statistics);
-  } catch (error: any) {
-    if (error.message === 'State not found') {
-      return res.status(404).json({ message: 'State not found' });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (error.message === 'State not found') {
+        return res.status(404).json({ message: 'State not found' });
+      }
+      res.status(500).json({ message: 'Error fetching statistics', error: error.message });
+    } else {
+      res.status(500).json({ message: 'Error fetching statistics', error: 'Unknown error occurred' });
     }
-    res.status(500).json({ message: 'Error fetching statistics', error: error.message });
   }
 });
 
@@ -245,11 +439,15 @@ router.get('/:id/controllers', async (req, res) => {
   try {
     const controllers = await stateService.getStateControllers(req.params.id);
     res.json(controllers);
-  } catch (error: any) {
-    if (error.message === 'State not found') {
-      return res.status(404).json({ message: 'State not found' });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (error.message === 'State not found') {
+        return res.status(404).json({ message: 'State not found' });
+      }
+      res.status(500).json({ message: 'Error fetching controllers', error: error.message });
+    } else {
+      res.status(500).json({ message: 'Error fetching controllers', error: 'Unknown error occurred' });
     }
-    res.status(500).json({ message: 'Error fetching controllers', error: error.message });
   }
 });
 
