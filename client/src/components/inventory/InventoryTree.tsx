@@ -1,229 +1,285 @@
-import React, { useEffect, useState } from 'react';
-import InventoryTreeNode from './InventoryTreeNode';
-import PropertyListView from './PropertyListView';
-import { StateObject } from '../../types/inventory';
-import { useInventoryContext, InventoryNode } from '../../context/InventoryContext';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { FaHome, FaMapMarkerAlt, FaFolder, FaBars, FaAngleRight, FaAngleDown, FaCity, FaFlag } from 'react-icons/fa';
+import { InventoryTreeNode } from './InventoryTreeNode';
+import { Tree, TreeNode } from '../common/Tree';
+import axios from 'axios';
+import './InventoryModule.css';
 
-// Mock data for development purposes
-const mockStates: StateObject[] = [
-  {
-    id: 'state-1',
-    name: 'California',
-    abbreviation: 'CA',
-    type: 'state',
-    parentId: 'usmap',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    geometry: {
-      type: 'Polygon',
-      coordinates: [],
-    },
-    metadata: {
-      totalCounties: 58,
-      totalProperties: 1245,
-      statistics: {
-        totalTaxLiens: 145,
-        totalValue: 3500000,
-        averagePropertyValue: 350000,
-        totalPropertiesWithLiens: 145,
-        lastUpdated: new Date(),
-      },
-    },
-    controllers: [],
-    counties: [
-      {
-        id: 'county-1',
-        name: 'Los Angeles County',
-        type: 'county',
-        parentId: 'state-1',
-        stateId: 'state-1',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        geometry: {
-          type: 'Polygon',
-          coordinates: [],
-        },
-        metadata: {
-          totalProperties: 450,
-          statistics: {
-            totalTaxLiens: 56,
-            totalValue: 1200000,
-            averagePropertyValue: 380000,
-            totalPropertiesWithLiens: 56,
-            lastUpdated: new Date(),
-          },
-          searchConfig: {
-            searchUrl: 'https://example.com',
-            lookupMethod: 'parcel_id',
-            selectors: {},
-          },
-        },
-        controllers: [],
-        properties: [],
-      },
-      {
-        id: 'county-2',
-        name: 'San Diego County',
-        type: 'county',
-        parentId: 'state-1',
-        stateId: 'state-1',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        geometry: {
-          type: 'Polygon',
-          coordinates: [],
-        },
-        metadata: {
-          totalProperties: 325,
-          statistics: {
-            totalTaxLiens: 38,
-            totalValue: 950000,
-            averagePropertyValue: 420000,
-            totalPropertiesWithLiens: 38,
-            lastUpdated: new Date(),
-          },
-          searchConfig: {
-            searchUrl: 'https://example.com',
-            lookupMethod: 'parcel_id',
-            selectors: {},
-          },
-        },
-        controllers: [],
-        properties: [],
-      },
-    ],
-  },
-  {
-    id: 'state-2',
-    name: 'Texas',
-    abbreviation: 'TX',
-    type: 'state',
-    parentId: 'usmap',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    geometry: {
-      type: 'Polygon',
-      coordinates: [],
-    },
-    metadata: {
-      totalCounties: 254,
-      totalProperties: 2100,
-      statistics: {
-        totalTaxLiens: 230,
-        totalValue: 4200000,
-        averagePropertyValue: 280000,
-        totalPropertiesWithLiens: 230,
-        lastUpdated: new Date(),
-      },
-    },
-    controllers: [],
-    counties: [
-      {
-        id: 'county-3',
-        name: 'Harris County',
-        type: 'county',
-        parentId: 'state-2',
-        stateId: 'state-2',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        geometry: {
-          type: 'Polygon',
-          coordinates: [],
-        },
-        metadata: {
-          totalProperties: 685,
-          statistics: {
-            totalTaxLiens: 74,
-            totalValue: 1850000,
-            averagePropertyValue: 310000,
-            totalPropertiesWithLiens: 74,
-            lastUpdated: new Date(),
-          },
-          searchConfig: {
-            searchUrl: 'https://example.com',
-            lookupMethod: 'parcel_id',
-            selectors: {},
-          },
-        },
-        controllers: [],
-        properties: [],
-      },
-    ],
-  },
-];
+interface State {
+  _id: string;
+  id: string;
+  name: string;
+  abbreviation: string;
+  metadata: {
+    totalCounties: number;
+    totalProperties: number;
+  };
+}
 
-const InventoryTree: React.FC = () => {
-  const { expandedNodes, toggleNode, selectNode } = useInventoryContext();
-  const [states, setStates] = useState<StateObject[]>([]);
+interface County {
+  _id: string;
+  id: string;
+  name: string;
+  parentId: string;
+  metadata: {
+    totalProperties: number;
+  };
+}
+
+interface Property {
+  _id: string;
+  id: string;
+  name: string;
+  parentId: string;
+  location: {
+    address: {
+      street: string;
+      city: string;
+      zipCode: string;
+    };
+  };
+}
+
+// Define the tree node structure
+interface TreeItem {
+  id: string;
+  name: string;
+  type: 'state' | 'county' | 'property' | 'root';
+  childCount: number;
+  isOpen?: boolean;
+  children?: TreeItem[];
+  metadata?: any;
+}
+
+export const InventoryTree: React.FC = () => {
+  const navigate = useNavigate();
+  const [treeData, setTreeData] = useState<TreeItem[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set([]));
 
   useEffect(() => {
-    // In a real implementation, this would fetch data from an API
-    setStates(mockStates);
+    // Load initial tree data (states)
+    fetchStates();
   }, []);
 
-  const handleToggle = (nodeId: string) => {
-    toggleNode(nodeId);
+  const fetchStates = async () => {
+    setIsLoading(true);
+    try {
+      const response = await axios.get('/api/states');
+      const states = response.data;
+      
+      // Format the states as tree items
+      const stateItems: TreeItem[] = states.map((state: State) => ({
+        id: state._id,
+        name: state.name,
+        type: 'state',
+        childCount: state.metadata.totalCounties,
+        children: [],
+        metadata: {
+          abbreviation: state.abbreviation,
+          totalProperties: state.metadata.totalProperties
+        }
+      }));
+      
+      // Create a root node with states as children
+      const rootNode: TreeItem = {
+        id: 'root',
+        name: 'United States',
+        type: 'root',
+        childCount: stateItems.length,
+        isOpen: true,
+        children: stateItems
+      };
+      
+      setTreeData([rootNode]);
+      setIsLoading(false);
+    } catch (err) {
+      setError('Failed to load states');
+      setIsLoading(false);
+      console.error('Error fetching states:', err);
+    }
   };
 
-  const handleSelect = (node: InventoryNode) => {
-    selectNode(node);
+  const fetchCounties = async (stateId: string) => {
+    try {
+      const response = await axios.get(`/api/states/${stateId}/counties`);
+      const counties = response.data;
+      
+      // Format the counties as tree items
+      return counties.map((county: County) => ({
+        id: county._id,
+        name: county.name,
+        type: 'county',
+        childCount: county.metadata.totalProperties,
+        children: [],
+        metadata: {
+          totalProperties: county.metadata.totalProperties,
+          parentId: stateId
+        }
+      }));
+    } catch (err) {
+      console.error(`Error fetching counties for state ${stateId}:`, err);
+      return [];
+    }
   };
+
+  const fetchProperties = async (countyId: string) => {
+    try {
+      const response = await axios.get(`/api/properties/search?countyId=${countyId}&limit=50`);
+      const { properties } = response.data;
+      
+      // Format the properties as tree items
+      return properties.map((property: Property) => ({
+        id: property._id,
+        name: property.name || `${property.location.address.street}, ${property.location.address.city}`,
+        type: 'property',
+        childCount: 0,
+        metadata: {
+          address: property.location.address,
+          parentId: countyId
+        }
+      }));
+    } catch (err) {
+      console.error(`Error fetching properties for county ${countyId}:`, err);
+      return [];
+    }
+  };
+
+  const handleNodeToggle = async (nodeId: string, nodeType: string) => {
+    // Toggle node expansion
+    const newExpandedNodes = new Set(expandedNodes);
+    
+    if (expandedNodes.has(nodeId)) {
+      newExpandedNodes.delete(nodeId);
+    } else {
+      newExpandedNodes.add(nodeId);
+      
+      // Fetch children if needed
+      if (nodeType === 'state') {
+        // Find the state node in tree
+        const newTreeData = [...treeData];
+        const rootNode = newTreeData[0];
+        const stateIndex = rootNode.children?.findIndex(state => state.id === nodeId) || -1;
+        
+        if (stateIndex !== -1 && rootNode.children) {
+          const stateNode = rootNode.children[stateIndex];
+          
+          // Only fetch if no children yet
+          if (!stateNode.children || stateNode.children.length === 0) {
+            const counties = await fetchCounties(nodeId);
+            rootNode.children[stateIndex].children = counties;
+            setTreeData(newTreeData);
+          }
+        }
+      } else if (nodeType === 'county') {
+        // Find the county node in tree
+        const newTreeData = [...treeData];
+        const rootNode = newTreeData[0];
+        
+        // Find state that contains this county
+        for (let i = 0; i < (rootNode.children?.length || 0); i++) {
+          const stateNode = rootNode.children?.[i];
+          const countyIndex = stateNode?.children?.findIndex(county => county.id === nodeId) || -1;
+          
+          if (countyIndex !== -1 && stateNode?.children) {
+            const countyNode = stateNode.children[countyIndex];
+            
+            // Only fetch if no children yet
+            if (!countyNode.children || countyNode.children.length === 0) {
+              const properties = await fetchProperties(nodeId);
+              stateNode.children[countyIndex].children = properties;
+              setTreeData(newTreeData);
+            }
+            break;
+          }
+        }
+      }
+    }
+    
+    setExpandedNodes(newExpandedNodes);
+  };
+
+  const handleNodeSelect = (nodeId: string, nodeType: string) => {
+    // Navigate to the appropriate detail view
+    if (nodeType === 'state') {
+      navigate(`/inventory/states/${nodeId}`);
+    } else if (nodeType === 'county') {
+      navigate(`/inventory/counties/${nodeId}`);
+    } else if (nodeType === 'property') {
+      navigate(`/inventory/properties/${nodeId}`);
+    }
+  };
+
+  const renderNodeIcon = (nodeType: string) => {
+    switch (nodeType) {
+      case 'root':
+        return <FaFlag className="node-icon" />;
+      case 'state':
+        return <FaMapMarkerAlt className="node-icon" />;
+      case 'county':
+        return <FaCity className="node-icon" />;
+      case 'property':
+        return <FaHome className="node-icon" />;
+      default:
+        return <FaFolder className="node-icon" />;
+    }
+  };
+
+  const renderTreeNode = (node: TreeItem) => {
+    const isExpanded = expandedNodes.has(node.id);
+    
+    return (
+      <div className="tree-node" key={node.id}>
+        <div className="tree-node-content">
+          <span 
+            className="tree-node-toggle"
+            onClick={() => node.childCount > 0 && handleNodeToggle(node.id, node.type)}
+          >
+            {node.childCount > 0 && (
+              isExpanded ? <FaAngleDown className="toggle-icon" /> : <FaAngleRight className="toggle-icon" />
+            )}
+          </span>
+          
+          <span 
+            className="tree-node-label"
+            onClick={() => handleNodeSelect(node.id, node.type)}
+          >
+            {renderNodeIcon(node.type)}
+            <span className="node-name">{node.name}</span>
+            {node.childCount > 0 && (
+              <span className="node-count">({node.childCount})</span>
+            )}
+          </span>
+        </div>
+        
+        {isExpanded && node.children && node.children.length > 0 && (
+          <div className="tree-node-children">
+            {node.children.map(childNode => renderTreeNode(childNode))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  if (isLoading) {
+    return <div className="loading">Loading inventory tree...</div>;
+  }
+
+  if (error) {
+    return <div className="error">{error}</div>;
+  }
 
   return (
     <div className="inventory-tree">
-      {/* US Map Root Node */}
-      <InventoryTreeNode
-        node={{ 
-          id: 'usmap', 
-          name: 'US Map', 
-          type: 'us_map' 
-        }}
-        expanded={expandedNodes['usmap']}
-        onToggle={handleToggle}
-        onSelect={handleSelect}
-        level={0}
-      >
-        {/* State Nodes */}
-        {states.map(state => (
-          <InventoryTreeNode
-            key={state.id}
-            node={{
-              id: state.id,
-              name: state.name,
-              type: 'state',
-              data: state
-            }}
-            expanded={expandedNodes[state.id]}
-            onToggle={handleToggle}
-            onSelect={handleSelect}
-            level={1}
-          >
-            {/* County Nodes */}
-            {expandedNodes[state.id] && state.counties.map(county => (
-              <InventoryTreeNode
-                key={county.id}
-                node={{
-                  id: county.id,
-                  name: county.name,
-                  type: 'county',
-                  data: county
-                }}
-                expanded={expandedNodes[county.id]}
-                onToggle={handleToggle}
-                onSelect={handleSelect}
-                level={2}
-              >
-                {/* Property Nodes would be loaded on demand */}
-                {expandedNodes[county.id] && (
-                  <PropertyListView countyId={county.id} />
-                )}
-              </InventoryTreeNode>
-            ))}
-          </InventoryTreeNode>
-        ))}
-      </InventoryTreeNode>
+      <div className="tree-header">
+        <FaBars className="menu-icon" />
+        <h3>Inventory</h3>
+      </div>
+      <div className="tree-container">
+        {treeData.map(node => renderTreeNode(node))}
+      </div>
     </div>
   );
-};
-
-export default InventoryTree; 
+}; 

@@ -3,6 +3,7 @@ import { PropertyService } from '../services/property.service';
 import { PropertyObject, PropertySearchCriteria, PropertyTaxStatus } from '../types/inventory';
 import { County } from '../models/county.model';
 import { Property } from '../models/property.model';
+import { propertySearchMiddleware, validatePropertyHierarchy, directPropertySearch, fuzzyPropertySearch } from '../middleware/propertySearch.middleware';
 
 const router = Router();
 const propertyService = new PropertyService();
@@ -11,20 +12,182 @@ const propertyService = new PropertyService();
  * @swagger
  * /api/properties:
  *   get:
- *     summary: Get all properties
- *     description: Returns a list of all properties
+ *     summary: Get all properties with pagination
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: Number of items per page
  *     responses:
  *       200:
  *         description: List of properties
  */
 router.get('/', async (req, res) => {
   try {
-    const properties = await propertyService.getAllProperties();
-    res.json(properties);
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    
+    const { properties, total } = await propertyService.getAllProperties(page, limit);
+    res.json({
+      properties,
+      total,
+      page,
+      limit
+    });
   } catch (error: any) {
     res.status(500).json({ message: 'Error fetching properties', error: error.message });
   }
 });
+
+/**
+ * @swagger
+ * /api/properties/search:
+ *   get:
+ *     summary: Search properties with various filters
+ *     description: Flexible search endpoint with support for multiple filters
+ *     parameters:
+ *       - in: query
+ *         name: stateId
+ *         schema:
+ *           type: string
+ *         description: State ID to filter properties
+ *       - in: query
+ *         name: countyId
+ *         schema:
+ *           type: string
+ *         description: County ID to filter properties
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *         description: Property status
+ *       - in: query
+ *         name: minValue
+ *         schema:
+ *           type: number
+ *         description: Minimum property value
+ *       - in: query
+ *         name: maxValue
+ *         schema:
+ *           type: number
+ *         description: Maximum property value
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: Number of items per page
+ *     responses:
+ *       200:
+ *         description: Matched properties
+ */
+router.get('/search', propertySearchMiddleware, async (req, res) => {
+  try {
+    const { query, pagination, sort } = req.propertySearchQuery;
+    
+    const { properties, total } = await propertyService.searchProperties(
+      query,
+      pagination.page,
+      pagination.limit,
+      sort
+    );
+    
+    res.json({
+      properties,
+      total,
+      page: pagination.page,
+      limit: pagination.limit
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: 'Error searching properties', error: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /api/properties/direct-search:
+ *   get:
+ *     summary: Direct property search by exact identifiers
+ *     description: Search properties by parcel ID, tax account number, or text query
+ *     parameters:
+ *       - in: query
+ *         name: countyId
+ *         schema:
+ *           type: string
+ *         description: County ID to filter properties
+ *       - in: query
+ *         name: parcelId
+ *         schema:
+ *           type: string
+ *         description: Exact parcel ID to search for
+ *       - in: query
+ *         name: taxAccountNumber
+ *         schema:
+ *           type: string
+ *         description: Exact tax account number to search for
+ *       - in: query
+ *         name: searchQuery
+ *         schema:
+ *           type: string
+ *         description: Text search across multiple fields
+ *     responses:
+ *       200:
+ *         description: Search results
+ */
+router.get('/direct-search', directPropertySearch, fuzzyPropertySearch);
+
+/**
+ * @swagger
+ * /api/properties/fuzzy-search:
+ *   get:
+ *     summary: Fuzzy property search for partial matches
+ *     description: Search properties with fuzzy matching for identifiers
+ *     parameters:
+ *       - in: query
+ *         name: countyId
+ *         schema:
+ *           type: string
+ *         description: County ID to filter properties
+ *       - in: query
+ *         name: parcelId
+ *         schema:
+ *           type: string
+ *         description: Partial parcel ID to search for
+ *       - in: query
+ *         name: taxAccountNumber
+ *         schema:
+ *           type: string
+ *         description: Partial tax account number to search for
+ *       - in: query
+ *         name: searchQuery
+ *         schema:
+ *           type: string
+ *         description: General search query
+ *       - in: query
+ *         name: threshold
+ *         schema:
+ *           type: number
+ *           default: 0.7
+ *         description: Similarity threshold (0-1) for fuzzy matching
+ *     responses:
+ *       200:
+ *         description: Fuzzy search results
+ */
+router.get('/fuzzy-search', fuzzyPropertySearch);
 
 /**
  * @swagger
@@ -69,12 +232,19 @@ router.get('/:id', async (req, res) => {
  *     responses:
  *       201:
  *         description: Property created successfully
+ *       400:
+ *         description: Error creating property
+ *       404:
+ *         description: Parent county not found
  */
 router.post('/', async (req, res) => {
   try {
     const property = await propertyService.createProperty(req.body);
     res.status(201).json(property);
   } catch (error: any) {
+    if (error.message === 'Parent county not found') {
+      return res.status(404).json({ message: error.message });
+    }
     res.status(400).json({ message: 'Error creating property', error: error.message });
   }
 });
@@ -110,6 +280,9 @@ router.put('/:id', async (req, res) => {
     }
     res.json(property);
   } catch (error: any) {
+    if (error.message.includes('Cannot update parentId directly')) {
+      return res.status(400).json({ message: error.message });
+    }
     res.status(400).json({ message: 'Error updating property', error: error.message });
   }
 });
@@ -145,230 +318,7 @@ router.delete('/:id', async (req, res) => {
 
 /**
  * @swagger
- * /api/properties/search:
- *   get:
- *     summary: Search for properties by exact identifier
- *     tags: [Properties]
- *     parameters:
- *       - in: query
- *         name: countyId
- *         schema:
- *           type: string
- *         required: true
- *         description: County ID
- *       - in: query
- *         name: parcelId
- *         schema:
- *           type: string
- *         description: Parcel ID to search for
- *       - in: query
- *         name: taxAccountNumber
- *         schema:
- *           type: string
- *         description: Tax account number to search for
- *     responses:
- *       200:
- *         description: List of matching properties
- *       400:
- *         description: Invalid search parameters
- *       404:
- *         description: County not found
- */
-router.get('/search', async (req, res) => {
-  try {
-    const { countyId, parcelId, taxAccountNumber } = req.query;
-    
-    if (!countyId) {
-      return res.status(400).json({ message: 'County ID is required' });
-    }
-    
-    if (!parcelId && !taxAccountNumber) {
-      return res.status(400).json({ message: 'At least one search parameter is required' });
-    }
-    
-    // Get the county to check if it exists
-    const county = await County.findById(countyId);
-    if (!county) {
-      return res.status(404).json({ message: 'County not found' });
-    }
-    
-    // Build search query
-    const searchQuery: any = { 
-      'location.address.county': county.name 
-    };
-    
-    if (parcelId) {
-      searchQuery['location.parcelId'] = parcelId;
-    }
-    
-    if (taxAccountNumber) {
-      searchQuery['taxStatus.accountNumber'] = taxAccountNumber;
-    }
-    
-    // Execute search
-    const properties = await Property.find(searchQuery)
-      .limit(10)
-      .exec();
-    
-    res.json({ properties });
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-/**
- * @swagger
- * /api/properties/fuzzy-search:
- *   post:
- *     summary: Fuzzy search for properties
- *     tags: [Properties]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - query
- *               - countyId
- *             properties:
- *               query:
- *                 type: string
- *                 description: The search query
- *               countyId:
- *                 type: string
- *                 description: County ID
- *               lookupMethod:
- *                 type: string
- *                 description: Method to use for lookup (parcel_id or account_number)
- *               threshold:
- *                 type: number
- *                 description: Minimum similarity threshold (0-1)
- *     responses:
- *       200:
- *         description: List of fuzzy matches
- *       400:
- *         description: Invalid search parameters
- *       404:
- *         description: County not found
- */
-router.post('/fuzzy-search', async (req, res) => {
-  try {
-    const { query, countyId, lookupMethod = 'parcel_id', threshold = 0.7 } = req.body;
-    
-    if (!query) {
-      return res.status(400).json({ message: 'Search query is required' });
-    }
-    
-    if (!countyId) {
-      return res.status(400).json({ message: 'County ID is required' });
-    }
-    
-    // Get the county to check if it exists
-    const county = await County.findById(countyId);
-    if (!county) {
-      return res.status(404).json({ message: 'County not found' });
-    }
-    
-    // Determine search field based on lookup method
-    const searchField = lookupMethod === 'account_number'
-      ? 'taxStatus.accountNumber'
-      : 'location.parcelId';
-    
-    // Get all properties in the county
-    const countyProperties = await Property.find({
-      'location.address.county': county.name
-    }).exec();
-    
-    // Perform fuzzy matching
-    const matches = countyProperties
-      .map(property => {
-        const fieldValue = searchField === 'taxStatus.accountNumber'
-          ? property.taxStatus.accountNumber
-          : property.location.parcelId;
-          
-        // Skip if property doesn't have the field value
-        if (!fieldValue) return null;
-        
-        // Calculate similarity score (simple implementation)
-        // In a real app, you would use a proper fuzzy matching algorithm like Levenshtein distance
-        const similarity = calculateSimilarity(query.toString(), fieldValue.toString());
-        
-        return {
-          property,
-          similarity
-        };
-      })
-      .filter(match => match !== null && match.similarity >= threshold)
-      .sort((a, b) => b!.similarity - a!.similarity);
-    
-    res.json({ matches });
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Helper function to calculate string similarity (Jaccard index)
-function calculateSimilarity(str1: string, str2: string): number {
-  str1 = str1.toLowerCase();
-  str2 = str2.toLowerCase();
-  
-  // Create sets of characters for each string
-  const set1 = new Set(str1.split(''));
-  const set2 = new Set(str2.split(''));
-  
-  // Calculate intersection
-  const intersection = new Set([...set1].filter(x => set2.has(x)));
-  
-  // Calculate union
-  const union = new Set([...set1, ...set2]);
-  
-  // Jaccard similarity coefficient
-  return intersection.size / union.size;
-}
-
-/**
- * @swagger
- * /api/properties/search:
- *   get:
- *     summary: Search properties based on criteria
- *     parameters:
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *           default: 1
- *       - in: query
- *         name: pageSize
- *         schema:
- *           type: integer
- *           default: 10
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/PropertySearchCriteria'
- *     responses:
- *       200:
- *         description: Search results with pagination
- */
-router.get('/search', async (req, res) => {
-  try {
-    const page = parseInt(req.query.page as string) || 1;
-    const pageSize = parseInt(req.query.pageSize as string) || 10;
-    const criteria = req.body as PropertySearchCriteria;
-    
-    const results = await propertyService.searchProperties(criteria, page, pageSize);
-    res.json(results);
-  } catch (error: any) {
-    res.status(400).json({ message: 'Error searching properties', error: error.message });
-  }
-});
-
-/**
- * @swagger
- * /api/properties/{id}/taxStatus:
+ * /api/properties/{id}/tax-status:
  *   get:
  *     summary: Get tax status for a property
  *     parameters:
@@ -383,7 +333,7 @@ router.get('/search', async (req, res) => {
  *       404:
  *         description: Property not found
  */
-router.get('/:id/taxStatus', async (req, res) => {
+router.get('/:id/tax-status', async (req, res) => {
   try {
     const taxStatus = await propertyService.getPropertyTaxStatus(req.params.id);
     res.json(taxStatus);
@@ -397,7 +347,7 @@ router.get('/:id/taxStatus', async (req, res) => {
 
 /**
  * @swagger
- * /api/properties/{id}/taxStatus:
+ * /api/properties/{id}/tax-status:
  *   put:
  *     summary: Update tax status for a property
  *     parameters:
@@ -418,15 +368,164 @@ router.get('/:id/taxStatus', async (req, res) => {
  *       404:
  *         description: Property not found
  */
-router.put('/:id/taxStatus', async (req, res) => {
+router.put('/:id/tax-status', async (req, res) => {
   try {
     const property = await propertyService.updatePropertyTaxStatus(req.params.id, req.body);
-    res.json(property);
+    res.json({
+      message: 'Tax status updated successfully',
+      taxStatus: property.taxStatus
+    });
   } catch (error: any) {
     if (error.message === 'Property not found') {
       return res.status(404).json({ message: 'Property not found' });
     }
     res.status(400).json({ message: 'Error updating tax status', error: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /api/properties/{id}/move:
+ *   post:
+ *     summary: Move a property to a different county
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - newCountyId
+ *             properties:
+ *               newCountyId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Property moved successfully
+ *       404:
+ *         description: Property or county not found
+ */
+router.post('/:id/move', async (req, res) => {
+  try {
+    const { newCountyId } = req.body;
+    
+    if (!newCountyId) {
+      return res.status(400).json({ message: 'New county ID is required' });
+    }
+    
+    const property = await propertyService.moveProperty(req.params.id, newCountyId);
+    
+    if (!property) {
+      return res.status(404).json({ message: 'Property not found' });
+    }
+    
+    res.json({
+      message: 'Property moved successfully',
+      property
+    });
+  } catch (error: any) {
+    if (error.message.includes('County not found')) {
+      return res.status(404).json({ message: error.message });
+    }
+    res.status(400).json({ message: 'Error moving property', error: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /api/properties/states/{stateId}:
+ *   get:
+ *     summary: Get properties by state ID
+ *     parameters:
+ *       - in: path
+ *         name: stateId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of properties in the state
+ *       404:
+ *         description: State not found
+ */
+router.get('/states/:stateId', async (req, res) => {
+  try {
+    // Use property search middleware for more complex queries
+    const query = { stateId: req.params.stateId };
+    const properties = await propertyService.searchProperties(query);
+    res.json(properties);
+  } catch (error: any) {
+    res.status(500).json({ message: 'Error fetching properties', error: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /api/properties/counties/{countyId}:
+ *   get:
+ *     summary: Get properties by county ID
+ *     parameters:
+ *       - in: path
+ *         name: countyId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of properties in the county
+ *       404:
+ *         description: County not found
+ */
+router.get('/counties/:countyId', async (req, res) => {
+  try {
+    // Use property search middleware for more complex queries
+    const query = { parentId: req.params.countyId };
+    const properties = await propertyService.searchProperties(query);
+    res.json(properties);
+  } catch (error: any) {
+    res.status(500).json({ message: 'Error fetching properties', error: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /api/properties/states/{stateId}/counties/{countyId}:
+ *   get:
+ *     summary: Get properties by state and county ID
+ *     parameters:
+ *       - in: path
+ *         name: stateId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: countyId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of properties in the specified county
+ *       404:
+ *         description: State or county not found
+ */
+router.get('/states/:stateId/counties/:countyId', async (req, res) => {
+  try {
+    const { stateId, countyId } = req.params;
+    
+    const properties = await propertyService.getPropertiesByCountyAndState(countyId, stateId);
+    res.json({ properties, total: properties.length });
+  } catch (error: any) {
+    if (error.message.includes('County not found in the specified state')) {
+      return res.status(404).json({ message: error.message });
+    }
+    res.status(500).json({ message: 'Error fetching properties', error: error.message });
   }
 });
 

@@ -11,13 +11,20 @@ const stateService = new StateService();
  *   get:
  *     summary: Get all states
  *     description: Returns a list of all states
+ *     parameters:
+ *       - in: query
+ *         name: includeGeometry
+ *         schema:
+ *           type: boolean
+ *         description: Include geometry information in response
  *     responses:
  *       200:
  *         description: List of states
  */
 router.get('/', async (req, res) => {
   try {
-    const states = await stateService.getAllStates();
+    const includeGeometry = req.query.includeGeometry === 'true';
+    const states = await stateService.getAllStates(includeGeometry);
     res.json(states);
   } catch (error: any) {
     res.status(500).json({ message: 'Error fetching states', error: error.message });
@@ -67,12 +74,19 @@ router.get('/:id', async (req, res) => {
  *     responses:
  *       201:
  *         description: State created successfully
+ *       400:
+ *         description: Error creating state
+ *       404:
+ *         description: Parent US Map not found
  */
 router.post('/', async (req, res) => {
   try {
     const state = await stateService.createState(req.body);
     res.status(201).json(state);
   } catch (error: any) {
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'State with this name or abbreviation already exists', error: error.message });
+    }
     res.status(400).json({ message: 'Error creating state', error: error.message });
   }
 });
@@ -126,6 +140,8 @@ router.put('/:id', async (req, res) => {
  *     responses:
  *       200:
  *         description: State deleted successfully
+ *       400:
+ *         description: Cannot delete state with counties
  *       404:
  *         description: State not found
  */
@@ -137,6 +153,9 @@ router.delete('/:id', async (req, res) => {
     }
     res.json({ message: 'State deleted successfully' });
   } catch (error: any) {
+    if (error.message.includes('Cannot delete state with counties')) {
+      return res.status(400).json({ message: error.message });
+    }
     res.status(500).json({ message: 'Error deleting state', error: error.message });
   }
 });
@@ -152,6 +171,11 @@ router.delete('/:id', async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
+ *       - in: query
+ *         name: includeGeometry
+ *         schema:
+ *           type: boolean
+ *         description: Include geometry information in response
  *     responses:
  *       200:
  *         description: List of counties
@@ -160,7 +184,8 @@ router.delete('/:id', async (req, res) => {
  */
 router.get('/:id/counties', async (req, res) => {
   try {
-    const counties = await stateService.getStateCounties(req.params.id);
+    const includeGeometry = req.query.includeGeometry === 'true';
+    const counties = await stateService.getStateCounties(req.params.id, includeGeometry);
     res.json(counties);
   } catch (error: any) {
     if (error.message === 'State not found') {
@@ -225,6 +250,35 @@ router.get('/:id/controllers', async (req, res) => {
       return res.status(404).json({ message: 'State not found' });
     }
     res.status(500).json({ message: 'Error fetching controllers', error: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /api/states/{id}/recalculate:
+ *   post:
+ *     summary: Recalculate state statistics based on counties
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: State statistics updated successfully
+ *       404:
+ *         description: State not found
+ */
+router.post('/:id/recalculate', async (req, res) => {
+  try {
+    const state = await stateService.recalculateStateStatistics(req.params.id);
+    if (!state) {
+      return res.status(404).json({ message: 'State not found' });
+    }
+    res.json({ message: 'State statistics updated successfully', statistics: state.metadata.statistics });
+  } catch (error: any) {
+    res.status(500).json({ message: 'Error recalculating state statistics', error: error.message });
   }
 });
 
