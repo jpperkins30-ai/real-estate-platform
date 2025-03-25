@@ -3,6 +3,99 @@ import { Property } from '../models/property.model';
 import { County } from '../models/county.model';
 import { State } from '../models/state.model';
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     PropertySearchQuery:
+ *       type: object
+ *       properties:
+ *         stateId:
+ *           type: string
+ *           description: Filter properties by state ID
+ *         countyId:
+ *           type: string
+ *           description: Filter properties by county ID
+ *         status:
+ *           type: string
+ *           description: Filter by property status
+ *         minValue:
+ *           type: number
+ *           description: Minimum property value
+ *         maxValue:
+ *           type: number
+ *           description: Maximum property value
+ *         propertyType:
+ *           type: string
+ *           description: Type of property
+ *         condition:
+ *           type: string
+ *           description: Property condition
+ *         minBedrooms:
+ *           type: number
+ *           description: Minimum number of bedrooms
+ *         maxBedrooms:
+ *           type: number
+ *           description: Maximum number of bedrooms
+ *         minBathrooms:
+ *           type: number
+ *           description: Minimum number of bathrooms
+ *         maxBathrooms:
+ *           type: number
+ *           description: Maximum number of bathrooms
+ *         minYearBuilt:
+ *           type: number
+ *           description: Minimum year built
+ *         maxYearBuilt:
+ *           type: number
+ *           description: Maximum year built
+ *         minLotSize:
+ *           type: number
+ *           description: Minimum lot size
+ *         maxLotSize:
+ *           type: number
+ *           description: Maximum lot size
+ *         taxLienStatus:
+ *           type: string
+ *           description: Tax lien status
+ *         minSquareFeet:
+ *           type: number
+ *           description: Minimum square footage
+ *         maxSquareFeet:
+ *           type: number
+ *           description: Maximum square footage
+ *         zipCode:
+ *           type: string
+ *           description: Property zip code
+ *         city:
+ *           type: string
+ *           description: Property city
+ *         page:
+ *           type: number
+ *           description: Page number for pagination
+ *         limit:
+ *           type: number
+ *           description: Number of results per page
+ *         sortBy:
+ *           type: string
+ *           description: Field to sort by
+ *         sortOrder:
+ *           type: string
+ *           enum: [asc, desc]
+ *           description: Sort order (ascending or descending)
+ *         parcelId:
+ *           type: string
+ *           description: Direct search by parcel ID
+ *         taxAccountNumber:
+ *           type: string
+ *           description: Direct search by tax account number
+ *         searchQuery:
+ *           type: string
+ *           description: General search query
+ *         threshold:
+ *           type: number
+ *           description: Similarity threshold for fuzzy search
+ */
 interface PropertySearchQuery {
   stateId?: string;
   countyId?: string;
@@ -38,6 +131,26 @@ interface PropertySearchQuery {
 /**
  * Middleware for building complex property search queries
  * Supports hierarchical filtering (state → county → property) and various property attributes
+ * 
+ * @swagger
+ * components:
+ *   schemas:
+ *     PropertySearchResult:
+ *       type: object
+ *       properties:
+ *         properties:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/Property'
+ *         total:
+ *           type: integer
+ *           description: Total number of matching properties
+ *         page:
+ *           type: integer
+ *           description: Current page number
+ *         limit:
+ *           type: integer
+ *           description: Number of results per page
  */
 export const propertySearchMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -199,8 +312,24 @@ export const propertySearchMiddleware = async (req: Request, res: Response, next
 };
 
 /**
- * Middleware to validate that a property exists in the specified hierarchy
- * Ensures the property belongs to the specified county and state
+ * Middleware to validate the property hierarchy (State → County → Property)
+ * Ensures that the specified countyId belongs to the specified stateId
+ * 
+ * @swagger
+ * components:
+ *   parameters:
+ *     PropertyHierarchyParams:
+ *       name: filters
+ *       in: query
+ *       schema:
+ *         type: object
+ *         properties:
+ *           stateId:
+ *             type: string
+ *             description: State ID
+ *           countyId:
+ *             type: string
+ *             description: County ID
  */
 export const validatePropertyHierarchy = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -239,7 +368,8 @@ export const validatePropertyHierarchy = async (req: Request, res: Response, nex
 };
 
 /**
- * Helper function to prepare string for fuzzy searching
+ * Helper function to prepare strings for fuzzy matching
+ * Removes spaces, converts to lowercase, and filters non-alphanumeric characters
  */
 const prepareForFuzzy = (str?: string): string => {
   if (!str) return '';
@@ -247,7 +377,24 @@ const prepareForFuzzy = (str?: string): string => {
 };
 
 /**
- * Direct property search middleware
+ * Middleware for direct property search by specific identifiers
+ * Supports searching by parcelId or taxAccountNumber
+ * 
+ * @swagger
+ * components:
+ *   parameters:
+ *     DirectSearchParams:
+ *       name: directSearch
+ *       in: query
+ *       schema:
+ *         type: object
+ *         properties:
+ *           parcelId:
+ *             type: string
+ *             description: Parcel ID for direct search
+ *           taxAccountNumber:
+ *             type: string
+ *             description: Tax account number for direct search
  */
 export const directPropertySearch = async (req: Request, res: Response, next: NextFunction) => {
   const { countyId, parcelId, taxAccountNumber, searchQuery } = req.query as unknown as PropertySearchQuery;
@@ -304,7 +451,50 @@ export const directPropertySearch = async (req: Request, res: Response, next: Ne
 };
 
 /**
- * Fuzzy property search middleware
+ * Endpoint for fuzzy property search
+ * Finds properties with similar values using Levenshtein distance
+ * 
+ * @swagger
+ * /api/properties/fuzzy-search:
+ *   get:
+ *     summary: Search properties using fuzzy matching
+ *     tags: [Properties]
+ *     parameters:
+ *       - in: query
+ *         name: searchQuery
+ *         schema:
+ *           type: string
+ *         description: General search query
+ *       - in: query
+ *         name: threshold
+ *         schema:
+ *           type: number
+ *           default: 0.7
+ *         description: Similarity threshold (0.0 to 1.0)
+ *       - in: query
+ *         name: stateId
+ *         schema:
+ *           type: string
+ *         description: State ID to limit search scope
+ *       - in: query
+ *         name: countyId
+ *         schema:
+ *           type: string
+ *         description: County ID to limit search scope
+ *     responses:
+ *       200:
+ *         description: List of properties matching the fuzzy search criteria
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 properties:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Property'
+ *                 total:
+ *                   type: integer
  */
 export const fuzzyPropertySearch = async (req: Request, res: Response) => {
   const { 
