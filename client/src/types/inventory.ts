@@ -14,7 +14,16 @@ export interface State {
   id: string;
   name: string;
   abbreviation: string;
+  type: 'state';
+  parentId?: string;
   region?: string;
+  geometry?: GeoJsonGeometry;
+  metadata?: {
+    totalCounties: number;
+    totalProperties: number;
+    statistics: Statistics;
+  };
+  controllers?: ControllerReference[];
   createdAt: string;
   updatedAt: string;
 }
@@ -24,9 +33,17 @@ export interface County {
   id: string;
   name: string;
   stateId: string;
+  type: 'county';
+  parentId: string;
   fips?: string;
   population?: number;
   area?: number;
+  geometry?: GeoJsonGeometry;
+  metadata?: {
+    totalProperties: number;
+    statistics: Statistics;
+  };
+  controllers?: ControllerReference[];
   dataLastUpdated?: string;
   createdAt: string;
   updatedAt: string;
@@ -37,6 +54,8 @@ export interface Property {
   id: string;
   countyId: string;
   parcelId?: string;
+  type: 'property';
+  parentId: string;
   address: {
     street: string;
     city: string;
@@ -58,9 +77,22 @@ export interface Property {
   lastSalePrice?: number;
   taxAssessedValue?: number;
   taxYear?: number;
+  taxStatus?: {
+    assessedValue: number;
+    marketValue: number;
+    lastAssessmentDate: string;
+    taxRate: number;
+    annualTaxAmount: number;
+    taxLienAmount?: number;
+    taxLienDate?: string;
+    taxLienStatus?: 'Active' | 'Paid' | 'Foreclosed';
+    lastPaymentDate?: string;
+    nextPaymentDue?: string;
+  };
   status: 'active' | 'inactive' | 'pending';
   tags?: string[];
   images?: string[];
+  controllers?: ControllerReference[];
   createdAt: string;
   updatedAt: string;
 }
@@ -68,11 +100,11 @@ export interface Property {
 // Controller Reference
 export interface ControllerReference {
   controllerId: string;
-  controllerType: string;
+  controllerType: 'Tax Sale' | 'Map' | 'Property' | 'Demographics';
   enabled: boolean;
-  lastRun?: Date;
-  nextScheduledRun?: Date;
-  configuration: Record<string, any>;
+  lastRun?: string;
+  nextScheduledRun?: string;
+  configuration?: Record<string, any>;
 }
 
 // Data Source
@@ -530,6 +562,8 @@ export interface PropertyFilters {
   minLotSize?: number;
   maxLotSize?: number;
   status?: string;
+  hasTaxLien?: boolean;
+  taxLienStatus?: string;
   [key: string]: any;
 }
 
@@ -539,4 +573,17 @@ export interface PaginatedResponse<T> {
   page: number;
   limit: number;
   totalPages: number;
+}
+
+export interface Statistics {
+  totalTaxLiens: number;
+  totalValue: number;
+  averagePropertyValue?: number;
+  totalPropertiesWithLiens?: number;
+  lastUpdated?: string;
+}
+
+export interface GeoJsonGeometry {
+  type: 'Polygon' | 'MultiPolygon';
+  coordinates: number[][][];
 } 

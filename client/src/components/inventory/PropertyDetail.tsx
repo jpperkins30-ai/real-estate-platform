@@ -15,8 +15,9 @@ import {
   Tab,
   Nav
 } from 'react-bootstrap';
-import { useProperty, useCounty } from '../../services/inventoryService';
+import { usePropertyWithControllers, useCounty } from '../../services/inventoryService';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import AttachedControllers from './controllers/AttachedControllers';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -35,8 +36,9 @@ const PropertyDetail: React.FC = () => {
   const { 
     data: property, 
     isLoading: propertyLoading, 
-    error: propertyError 
-  } = useProperty(propertyId);
+    error: propertyError,
+    refetch: refetchProperty 
+  } = usePropertyWithControllers(propertyId);
   
   const { 
     data: county,
@@ -162,6 +164,16 @@ const PropertyDetail: React.FC = () => {
                       <Nav.Link eventKey="location">Location</Nav.Link>
                     </Nav.Item>
                   )}
+                  {property.taxStatus && (
+                    <Nav.Item>
+                      <Nav.Link eventKey="taxStatus">Tax Status</Nav.Link>
+                    </Nav.Item>
+                  )}
+                  {property.controllers && property.controllers.length > 0 && (
+                    <Nav.Item>
+                      <Nav.Link eventKey="controllers">Controllers</Nav.Link>
+                    </Nav.Item>
+                  )}
                   {property.tags && property.tags.length > 0 && (
                     <Nav.Item>
                       <Nav.Link eventKey="tags">Tags</Nav.Link>
@@ -224,6 +236,14 @@ const PropertyDetail: React.FC = () => {
                               <th>Tax Year</th>
                               <td>{property.taxYear || 'N/A'}</td>
                             </tr>
+                            {property.taxStatus?.taxLienAmount && (
+                              <tr>
+                                <th>Tax Lien Amount</th>
+                                <td className="text-danger">
+                                  {formatCurrency(property.taxStatus.taxLienAmount)}
+                                </td>
+                              </tr>
+                            )}
                           </tbody>
                         </Table>
                       </Col>
@@ -295,6 +315,77 @@ const PropertyDetail: React.FC = () => {
                       </div>
                     </Tab.Pane>
                   )}
+                  {property.taxStatus && (
+                    <Tab.Pane eventKey="taxStatus">
+                      <h5>Tax Information</h5>
+                      <Table striped bordered>
+                        <tbody>
+                          <tr>
+                            <th>Assessed Value</th>
+                            <td>{formatCurrency(property.taxStatus.assessedValue)}</td>
+                          </tr>
+                          <tr>
+                            <th>Market Value</th>
+                            <td>{formatCurrency(property.taxStatus.marketValue)}</td>
+                          </tr>
+                          <tr>
+                            <th>Last Assessment Date</th>
+                            <td>{property.taxStatus.lastAssessmentDate ? new Date(property.taxStatus.lastAssessmentDate).toLocaleDateString() : 'N/A'}</td>
+                          </tr>
+                          <tr>
+                            <th>Tax Rate</th>
+                            <td>{property.taxStatus.taxRate}%</td>
+                          </tr>
+                          <tr>
+                            <th>Annual Tax Amount</th>
+                            <td>{formatCurrency(property.taxStatus.annualTaxAmount)}</td>
+                          </tr>
+                          {property.taxStatus.taxLienAmount && (
+                            <>
+                              <tr>
+                                <th>Tax Lien Amount</th>
+                                <td className="text-danger">{formatCurrency(property.taxStatus.taxLienAmount)}</td>
+                              </tr>
+                              <tr>
+                                <th>Tax Lien Date</th>
+                                <td>{property.taxStatus.taxLienDate ? new Date(property.taxStatus.taxLienDate).toLocaleDateString() : 'N/A'}</td>
+                              </tr>
+                              <tr>
+                                <th>Tax Lien Status</th>
+                                <td>
+                                  <Badge bg={
+                                    property.taxStatus.taxLienStatus === 'Active' ? 'danger' : 
+                                    property.taxStatus.taxLienStatus === 'Paid' ? 'success' : 
+                                    'warning'
+                                  }>
+                                    {property.taxStatus.taxLienStatus || 'Unknown'}
+                                  </Badge>
+                                </td>
+                              </tr>
+                            </>
+                          )}
+                          <tr>
+                            <th>Last Payment Date</th>
+                            <td>{property.taxStatus.lastPaymentDate ? new Date(property.taxStatus.lastPaymentDate).toLocaleDateString() : 'N/A'}</td>
+                          </tr>
+                          <tr>
+                            <th>Next Payment Due</th>
+                            <td>{property.taxStatus.nextPaymentDue ? new Date(property.taxStatus.nextPaymentDue).toLocaleDateString() : 'N/A'}</td>
+                          </tr>
+                        </tbody>
+                      </Table>
+                    </Tab.Pane>
+                  )}
+                  {property.controllers && (
+                    <Tab.Pane eventKey="controllers">
+                      <AttachedControllers 
+                        objectType="property"
+                        objectId={property.id}
+                        controllers={property.controllers}
+                        onControllerUpdate={() => refetchProperty()}
+                      />
+                    </Tab.Pane>
+                  )}
                   {property.tags && property.tags.length > 0 && (
                     <Tab.Pane eventKey="tags">
                       <h5>Property Tags</h5>
@@ -356,6 +447,12 @@ const PropertyDetail: React.FC = () => {
                   <span className="fw-bold">{formatCurrency(property.lastSalePrice)}</span>
                 </ListGroup.Item>
               )}
+              {property.taxStatus?.taxLienAmount && (
+                <ListGroup.Item className="d-flex justify-content-between">
+                  <span>Tax Lien:</span>
+                  <span className="text-danger fw-bold">{formatCurrency(property.taxStatus.taxLienAmount)}</span>
+                </ListGroup.Item>
+              )}
             </ListGroup>
           </Card>
 
@@ -397,6 +494,39 @@ const PropertyDetail: React.FC = () => {
                   <p>Tax Year: {property.taxYear}</p>
                 )}
               </Card.Body>
+            </Card>
+          )}
+
+          {/* Attached Controllers Summary */}
+          {property.controllers && property.controllers.length > 0 && (
+            <Card className="mb-4">
+              <Card.Header>
+                <h5 className="mb-0">Attached Controllers</h5>
+              </Card.Header>
+              <ListGroup variant="flush">
+                {property.controllers.map((controller) => (
+                  <ListGroup.Item key={controller.controllerId} className="d-flex justify-content-between align-items-center">
+                    <div>
+                      <div>{controller.controllerType}</div>
+                      <small className="text-muted">
+                        {controller.enabled ? 'Enabled' : 'Disabled'}
+                      </small>
+                    </div>
+                    <Badge bg={controller.enabled ? 'success' : 'secondary'}>
+                      {controller.enabled ? 'Active' : 'Inactive'}
+                    </Badge>
+                  </ListGroup.Item>
+                ))}
+              </ListGroup>
+              <Card.Footer>
+                <Link to="#" onClick={(e) => {
+                  e.preventDefault();
+                  const tabEl = document.querySelector('a[data-rr-ui-event-key="controllers"]');
+                  if (tabEl) (tabEl as HTMLElement).click();
+                }}>
+                  Manage Controllers
+                </Link>
+              </Card.Footer>
             </Card>
           )}
         </Col>

@@ -1,6 +1,13 @@
-import { useQuery } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
 import axios from 'axios';
-import { State, County, Property, PropertyFilters, PaginatedResponse } from '../types/inventory';
+import { 
+  State, 
+  County, 
+  Property, 
+  PropertyFilters, 
+  PaginatedResponse, 
+  ControllerReference 
+} from '../types/inventory';
 
 // API client setup
 const apiClient = axios.create({
@@ -27,6 +34,17 @@ export const useState = (stateId: string | undefined) => {
   });
 };
 
+export const useStateWithControllers = (stateId: string | undefined) => {
+  return useQuery<State>(['state', stateId, 'controllers'], async () => {
+    const { data } = await apiClient.get(`/states/${stateId}`, {
+      params: { populate: 'controllers' }
+    });
+    return data;
+  }, {
+    enabled: !!stateId
+  });
+};
+
 export const useCounties = (stateId: string | undefined) => {
   return useQuery<County[]>(['counties', stateId], async () => {
     const { data } = await apiClient.get(`/states/${stateId}/counties`);
@@ -36,9 +54,31 @@ export const useCounties = (stateId: string | undefined) => {
   });
 };
 
+export const useCountiesWithControllers = (stateId: string | undefined) => {
+  return useQuery<County[]>(['counties', stateId, 'controllers'], async () => {
+    const { data } = await apiClient.get(`/states/${stateId}/counties`, {
+      params: { populate: 'controllers' }
+    });
+    return data;
+  }, {
+    enabled: !!stateId
+  });
+};
+
 export const useCounty = (countyId: string | undefined) => {
   return useQuery<County>(['county', countyId], async () => {
     const { data } = await apiClient.get(`/counties/${countyId}`);
+    return data;
+  }, {
+    enabled: !!countyId
+  });
+};
+
+export const useCountyWithControllers = (countyId: string | undefined) => {
+  return useQuery<County>(['county', countyId, 'controllers'], async () => {
+    const { data } = await apiClient.get(`/counties/${countyId}`, {
+      params: { populate: 'controllers' }
+    });
     return data;
   }, {
     enabled: !!countyId
@@ -75,48 +115,249 @@ export const useProperty = (propertyId: string | undefined) => {
   });
 };
 
-// Mutation functions for creating, updating, and deleting inventory items
-export const createState = async (stateData: Omit<State, 'id' | 'createdAt' | 'updatedAt'>) => {
-  const { data } = await apiClient.post('/states', stateData);
-  return data;
+export const usePropertyWithControllers = (propertyId: string | undefined) => {
+  return useQuery<Property>(['property', propertyId, 'controllers'], async () => {
+    const { data } = await apiClient.get(`/properties/${propertyId}`, {
+      params: { populate: 'controllers' }
+    });
+    return data;
+  }, {
+    enabled: !!propertyId
+  });
 };
 
-export const updateState = async (stateId: string, stateData: Partial<State>) => {
-  const { data } = await apiClient.put(`/states/${stateId}`, stateData);
-  return data;
+export const useControllers = () => {
+  return useQuery<any[]>('controllers', async () => {
+    const { data } = await apiClient.get('/controllers');
+    return data;
+  });
 };
 
-export const deleteState = async (stateId: string) => {
-  const { data } = await apiClient.delete(`/states/${stateId}`);
-  return data;
+export const useController = (controllerId: string | undefined) => {
+  return useQuery<any>(['controller', controllerId], async () => {
+    const { data } = await apiClient.get(`/controllers/${controllerId}`);
+    return data;
+  }, {
+    enabled: !!controllerId
+  });
 };
 
-export const createCounty = async (countyData: Omit<County, 'id' | 'createdAt' | 'updatedAt'>) => {
-  const { data } = await apiClient.post('/counties', countyData);
-  return data;
+// Mutation hooks for creating, updating, and deleting inventory items
+export const useCreateState = () => {
+  const queryClient = useQueryClient();
+  return useMutation(
+    async (stateData: Omit<State, 'id' | 'createdAt' | 'updatedAt'>) => {
+      const { data } = await apiClient.post('/states', stateData);
+      return data;
+    },
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries('states');
+      }
+    }
+  );
 };
 
-export const updateCounty = async (countyId: string, countyData: Partial<County>) => {
-  const { data } = await apiClient.put(`/counties/${countyId}`, countyData);
-  return data;
+export const useUpdateState = () => {
+  const queryClient = useQueryClient();
+  return useMutation(
+    async ({ stateId, stateData }: { stateId: string, stateData: Partial<State> }) => {
+      const { data } = await apiClient.put(`/states/${stateId}`, stateData);
+      return data;
+    },
+    {
+      onSuccess: (data, variables) => {
+        queryClient.invalidateQueries(['state', variables.stateId]);
+        queryClient.invalidateQueries('states');
+      }
+    }
+  );
 };
 
-export const deleteCounty = async (countyId: string) => {
-  const { data } = await apiClient.delete(`/counties/${countyId}`);
-  return data;
+export const useDeleteState = () => {
+  const queryClient = useQueryClient();
+  return useMutation(
+    async (stateId: string) => {
+      const { data } = await apiClient.delete(`/states/${stateId}`);
+      return data;
+    },
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries('states');
+      }
+    }
+  );
 };
 
-export const createProperty = async (propertyData: Omit<Property, 'id' | 'createdAt' | 'updatedAt'>) => {
-  const { data } = await apiClient.post('/properties', propertyData);
-  return data;
+export const useCreateCounty = () => {
+  const queryClient = useQueryClient();
+  return useMutation(
+    async (countyData: Omit<County, 'id' | 'createdAt' | 'updatedAt'>) => {
+      const { data } = await apiClient.post('/counties', countyData);
+      return data;
+    },
+    {
+      onSuccess: (data) => {
+        queryClient.invalidateQueries(['counties', data.stateId]);
+        queryClient.invalidateQueries(['state', data.stateId]);
+      }
+    }
+  );
 };
 
-export const updateProperty = async (propertyId: string, propertyData: Partial<Property>) => {
-  const { data } = await apiClient.put(`/properties/${propertyId}`, propertyData);
-  return data;
+export const useUpdateCounty = () => {
+  const queryClient = useQueryClient();
+  return useMutation(
+    async ({ countyId, countyData }: { countyId: string, countyData: Partial<County> }) => {
+      const { data } = await apiClient.put(`/counties/${countyId}`, countyData);
+      return data;
+    },
+    {
+      onSuccess: (data, variables) => {
+        queryClient.invalidateQueries(['county', variables.countyId]);
+        queryClient.invalidateQueries(['counties', data.stateId]);
+      }
+    }
+  );
 };
 
-export const deleteProperty = async (propertyId: string) => {
-  const { data } = await apiClient.delete(`/properties/${propertyId}`);
-  return data;
+export const useDeleteCounty = () => {
+  const queryClient = useQueryClient();
+  return useMutation(
+    async (countyId: string) => {
+      const { data } = await apiClient.delete(`/counties/${countyId}`);
+      return data;
+    },
+    {
+      onSuccess: (data) => {
+        queryClient.invalidateQueries(['counties', data.stateId]);
+        queryClient.invalidateQueries(['state', data.stateId]);
+      }
+    }
+  );
+};
+
+export const useCreateProperty = () => {
+  const queryClient = useQueryClient();
+  return useMutation(
+    async (propertyData: Omit<Property, 'id' | 'createdAt' | 'updatedAt'>) => {
+      const { data } = await apiClient.post('/properties', propertyData);
+      return data;
+    },
+    {
+      onSuccess: (data) => {
+        queryClient.invalidateQueries(['properties', data.countyId]);
+        queryClient.invalidateQueries(['county', data.countyId]);
+      }
+    }
+  );
+};
+
+export const useUpdateProperty = () => {
+  const queryClient = useQueryClient();
+  return useMutation(
+    async ({ propertyId, propertyData }: { propertyId: string, propertyData: Partial<Property> }) => {
+      const { data } = await apiClient.put(`/properties/${propertyId}`, propertyData);
+      return data;
+    },
+    {
+      onSuccess: (data, variables) => {
+        queryClient.invalidateQueries(['property', variables.propertyId]);
+        queryClient.invalidateQueries(['properties', data.countyId]);
+      }
+    }
+  );
+};
+
+export const useDeleteProperty = () => {
+  const queryClient = useQueryClient();
+  return useMutation(
+    async (propertyId: string) => {
+      const { data } = await apiClient.delete(`/properties/${propertyId}`);
+      return data;
+    },
+    {
+      onSuccess: (data) => {
+        queryClient.invalidateQueries(['properties', data.countyId]);
+        queryClient.invalidateQueries(['county', data.countyId]);
+      }
+    }
+  );
+};
+
+export const useAttachController = () => {
+  const queryClient = useQueryClient();
+  return useMutation(
+    async ({ controllerId, objectType, objectId, configuration }: { 
+      controllerId: string, 
+      objectType: string, 
+      objectId: string, 
+      configuration: Record<string, any> 
+    }) => {
+      const { data } = await apiClient.post(`/controllers/${controllerId}/attach`, {
+        objectType,
+        objectId,
+        configuration
+      });
+      return data;
+    },
+    {
+      onSuccess: (data, variables) => {
+        // Invalidate both the controller and the object it was attached to
+        queryClient.invalidateQueries(['controller', variables.controllerId]);
+        queryClient.invalidateQueries([variables.objectType, variables.objectId]);
+        queryClient.invalidateQueries([variables.objectType, variables.objectId, 'controllers']);
+      }
+    }
+  );
+};
+
+export const useDetachController = () => {
+  const queryClient = useQueryClient();
+  return useMutation(
+    async ({ controllerId, objectType, objectId }: { 
+      controllerId: string, 
+      objectType: string, 
+      objectId: string
+    }) => {
+      const { data } = await apiClient.post(`/controllers/${controllerId}/detach`, {
+        objectType,
+        objectId
+      });
+      return data;
+    },
+    {
+      onSuccess: (data, variables) => {
+        // Invalidate both the controller and the object it was detached from
+        queryClient.invalidateQueries(['controller', variables.controllerId]);
+        queryClient.invalidateQueries([variables.objectType, variables.objectId]);
+        queryClient.invalidateQueries([variables.objectType, variables.objectId, 'controllers']);
+      }
+    }
+  );
+};
+
+export const useRunController = () => {
+  const queryClient = useQueryClient();
+  return useMutation(
+    async ({ controllerId, objectType, objectId }: { 
+      controllerId: string, 
+      objectType: string, 
+      objectId: string
+    }) => {
+      const { data } = await apiClient.post(`/controllers/${controllerId}/run`, {
+        objectType,
+        objectId
+      });
+      return data;
+    },
+    {
+      onSuccess: (data, variables) => {
+        // Invalidate controller and object when controller is run
+        queryClient.invalidateQueries(['controller', variables.controllerId]);
+        queryClient.invalidateQueries([variables.objectType, variables.objectId]);
+        queryClient.invalidateQueries([variables.objectType, variables.objectId, 'controllers']);
+      }
+    }
+  );
 }; 
