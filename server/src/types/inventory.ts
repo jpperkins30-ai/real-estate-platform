@@ -207,12 +207,13 @@ export interface PropertyTaxStatus {
   lastAssessmentDate: Date;
   taxRate: number;
   annualTaxAmount: number;
+  accountNumber?: string;
   taxLienAmount?: number;
   taxLienDate?: Date;
   taxLienStatus?: 'Active' | 'Paid' | 'Foreclosed';
   lastPaymentDate?: Date;
   nextPaymentDue?: Date;
-  paymentHistory: {
+  paymentHistory?: {
     date: Date;
     amount: number;
     type: 'Regular' | 'Lien' | 'Penalty';

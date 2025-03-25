@@ -1,0 +1,13 @@
+feat(inventory): Add tax lien status checking functionality
+
+Implement tax lien status checking to allow users to verify property tax lien information:
+
+- Create TaxLienService backend service with external API integration
+- Add tax-lien route endpoints for checking tax lien status
+- Create TaxLienStatusCheck frontend component with multiple status visualizations
+- Integrate tax lien checking in PropertyDetails component
+- Add comprehensive error handling and fallback mechanisms
+
+This feature provides real-time tax lien verification beyond what's stored in the database
+by connecting to county-specific APIs when available, with graceful fallback to stored
+information when external verification isn't possible. 

@@ -1,0 +1,21 @@
+[33mcommit 3bba4f6b28d69ee108864488422733fad824ef0c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/inventory-module-frontend[m[33m)[m
+Author: Real Estate Platform Developer <user@example.com>
+Date:   Tue Mar 25 09:27:03 2025 -0600
+
+    Implement frontend component design for Inventory Module with State-County-Property hierarchy
+
+client/src/components/inventory/InventoryHeader.tsx
+client/src/components/inventory/InventoryMain.tsx
+client/src/components/inventory/InventoryModule.css
+client/src/components/inventory/InventoryModule.tsx
+client/src/components/inventory/InventorySearch.tsx
+client/src/components/inventory/InventorySidebar.tsx
+client/src/components/inventory/InventoryTree.tsx
+client/src/components/inventory/InventoryTreeNode.tsx
+client/src/components/inventory/PropertyListView.tsx
+client/src/components/inventory/README.md
+client/src/components/inventory/details/CountyDetails.tsx
+client/src/components/inventory/details/PropertyDetails.tsx
+client/src/components/inventory/details/StateDetails.tsx
+client/src/components/inventory/index.ts
+client/src/components/inventory/routes.ts

@@ -3,6 +3,8 @@ import { Card, Row, Col, Table, Button, Badge, Nav, Tab, Alert, Form } from 'rea
 import { CountyObject } from '../../../types/inventory';
 import MapComponent from '../../maps/MapComponent';
 import { useInventoryContext } from '../../../context/InventoryContext';
+import PropertySearchBox from '../PropertySearchBox';
+import DataExportButton from '../../common/DataExportButton';
 
 // Mock data for development
 const mockCounties: Record<string, CountyObject> = {
@@ -350,14 +352,33 @@ const CountyDetails: React.FC<CountyDetailsProps> = ({ countyId }) => {
           <h3>{county.name}</h3>
         </div>
         <div>
+          <DataExportButton 
+            dataType="properties"
+            filters={{ countyId: county.id }}
+            buttonVariant="outline-primary"
+            buttonSize="sm"
+            buttonText="Export Properties"
+            className="me-2"
+            showFilters={true}
+          />
+          
           <Button variant="outline-secondary" size="sm" className="me-2">
             <i className="bi bi-pencil me-1"></i>
             Edit
           </Button>
           <Button variant="primary" size="sm">
-            <i className="bi bi-plus-lg me-1"></i>
-            Add Property
+            <i className="bi bi-arrow-up-right-square me-1"></i>
+            View on Map
           </Button>
+        </div>
+      </div>
+
+      <div className="card mb-4">
+        <div className="card-header">
+          <h3 className="card-title h5 mb-0">Property Search</h3>
+        </div>
+        <div className="card-body">
+          <PropertySearchBox countyId={county.id} />
         </div>
       </div>
 

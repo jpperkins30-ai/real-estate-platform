@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import InventoryTreeNode from './InventoryTreeNode';
 import PropertyListView from './PropertyListView';
 import { StateObject } from '../../types/inventory';
+import { useInventoryContext, InventoryNode } from '../../context/InventoryContext';
 
 // Mock data for development purposes
 const mockStates: StateObject[] = [
@@ -152,36 +153,32 @@ const mockStates: StateObject[] = [
 ];
 
 const InventoryTree: React.FC = () => {
-  const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
-  const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  const { expandedNodes, toggleNode, selectNode } = useInventoryContext();
   const [states, setStates] = useState<StateObject[]>([]);
 
   useEffect(() => {
     // In a real implementation, this would fetch data from an API
     setStates(mockStates);
-    
-    // Initially expand the US map node
-    setExpandedNodes({ usmap: true });
   }, []);
 
   const handleToggle = (nodeId: string) => {
-    setExpandedNodes(prev => ({
-      ...prev,
-      [nodeId]: !prev[nodeId],
-    }));
+    toggleNode(nodeId);
   };
 
-  const handleSelect = (nodeId: string) => {
-    setSelectedNode(nodeId);
+  const handleSelect = (node: InventoryNode) => {
+    selectNode(node);
   };
 
   return (
     <div className="inventory-tree">
       {/* US Map Root Node */}
       <InventoryTreeNode
-        node={{ id: 'usmap', name: 'US Map', type: 'us_map' }}
+        node={{ 
+          id: 'usmap', 
+          name: 'US Map', 
+          type: 'us_map' 
+        }}
         expanded={expandedNodes['usmap']}
-        selected={selectedNode === 'usmap'}
         onToggle={handleToggle}
         onSelect={handleSelect}
         level={0}
@@ -190,9 +187,13 @@ const InventoryTree: React.FC = () => {
         {states.map(state => (
           <InventoryTreeNode
             key={state.id}
-            node={state}
+            node={{
+              id: state.id,
+              name: state.name,
+              type: 'state',
+              data: state
+            }}
             expanded={expandedNodes[state.id]}
-            selected={selectedNode === state.id}
             onToggle={handleToggle}
             onSelect={handleSelect}
             level={1}
@@ -201,9 +202,13 @@ const InventoryTree: React.FC = () => {
             {expandedNodes[state.id] && state.counties.map(county => (
               <InventoryTreeNode
                 key={county.id}
-                node={county}
+                node={{
+                  id: county.id,
+                  name: county.name,
+                  type: 'county',
+                  data: county
+                }}
                 expanded={expandedNodes[county.id]}
-                selected={selectedNode === county.id}
                 onToggle={handleToggle}
                 onSelect={handleSelect}
                 level={2}

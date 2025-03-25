@@ -1,0 +1,16 @@
+feat(inventory): Add property search functionality
+
+Implement a comprehensive property search solution with both exact and fuzzy matching capabilities:
+
+- Create PropertySearchBox component with error handling and loading states
+- Integrate PropertySearchBox into CountyDetails component
+- Create a dedicated PropertySearchPage with county selection
+- Add propertySearch service with direct and fuzzy search functions
+- Write unit tests for both the service and component
+- Update the inventory module routes and navigation
+- Add 'accountNumber' field to PropertyTaxStatus interface
+- Update documentation to describe the property search implementation
+
+This feature allows users to easily find properties using various identifiers 
+(parcel IDs, tax account numbers) with fallback to fuzzy matching when exact 
+matches are not found. 

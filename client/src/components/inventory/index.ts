@@ -26,4 +26,8 @@ export {
 };
 
 // Export the default module for easier importing
-export default InventoryModule; 
+export default InventoryModule;
+
+export { default as ControllerWizard } from './details/ControllerWizard';
+export { default as PropertySearchBox } from './PropertySearchBox';
+export { default as TaxLienStatusCheck } from './TaxLienStatusCheck'; 

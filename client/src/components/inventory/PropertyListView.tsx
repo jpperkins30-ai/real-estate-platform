@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Spinner, Alert } from 'react-bootstrap';
 import { PropertyObject } from '../../types/inventory';
+import { useInventoryContext } from '../../context/InventoryContext';
 
 // Mock data for development purposes
 const mockProperties: Record<string, PropertyObject[]> = {
@@ -34,7 +35,7 @@ const mockProperties: Record<string, PropertyObject[]> = {
         assessedValue: 450000,
         marketValue: 520000,
         saleAmount: 410000,
-        lastSaleDate: new Date('2018-05-15'),
+        saleDate: new Date('2018-05-15'),
         taxAmount: 5200,
         taxYear: 2023,
         taxDueDate: new Date('2023-12-10'),
@@ -197,6 +198,7 @@ interface PropertyListViewProps {
 }
 
 const PropertyListView: React.FC<PropertyListViewProps> = ({ countyId }) => {
+  const { selectNode } = useInventoryContext();
   const [properties, setProperties] = useState<PropertyObject[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -218,6 +220,15 @@ const PropertyListView: React.FC<PropertyListViewProps> = ({ countyId }) => {
       }
     }, 800);
   }, [countyId]);
+
+  const handlePropertySelect = (property: PropertyObject) => {
+    selectNode({
+      id: property.id,
+      name: property.address?.street || `Property ${property.id}`,
+      type: 'property',
+      data: property
+    });
+  };
 
   if (loading) {
     return (
@@ -248,8 +259,12 @@ const PropertyListView: React.FC<PropertyListViewProps> = ({ countyId }) => {
         </thead>
         <tbody>
           {properties.map(property => (
-            <tr key={property.id}>
-              <td>{property.address.street}</td>
+            <tr 
+              key={property.id} 
+              onClick={() => handlePropertySelect(property)}
+              style={{ cursor: 'pointer' }}
+            >
+              <td>{property.address?.street}</td>
               <td>{property.metadata.propertyType}</td>
               <td>
                 <span className={`badge ${property.metadata.taxStatus === 'Delinquent' ? 'bg-danger' : 'bg-success'}`}>

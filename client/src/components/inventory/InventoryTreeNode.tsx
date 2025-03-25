@@ -1,18 +1,11 @@
 import React from 'react';
-import { StateObject, CountyObject } from '../../types/inventory';
-
-interface NodeCommon {
-  id: string;
-  name: string;
-  type: string;
-}
+import { useInventoryContext, InventoryNode } from '../../context/InventoryContext';
 
 interface InventoryTreeNodeProps {
-  node: NodeCommon | StateObject | CountyObject;
+  node: InventoryNode;
   expanded: boolean;
-  selected: boolean;
   onToggle: (id: string) => void;
-  onSelect: (id: string) => void;
+  onSelect: (node: InventoryNode) => void;
   level: number;
   children?: React.ReactNode;
 }
@@ -20,13 +13,14 @@ interface InventoryTreeNodeProps {
 const InventoryTreeNode: React.FC<InventoryTreeNodeProps> = ({
   node,
   expanded,
-  selected,
   onToggle,
   onSelect,
   level,
   children,
 }) => {
+  const { selectedNode } = useInventoryContext();
   const hasChildren = React.Children.count(children) > 0;
+  const isSelected = selectedNode?.id === node.id;
   
   const getNodeIcon = () => {
     switch (node.type) {
@@ -38,6 +32,8 @@ const InventoryTreeNode: React.FC<InventoryTreeNodeProps> = ({
         return <i className="bi bi-geo-alt"></i>;
       case 'property':
         return <i className="bi bi-house-door"></i>;
+      case 'controller':
+        return <i className="bi bi-gear"></i>;
       default:
         return <i className="bi bi-folder"></i>;
     }
@@ -49,7 +45,7 @@ const InventoryTreeNode: React.FC<InventoryTreeNodeProps> = ({
   };
 
   const handleSelect = () => {
-    onSelect(node.id);
+    onSelect(node);
   };
 
   // Calculate padding based on level for indentation
@@ -58,7 +54,7 @@ const InventoryTreeNode: React.FC<InventoryTreeNodeProps> = ({
   return (
     <div className="inventory-tree-node-container">
       <div 
-        className={`inventory-tree-node ${selected ? 'selected' : ''}`}
+        className={`inventory-tree-node ${isSelected ? 'selected' : ''}`}
         onClick={handleSelect}
         style={{ paddingLeft }}
       >

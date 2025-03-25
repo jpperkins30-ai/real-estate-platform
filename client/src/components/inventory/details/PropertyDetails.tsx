@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Table, Button, Badge, Nav, Tab, Form } from 'react-bootstrap';
 import { PropertyObject } from '../../../types/inventory';
 import MapComponent from '../../maps/MapComponent';
+import { TaxLienStatusCheck } from '../index';
 
 // Mock data for development
 const mockProperties: Record<string, PropertyObject> = {
@@ -429,6 +430,15 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ propertyId }) => {
                     <i className="bi bi-plus-lg me-1"></i>
                     Add Lien
                   </Button>
+                </div>
+                
+                <div className="mb-4">
+                  <TaxLienStatusCheck 
+                    property={property} 
+                    onStatusChange={(status) => {
+                      console.log(`Tax lien status updated: ${status}`);
+                    }}
+                  />
                 </div>
                 
                 {property.metadata.liens && property.metadata.liens.length > 0 ? (

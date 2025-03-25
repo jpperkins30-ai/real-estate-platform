@@ -3,6 +3,8 @@ import { ControllerService } from '../services/controller.service';
 import { ControllerObject, ControllerObjectReference, ControllerExecutionRequest } from '../types/inventory';
 
 const router = Router();
+const typesRouter = Router();
+const collectorTypesRouter = Router();
 const controllerService = new ControllerService();
 
 /**
@@ -367,4 +369,184 @@ router.get('/:id/history', async (req, res) => {
   }
 });
 
-export default router; 
+/**
+ * @swagger
+ * /api/controllers/validate/{id}:
+ *   post:
+ *     summary: Validate a controller
+ *     tags: [Controllers]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Controller validated successfully
+ *       404:
+ *         description: Controller not found
+ */
+router.post('/:id/validate', async (req, res) => {
+  try {
+    // Get the controller
+    const controller = await controllerService.getControllerById(req.params.id);
+    if (!controller) {
+      return res.status(404).json({ message: 'Controller not found' });
+    }
+
+    // Perform validation logic
+    const validationResult = await controllerService.validateController(req.params.id);
+    
+    res.json({
+      status: 'Success',
+      result: validationResult
+    });
+  } catch (error: any) {
+    if (error.message === 'Controller not found') {
+      return res.status(404).json({ message: error.message });
+    }
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /api/controllers/{id}/test:
+ *   post:
+ *     summary: Test a controller by running a sample collection
+ *     tags: [Controllers]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Controller test completed successfully
+ *       404:
+ *         description: Controller not found
+ */
+router.post('/:id/test', async (req, res) => {
+  try {
+    // Get the controller
+    const controller = await controllerService.getControllerById(req.params.id);
+    if (!controller) {
+      return res.status(404).json({ message: 'Controller not found' });
+    }
+
+    // Perform test collection with sample data
+    const testResult = await controllerService.testController(req.params.id);
+    
+    res.json({
+      status: 'Success',
+      result: testResult
+    });
+  } catch (error: any) {
+    if (error.message === 'Controller not found') {
+      return res.status(404).json({ message: error.message });
+    }
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /api/controllers/{id}/docs:
+ *   post:
+ *     summary: Generate API documentation for a controller
+ *     tags: [Controllers]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: API documentation generated successfully
+ *       404:
+ *         description: Controller not found
+ */
+router.post('/:id/docs', async (req, res) => {
+  try {
+    // Get the controller
+    const controller = await controllerService.getControllerById(req.params.id);
+    if (!controller) {
+      return res.status(404).json({ message: 'Controller not found' });
+    }
+
+    // Generate API documentation for the controller
+    const docResult = await controllerService.generateControllerDocs(req.params.id);
+    
+    res.json({
+      status: 'Success',
+      result: docResult
+    });
+  } catch (error: any) {
+    if (error.message === 'Controller not found') {
+      return res.status(404).json({ message: error.message });
+    }
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Controller types routes
+/**
+ * @swagger
+ * /api/controller-types:
+ *   get:
+ *     summary: Get all controller types
+ *     tags: [Controllers]
+ *     responses:
+ *       200:
+ *         description: List of controller types
+ */
+typesRouter.get('/', async (req, res) => {
+  try {
+    const controllerTypes = [
+      { id: 'tax_sale', name: 'Tax Sale', description: 'Manages tax sale data collection' },
+      { id: 'map', name: 'Map', description: 'Manages geographical data collection' },
+      { id: 'property', name: 'Property', description: 'Manages property data collection' },
+      { id: 'demographics', name: 'Demographics', description: 'Manages demographic data collection' }
+    ];
+    
+    res.json(controllerTypes);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Collector types routes
+/**
+ * @swagger
+ * /api/collector-types:
+ *   get:
+ *     summary: Get all collector types
+ *     tags: [Controllers]
+ *     responses:
+ *       200:
+ *         description: List of collector types
+ */
+collectorTypesRouter.get('/', async (req, res) => {
+  try {
+    const collectorTypes = [
+      { id: 'web_scraper', name: 'Web Scraper', description: 'Collects data by scraping websites', supportedSourceTypes: ['county-website', 'state-records'] },
+      { id: 'api_client', name: 'API Client', description: 'Collects data from APIs', supportedSourceTypes: ['api'] },
+      { id: 'file_parser', name: 'File Parser', description: 'Parses files like PDFs or CSVs', supportedSourceTypes: ['pdf', 'csv'] },
+      { id: 'database_connector', name: 'Database Connector', description: 'Connects to external databases', supportedSourceTypes: ['tax-database'] }
+    ];
+    
+    res.json(collectorTypes);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Export controllers
+export default {
+  main: router,
+  types: typesRouter,
+  collectorTypes: collectorTypesRouter
+}; 

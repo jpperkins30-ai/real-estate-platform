@@ -1,0 +1,14 @@
+feat(export): Add optimized direct CSV export functionality
+
+Implement optimized direct CSV export for improved performance:
+
+- Add direct-csv endpoints for properties and counties
+- Implement efficient field mapping and transformation in backend routes
+- Add directExportToCSV method to client export service
+- Update DataExportButton to utilize direct export when available
+- Maintain compatibility with the existing export system
+
+This enhancement provides faster and more memory-efficient exports by directly
+transforming database records into the expected CSV format without unnecessary
+transformations. The direct export is particularly beneficial for large datasets
+where the previous approach could cause performance issues. 

@@ -1,26 +1,46 @@
 import React from 'react';
-import { Button } from 'react-bootstrap';
+import { Box, Typography, Button } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import SearchIcon from '@mui/icons-material/Search';
+import { useNavigate } from 'react-router-dom';
 
-const InventoryHeader: React.FC = () => {
+interface InventoryHeaderProps {
+  title?: string;
+}
+
+const InventoryHeader: React.FC<InventoryHeaderProps> = ({ title = 'Inventory Module' }) => {
+  const navigate = useNavigate();
+  
   return (
-    <div className="inventory-header">
-      <div className="d-flex justify-content-between align-items-center">
-        <div>
-          <h1 className="h4 mb-0">Inventory Management</h1>
-          <p className="text-muted small mb-0">Manage States, Counties, and Properties</p>
-        </div>
-        <div>
-          <Button variant="outline-secondary" size="sm" className="me-2">
-            <i className="bi bi-arrow-repeat me-1"></i>
-            Refresh
-          </Button>
-          <Button variant="primary" size="sm">
-            <i className="bi bi-plus-lg me-1"></i>
-            Add New
-          </Button>
-        </div>
-      </div>
-    </div>
+    <Box sx={{ 
+      display: 'flex', 
+      justifyContent: 'space-between', 
+      alignItems: 'center', 
+      padding: 2, 
+      borderBottom: '1px solid #e0e0e0' 
+    }}>
+      <Typography variant="h5" component="h1">
+        {title}
+      </Typography>
+      <Box sx={{ display: 'flex', gap: 2 }}>
+        <Button 
+          variant="outlined"
+          color="primary"
+          startIcon={<SearchIcon />}
+          onClick={() => navigate('/inventory/search')}
+        >
+          Property Search
+        </Button>
+        <Button 
+          variant="contained" 
+          color="primary"
+          startIcon={<AddIcon />}
+          onClick={() => navigate('/inventory/controllers/wizard')}
+        >
+          Create Controller
+        </Button>
+      </Box>
+    </Box>
   );
 };
 
