@@ -12,8 +12,10 @@ import {
   ListGroup
 } from 'react-bootstrap';
 import { usePropertyWithControllers } from '../../../services/inventoryService';
+import { useQueryClient } from 'react-query';
 import { Property } from '../../../types/inventory';
 import AttachedControllers from '../controllers/AttachedControllers';
+import PropertyController from '../controllers/PropertyController';
 import LoadingSpinner from '../../common/LoadingSpinner';
 
 interface PropertyDetailProps {
@@ -23,6 +25,7 @@ interface PropertyDetailProps {
 const PropertyDetail: React.FC<PropertyDetailProps> = ({ propertyId }) => {
   const { data: property, isLoading, error } = usePropertyWithControllers(propertyId);
   const [activeTab, setActiveTab] = useState('overview');
+  const queryClient = useQueryClient();
 
   // Format currency values
   const formatCurrency = (value?: number) => {
@@ -332,10 +335,9 @@ const PropertyDetail: React.FC<PropertyDetailProps> = ({ propertyId }) => {
               </Tab.Pane>
 
               <Tab.Pane eventKey="controllers">
-                <AttachedControllers
-                  objectType="property"
-                  objectId={property.id}
-                  controllers={property.controllers || []}
+                <PropertyController
+                  property={property}
+                  onUpdate={() => queryClient.invalidateQueries(['property', propertyId, 'controllers'])}
                 />
               </Tab.Pane>
             </Tab.Content>

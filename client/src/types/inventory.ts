@@ -167,9 +167,23 @@ export interface Controller {
   id: string;
   name: string;
   type: string;
+  controllerType: ControllerType;
   description?: string;
-  enabled: boolean;
-  config: {
+  enabled?: boolean;
+  configTemplate?: {
+    requiredFields: string[];
+    optionalFields: Record<string, any>;
+  };
+  attachedTo?: {
+    objectId: string;
+    objectType: ControllableObjectType;
+  }[];
+  implementation?: {
+    collectorType: string;
+    supportedSourceTypes: string[];
+    additionalConfig?: Record<string, any>;
+  };
+  config?: {
     schedule: {
       enabled: boolean;
       cronExpression?: string;
@@ -210,12 +224,6 @@ export interface Controller {
       objectsFailed?: number;
       additionalInfo?: Record<string, any>;
     };
-  }[];
-  attachedObjects?: {
-    objectId: string;
-    objectType: string;
-    attachedAt: Date;
-    lastProcessed?: Date;
   }[];
   createdAt: Date;
   updatedAt: Date;

@@ -6,7 +6,10 @@ import {
   Property, 
   PropertyFilters, 
   PaginatedResponse, 
-  ControllerReference 
+  ControllerReference,
+  Controller,
+  ControllableObjectType,
+  ControllerType
 } from '../types/inventory';
 
 // API client setup
@@ -127,14 +130,14 @@ export const usePropertyWithControllers = (propertyId: string | undefined) => {
 };
 
 export const useControllers = () => {
-  return useQuery<any[]>('controllers', async () => {
+  return useQuery<Controller[]>('controllers', async () => {
     const { data } = await apiClient.get('/controllers');
     return data;
   });
 };
 
 export const useController = (controllerId: string | undefined) => {
-  return useQuery<any>(['controller', controllerId], async () => {
+  return useQuery<Controller>(['controller', controllerId], async () => {
     const { data } = await apiClient.get(`/controllers/${controllerId}`);
     return data;
   }, {
@@ -287,26 +290,45 @@ export const useDeleteProperty = () => {
 
 export const useAttachController = () => {
   const queryClient = useQueryClient();
+  
   return useMutation(
-    async ({ controllerId, objectType, objectId, configuration }: { 
-      controllerId: string, 
-      objectType: string, 
-      objectId: string, 
-      configuration: Record<string, any> 
+    async ({ 
+      objectType, 
+      objectId, 
+      controllerId, 
+      controllerType,
+      configuration = {} 
+    }: { 
+      objectType: ControllableObjectType; 
+      objectId: string; 
+      controllerId: string;
+      controllerType: ControllerType;
+      configuration?: Record<string, any>;
     }) => {
       const { data } = await apiClient.post(`/controllers/${controllerId}/attach`, {
         objectType,
         objectId,
+        controllerType,
         configuration
       });
       return data;
     },
     {
       onSuccess: (data, variables) => {
-        // Invalidate both the controller and the object it was attached to
+        // Invalidate relevant queries
         queryClient.invalidateQueries(['controller', variables.controllerId]);
-        queryClient.invalidateQueries([variables.objectType, variables.objectId]);
-        queryClient.invalidateQueries([variables.objectType, variables.objectId, 'controllers']);
+        
+        // Invalidate the object the controller is attached to
+        if (variables.objectType === 'property') {
+          queryClient.invalidateQueries(['property', variables.objectId]);
+          queryClient.invalidateQueries(['property', variables.objectId, 'controllers']);
+        } else if (variables.objectType === 'county') {
+          queryClient.invalidateQueries(['county', variables.objectId]);
+          queryClient.invalidateQueries(['county', variables.objectId, 'controllers']);
+        } else if (variables.objectType === 'state') {
+          queryClient.invalidateQueries(['state', variables.objectId]);
+          queryClient.invalidateQueries(['state', variables.objectId, 'controllers']);
+        }
       }
     }
   );
@@ -314,11 +336,16 @@ export const useAttachController = () => {
 
 export const useDetachController = () => {
   const queryClient = useQueryClient();
+  
   return useMutation(
-    async ({ controllerId, objectType, objectId }: { 
-      controllerId: string, 
-      objectType: string, 
-      objectId: string
+    async ({ 
+      objectType, 
+      objectId, 
+      controllerId 
+    }: { 
+      objectType: ControllableObjectType; 
+      objectId: string; 
+      controllerId: string;
     }) => {
       const { data } = await apiClient.post(`/controllers/${controllerId}/detach`, {
         objectType,
@@ -328,10 +355,20 @@ export const useDetachController = () => {
     },
     {
       onSuccess: (data, variables) => {
-        // Invalidate both the controller and the object it was detached from
+        // Invalidate relevant queries
         queryClient.invalidateQueries(['controller', variables.controllerId]);
-        queryClient.invalidateQueries([variables.objectType, variables.objectId]);
-        queryClient.invalidateQueries([variables.objectType, variables.objectId, 'controllers']);
+        
+        // Invalidate the object the controller is detached from
+        if (variables.objectType === 'property') {
+          queryClient.invalidateQueries(['property', variables.objectId]);
+          queryClient.invalidateQueries(['property', variables.objectId, 'controllers']);
+        } else if (variables.objectType === 'county') {
+          queryClient.invalidateQueries(['county', variables.objectId]);
+          queryClient.invalidateQueries(['county', variables.objectId, 'controllers']);
+        } else if (variables.objectType === 'state') {
+          queryClient.invalidateQueries(['state', variables.objectId]);
+          queryClient.invalidateQueries(['state', variables.objectId, 'controllers']);
+        }
       }
     }
   );
@@ -339,11 +376,16 @@ export const useDetachController = () => {
 
 export const useRunController = () => {
   const queryClient = useQueryClient();
+  
   return useMutation(
-    async ({ controllerId, objectType, objectId }: { 
-      controllerId: string, 
-      objectType: string, 
-      objectId: string
+    async ({ 
+      objectType, 
+      objectId, 
+      controllerId 
+    }: { 
+      objectType: ControllableObjectType; 
+      objectId: string; 
+      controllerId: string;
     }) => {
       const { data } = await apiClient.post(`/controllers/${controllerId}/run`, {
         objectType,
@@ -353,10 +395,20 @@ export const useRunController = () => {
     },
     {
       onSuccess: (data, variables) => {
-        // Invalidate controller and object when controller is run
+        // Invalidate relevant queries
         queryClient.invalidateQueries(['controller', variables.controllerId]);
-        queryClient.invalidateQueries([variables.objectType, variables.objectId]);
-        queryClient.invalidateQueries([variables.objectType, variables.objectId, 'controllers']);
+        
+        // Invalidate the object the controller is run against
+        if (variables.objectType === 'property') {
+          queryClient.invalidateQueries(['property', variables.objectId]);
+          queryClient.invalidateQueries(['property', variables.objectId, 'controllers']);
+        } else if (variables.objectType === 'county') {
+          queryClient.invalidateQueries(['county', variables.objectId]);
+          queryClient.invalidateQueries(['county', variables.objectId, 'controllers']);
+        } else if (variables.objectType === 'state') {
+          queryClient.invalidateQueries(['state', variables.objectId]);
+          queryClient.invalidateQueries(['state', variables.objectId, 'controllers']);
+        }
       }
     }
   );
