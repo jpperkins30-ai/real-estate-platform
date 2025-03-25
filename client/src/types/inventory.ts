@@ -28,6 +28,16 @@ export interface State {
   updatedAt: string;
 }
 
+/**
+ * County search configuration
+ */
+export interface SearchConfig {
+  searchUrl?: string;
+  lookupMethod: 'account_number' | 'parcel_id';
+  selectors: Record<string, string>;
+  lienUrl?: string;
+}
+
 // County
 export interface County {
   id: string;
@@ -42,6 +52,7 @@ export interface County {
   metadata?: {
     totalProperties: number;
     statistics: Statistics;
+    searchConfig?: SearchConfig;
   };
   controllers?: ControllerReference[];
   dataLastUpdated?: string;
@@ -52,11 +63,17 @@ export interface County {
 // Property
 export interface Property {
   id: string;
-  countyId: string;
-  parcelId?: string;
+  parcelId: string;
+  taxAccountNumber: string;
   type: 'property';
   parentId: string;
-  address: {
+  countyId: string;
+  stateId: string;
+  ownerName: string;
+  propertyAddress: string;
+  city?: string;
+  zipCode?: string;
+  address?: {
     street: string;
     city: string;
     state: string;
@@ -66,7 +83,11 @@ export interface Property {
     lat: number;
     lng: number;
   };
-  propertyType: string;
+  geometry?: {
+    type: 'Point' | 'Polygon';
+    coordinates: number[] | number[][][]; // [lng, lat] for Point or [[[lng, lat]]] for Polygon
+  };
+  propertyType?: string;
   zoning?: string;
   lotSize?: number;
   buildingSize?: number;
@@ -77,19 +98,26 @@ export interface Property {
   lastSalePrice?: number;
   taxAssessedValue?: number;
   taxYear?: number;
-  taxStatus?: {
-    assessedValue: number;
-    marketValue: number;
-    lastAssessmentDate: string;
-    taxRate: number;
-    annualTaxAmount: number;
-    taxLienAmount?: number;
-    taxLienDate?: string;
-    taxLienStatus?: 'Active' | 'Paid' | 'Foreclosed';
-    lastPaymentDate?: string;
-    nextPaymentDue?: string;
+  metadata: {
+    propertyType: string;
+    yearBuilt?: number;
+    landArea?: number;
+    landAreaUnit?: string;
+    buildingArea?: number;
+    buildingAreaUnit?: string;
+    taxStatus: 'Paid' | 'Delinquent' | 'Unknown';
+    assessedValue?: number;
+    marketValue?: number;
+    taxDue?: number;
+    saleType?: 'Tax Lien' | 'Deed' | 'Conventional' | 'Other';
+    saleAmount?: number;
+    saleDate?: string;
+    lastUpdated: string;
+    dataSource?: string;
+    lookupMethod?: 'account_number' | 'parcel_id';
+    rawData?: Record<string, any>;
   };
-  status: 'active' | 'inactive' | 'pending';
+  status?: 'active' | 'inactive' | 'pending';
   tags?: string[];
   images?: string[];
   controllers?: ControllerReference[];

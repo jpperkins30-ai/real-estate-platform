@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Table, Button, Badge, Nav, Tab, Alert, Form } from 'react-bootstrap';
-import { CountyObject } from '../../../types/inventory';
+import { County } from '../../../types/inventory';
 import MapComponent from '../../maps/MapComponent';
 import { useInventoryContext } from '../../../context/InventoryContext';
 import PropertySearchBox from '../PropertySearchBox';
 import DataExportButton from '../../common/DataExportButton';
+import SearchConfigEditor from '../county/SearchConfigEditor';
+import { useCountyWithControllers } from '../../../services/inventoryService';
+import { AttachedControllers } from '../controllers/AttachedControllers';
+import LoadingSpinner from '../../common/LoadingSpinner';
 
 // Mock data for development
-const mockCounties: Record<string, CountyObject> = {
+const mockCounties: Record<string, County> = {
   'county-1': {
     id: 'county-1',
     name: 'Los Angeles County',
@@ -293,41 +297,16 @@ interface CountyDetailsProps {
 
 const CountyDetails: React.FC<CountyDetailsProps> = ({ countyId }) => {
   const { selectNode } = useInventoryContext();
-  const [county, setCounty] = useState<CountyObject | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const { data: county, isLoading, error } = useCountyWithControllers(countyId);
+  const [activeTab, setActiveTab] = useState('overview');
   const [darkMode, setDarkMode] = useState<boolean>(false);
 
-  useEffect(() => {
-    // Simulating API fetch
-    setLoading(true);
-    
-    // In a real implementation, this would be an API call
-    setTimeout(() => {
-      setCounty(mockCounties[countyId] || null);
-      setLoading(false);
-    }, 800);
-  }, [countyId]);
-
-  if (loading) {
-    return (
-      <div className="text-center p-4">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
-        <p className="mt-2">Loading county details...</p>
-      </div>
-    );
+  if (isLoading) {
+    return <LoadingSpinner />;
   }
 
-  if (!county) {
-    return (
-      <Card className="border-danger">
-        <Card.Body>
-          <Card.Title className="text-danger">County Not Found</Card.Title>
-          <p>The county with ID {countyId} could not be found.</p>
-        </Card.Body>
-      </Card>
-    );
+  if (error || !county) {
+    return <Alert variant="danger">Error loading county details. Please try again.</Alert>;
   }
 
   const handlePropertySelect = (propertyId: string) => {
@@ -344,324 +323,224 @@ const CountyDetails: React.FC<CountyDetailsProps> = ({ countyId }) => {
 
   return (
     <div className="county-details">
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <div>
-          <span className="text-muted">
-            <small>{county.stateId}</small>
-          </span>
-          <h3>{county.name}</h3>
-        </div>
-        <div>
-          <DataExportButton 
-            dataType="properties"
-            filters={{ countyId: county.id }}
-            buttonVariant="outline-primary"
-            buttonSize="sm"
-            buttonText="Export Properties"
-            className="me-2"
-            showFilters={true}
-          />
-          
-          <Button variant="outline-secondary" size="sm" className="me-2">
-            <i className="bi bi-pencil me-1"></i>
-            Edit
-          </Button>
-          <Button variant="primary" size="sm">
-            <i className="bi bi-arrow-up-right-square me-1"></i>
-            View on Map
-          </Button>
-        </div>
-      </div>
+      <Card className="mb-4">
+        <Card.Header>
+          <div className="d-flex justify-content-between align-items-center">
+            <h3>{county.name}</h3>
+            <div>
+              <Button variant="outline-primary" size="sm" className="me-2">Edit</Button>
+              <DataExportButton data={county} filename={`county-${county.id}`} />
+            </div>
+          </div>
+        </Card.Header>
+        <Card.Body>
+          <Tab.Container id="county-tabs" activeKey={activeTab} onSelect={(k) => setActiveTab(k || 'overview')}>
+            <Nav variant="tabs" className="mb-3">
+              <Nav.Item>
+                <Nav.Link eventKey="overview">Overview</Nav.Link>
+              </Nav.Item>
+              <Nav.Item>
+                <Nav.Link eventKey="properties">Properties</Nav.Link>
+              </Nav.Item>
+              <Nav.Item>
+                <Nav.Link eventKey="map">Map</Nav.Link>
+              </Nav.Item>
+              <Nav.Item>
+                <Nav.Link eventKey="search-config">Search Configuration</Nav.Link>
+              </Nav.Item>
+              <Nav.Item>
+                <Nav.Link eventKey="controllers">Controllers</Nav.Link>
+              </Nav.Item>
+            </Nav>
 
-      <div className="card mb-4">
-        <div className="card-header">
-          <h3 className="card-title h5 mb-0">Property Search</h3>
-        </div>
-        <div className="card-body">
-          <PropertySearchBox countyId={county.id} />
-        </div>
-      </div>
+            <Tab.Content>
+              <Tab.Pane eventKey="overview">
+                <Row>
+                  <Col md={6}>
+                    <Card>
+                      <Card.Header>County Details</Card.Header>
+                      <Card.Body>
+                        <Table striped>
+                          <tbody>
+                            <tr>
+                              <td>County Name</td>
+                              <td>{county.name}</td>
+                            </tr>
+                            <tr>
+                              <td>State</td>
+                              <td>{county.stateId}</td>
+                            </tr>
+                            <tr>
+                              <td>FIPS Code</td>
+                              <td>{county.fips || 'N/A'}</td>
+                            </tr>
+                            <tr>
+                              <td>Population</td>
+                              <td>{county.population?.toLocaleString() || 'N/A'}</td>
+                            </tr>
+                            <tr>
+                              <td>Area</td>
+                              <td>{county.area ? `${county.area.toLocaleString()} sq mi` : 'N/A'}</td>
+                            </tr>
+                            <tr>
+                              <td>Created</td>
+                              <td>{new Date(county.createdAt).toLocaleDateString()}</td>
+                            </tr>
+                            <tr>
+                              <td>Updated</td>
+                              <td>{new Date(county.updatedAt).toLocaleDateString()}</td>
+                            </tr>
+                          </tbody>
+                        </Table>
+                      </Card.Body>
+                    </Card>
+                  </Col>
+                  <Col md={6}>
+                    <Card>
+                      <Card.Header>Statistics</Card.Header>
+                      <Card.Body>
+                        <Table striped>
+                          <tbody>
+                            <tr>
+                              <td>Total Properties</td>
+                              <td>{county.metadata?.totalProperties.toLocaleString() || 0}</td>
+                            </tr>
+                            <tr>
+                              <td>Properties with Tax Liens</td>
+                              <td>{county.metadata?.statistics.totalPropertiesWithLiens?.toLocaleString() || 0}</td>
+                            </tr>
+                            <tr>
+                              <td>Total Tax Liens</td>
+                              <td>{county.metadata?.statistics.totalTaxLiens.toLocaleString() || 0}</td>
+                            </tr>
+                            <tr>
+                              <td>Total Property Value</td>
+                              <td>${county.metadata?.statistics.totalValue.toLocaleString() || 0}</td>
+                            </tr>
+                            <tr>
+                              <td>Average Property Value</td>
+                              <td>${county.metadata?.statistics.averagePropertyValue?.toLocaleString() || 'N/A'}</td>
+                            </tr>
+                            <tr>
+                              <td>Last Updated</td>
+                              <td>{county.metadata?.statistics.lastUpdated ? new Date(county.metadata.statistics.lastUpdated).toLocaleDateString() : 'N/A'}</td>
+                            </tr>
+                          </tbody>
+                        </Table>
+                      </Card.Body>
+                    </Card>
+                  </Col>
+                </Row>
+              </Tab.Pane>
 
-      <Row className="mb-4">
-        <Col md={6} lg={3}>
-          <Card className="text-center h-100">
-            <Card.Body>
-              <h1 className="display-4">{county.metadata.totalProperties}</h1>
-              <Card.Text>Properties</Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={6} lg={3}>
-          <Card className="text-center h-100">
-            <Card.Body>
-              <h1 className="display-4">{county.metadata.statistics.totalTaxLiens}</h1>
-              <Card.Text>Tax Liens</Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={6} lg={3}>
-          <Card className="text-center h-100">
-            <Card.Body>
-              <h1 className="display-4">${(county.metadata.statistics.averagePropertyValue / 1000).toFixed(0)}K</h1>
-              <Card.Text>Avg. Property Value</Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={6} lg={3}>
-          <Card className="text-center h-100">
-            <Card.Body>
-              <h1 className="display-4">${(county.metadata.statistics.totalValue / 1000000).toFixed(1)}M</h1>
-              <Card.Text>Total Value</Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-
-      <Tab.Container defaultActiveKey="map">
-        <Nav variant="tabs" className="mb-3">
-          <Nav.Item>
-            <Nav.Link eventKey="properties">Properties</Nav.Link>
-          </Nav.Item>
-          <Nav.Item>
-            <Nav.Link eventKey="map">Map View</Nav.Link>
-          </Nav.Item>
-          <Nav.Item>
-            <Nav.Link eventKey="search">Search Configuration</Nav.Link>
-          </Nav.Item>
-          <Nav.Item>
-            <Nav.Link eventKey="collectors">Data Collectors</Nav.Link>
-          </Nav.Item>
-        </Nav>
-        
-        <Tab.Content>
-          <Tab.Pane eventKey="properties">
-            <Card>
-              <Card.Body>
-                <div className="d-flex justify-content-between mb-3">
-                  <Card.Title>Properties in {county.name}</Card.Title>
-                  <div>
-                    <Button variant="outline-secondary" size="sm" className="me-2">
-                      <i className="bi bi-funnel me-1"></i>
-                      Filter
-                    </Button>
-                    <Button variant="outline-secondary" size="sm">
-                      <i className="bi bi-download me-1"></i>
-                      Export
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="table-responsive">
-                  <Table hover>
-                    <thead>
-                      <tr>
-                        <th>Address</th>
-                        <th>Type</th>
-                        <th>Status</th>
-                        <th>Value</th>
-                        <th>Last Updated</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {county.properties.length === 0 ? (
-                        <tr>
-                          <td colSpan={6} className="text-center py-3">
-                            No properties added yet. 
-                            <Button variant="link" size="sm">Import properties</Button> or 
-                            <Button variant="link" size="sm">Add manually</Button>
-                          </td>
-                        </tr>
-                      ) : (
-                        county.properties.map(property => (
-                          <tr key={property.id}>
-                            <td>{property.address.street}</td>
-                            <td>{property.metadata.propertyType}</td>
-                            <td>
-                              <Badge bg={
-                                property.metadata.status === 'new' ? 'warning' :
-                                property.metadata.status === 'hot' ? 'danger' :
-                                property.metadata.status === 'verified' ? 'primary' :
-                                property.metadata.taxStatus === 'Delinquent' ? 'danger' : 'success'
-                              }>
-                                {property.metadata.status ? 
-                                  property.metadata.status.charAt(0).toUpperCase() + property.metadata.status.slice(1) :
-                                  property.metadata.taxStatus}
-                              </Badge>
-                            </td>
-                            <td>${property.metadata.marketValue?.toLocaleString()}</td>
-                            <td>{(property.metadata.lastUpdated || property.updatedAt).toLocaleDateString()}</td>
-                            <td>
-                              <Button 
-                                variant="outline-primary" 
-                                size="sm"
-                                onClick={() => handlePropertySelect(property.id)}>
-                                View
-                              </Button>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </Table>
-                </div>
-              </Card.Body>
-            </Card>
-          </Tab.Pane>
-          
-          <Tab.Pane eventKey="map">
-            <Card>
-              <Card.Body>
-                <div className="d-flex justify-content-between mb-3">
-                  <Card.Title>Interactive Map of {county?.name}</Card.Title>
-                  <div className="d-flex align-items-center">
-                    <Form.Check 
-                      type="switch"
-                      id="dark-mode-switch"
-                      label="Dark Mode"
-                      checked={darkMode}
-                      onChange={(e) => setDarkMode(e.target.checked)}
-                      className="me-3"
-                    />
-                    <Button variant="outline-secondary" size="sm">
-                      <i className="bi bi-arrows-fullscreen me-1"></i>
-                      Full Screen
-                    </Button>
-                  </div>
-                </div>
-                
-                <MapComponent 
-                  type="county"
-                  data={{
-                    geometry: county?.geometry,
-                    properties: county?.properties || []
-                  }}
-                  onSelect={handlePropertySelect}
-                  darkMode={darkMode}
-                />
-                
-                <div className="mt-3">
-                  <Alert variant="info">
-                    <i className="bi bi-info-circle me-2"></i>
-                    Click on markers to view property details. Pulsing red markers indicate hot properties with urgent delinquent taxes.
-                    Orange markers are new tax sales (0-7 days), and blue markers are verified active properties.
-                  </Alert>
-                </div>
-              </Card.Body>
-            </Card>
-          </Tab.Pane>
-          
-          <Tab.Pane eventKey="search">
-            <Card>
-              <Card.Body>
-                <Card.Title>County Search Configuration</Card.Title>
-                
-                <Alert variant="info" className="mb-4">
-                  <i className="bi bi-info-circle me-2"></i>
-                  Configure how the system searches for properties and tax liens in this county's online records.
-                </Alert>
-                
-                <div className="mb-3">
-                  <h5>Search URL</h5>
-                  <p className="text-muted mb-2">The URL of the county's property search page</p>
-                  <div className="d-flex">
-                    <code className="py-2 px-3 bg-light flex-grow-1 text-truncate">
-                      {county.metadata.searchConfig.searchUrl}
-                    </code>
-                    <Button variant="outline-secondary" size="sm" className="ms-2">
-                      <i className="bi bi-pencil"></i>
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="mb-3">
-                  <h5>Lookup Method</h5>
-                  <p className="text-muted mb-2">The identifier used to search for properties</p>
-                  <Badge bg="secondary" className="me-2">
-                    {county.metadata.searchConfig.lookupMethod === 'parcel_id' ? 'Parcel ID' : 'Account Number'}
-                  </Badge>
-                  <Button variant="link" size="sm">Change</Button>
-                </div>
-                
-                {county.metadata.searchConfig.lienUrl && (
-                  <div className="mb-3">
-                    <h5>Tax Lien URL</h5>
-                    <p className="text-muted mb-2">The URL of the county's tax lien search page</p>
-                    <div className="d-flex">
-                      <code className="py-2 px-3 bg-light flex-grow-1 text-truncate">
-                        {county.metadata.searchConfig.lienUrl}
-                      </code>
-                      <Button variant="outline-secondary" size="sm" className="ms-2">
-                        <i className="bi bi-pencil"></i>
-                      </Button>
+              <Tab.Pane eventKey="properties">
+                <PropertySearchBox countyId={county.id} />
+                <Card>
+                  <Card.Body>
+                    <div className="d-flex justify-content-between mb-3">
+                      <Card.Title>Properties in {county.name}</Card.Title>
+                      <div>
+                        <Button variant="outline-secondary" size="sm" className="me-2">
+                          <i className="bi bi-funnel me-1"></i>
+                          Filter
+                        </Button>
+                        <Button variant="outline-secondary" size="sm">
+                          <i className="bi bi-download me-1"></i>
+                          Export
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                )}
-                
-                <hr />
-                
-                <div className="d-flex justify-content-end">
-                  <Button variant="primary">
-                    <i className="bi bi-save me-1"></i>
-                    Save Configuration
-                  </Button>
+                    
+                    <div className="table-responsive">
+                      <Table hover>
+                        <thead>
+                          <tr>
+                            <th>Address</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Value</th>
+                            <th>Last Updated</th>
+                            <th>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {county.properties.length === 0 ? (
+                            <tr>
+                              <td colSpan={6} className="text-center py-3">
+                                No properties added yet. 
+                                <Button variant="link" size="sm">Import properties</Button> or 
+                                <Button variant="link" size="sm">Add manually</Button>
+                              </td>
+                            </tr>
+                          ) : (
+                            county.properties.map(property => (
+                              <tr key={property.id}>
+                                <td>{property.address.street}</td>
+                                <td>{property.metadata.propertyType}</td>
+                                <td>
+                                  <Badge bg={
+                                    property.metadata.status === 'new' ? 'warning' :
+                                    property.metadata.status === 'hot' ? 'danger' :
+                                    property.metadata.status === 'verified' ? 'primary' :
+                                    property.metadata.taxStatus === 'Delinquent' ? 'danger' : 'success'
+                                  }>
+                                    {property.metadata.status ? 
+                                      property.metadata.status.charAt(0).toUpperCase() + property.metadata.status.slice(1) :
+                                      property.metadata.taxStatus}
+                                  </Badge>
+                                </td>
+                                <td>${property.metadata.marketValue?.toLocaleString()}</td>
+                                <td>{(property.metadata.lastUpdated || property.updatedAt).toLocaleDateString()}</td>
+                                <td>
+                                  <Button 
+                                    variant="outline-primary" 
+                                    size="sm"
+                                    onClick={() => handlePropertySelect(property.id)}>
+                                    View
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </Table>
+                    </div>
+                  </Card.Body>
+                </Card>
+              </Tab.Pane>
+
+              <Tab.Pane eventKey="map">
+                <div style={{ height: '500px', width: '100%' }}>
+                  {county.geometry ? (
+                    <MapComponent 
+                      geometry={county.geometry}
+                      zoom={8}
+                      properties={{
+                        name: county.name,
+                        type: 'county'
+                      }}
+                    />
+                  ) : (
+                    <Alert variant="info">No geometry data available for this county.</Alert>
+                  )}
                 </div>
-              </Card.Body>
-            </Card>
-          </Tab.Pane>
-          
-          <Tab.Pane eventKey="collectors">
-            <Card>
-              <Card.Body>
-                <Card.Title>Data Collectors</Card.Title>
-                {county.controllers.length === 0 ? (
-                  <div className="text-center py-4">
-                    <p>No data collectors configured for this county.</p>
-                    <Button variant="outline-primary" size="sm">
-                      <i className="bi bi-plus-lg me-1"></i>
-                      Add Data Collector
-                    </Button>
-                  </div>
-                ) : (
-                  <Table hover>
-                    <thead>
-                      <tr>
-                        <th>Collector Type</th>
-                        <th>Status</th>
-                        <th>Last Run</th>
-                        <th>Next Run</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {county.controllers.map(controller => (
-                        <tr key={controller.controllerId}>
-                          <td>{controller.controllerType}</td>
-                          <td>
-                            <Badge bg={controller.enabled ? 'success' : 'secondary'}>
-                              {controller.enabled ? 'Active' : 'Disabled'}
-                            </Badge>
-                          </td>
-                          <td>{controller.lastRun?.toLocaleDateString() || 'Never'}</td>
-                          <td>{controller.nextScheduledRun?.toLocaleDateString() || 'Not scheduled'}</td>
-                          <td>
-                            <Button variant="outline-primary" size="sm" className="me-1">
-                              Configure
-                            </Button>
-                            <Button variant="outline-secondary" size="sm">
-                              Run Now
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </Table>
-                )}
-              </Card.Body>
-            </Card>
-          </Tab.Pane>
-        </Tab.Content>
-      </Tab.Container>
+              </Tab.Pane>
+
+              <Tab.Pane eventKey="search-config">
+                <SearchConfigEditor county={county} />
+              </Tab.Pane>
+
+              <Tab.Pane eventKey="controllers">
+                <AttachedControllers 
+                  objectType="county" 
+                  objectId={county.id} 
+                  controllers={county.controllers || []} 
+                />
+              </Tab.Pane>
+            </Tab.Content>
+          </Tab.Container>
+        </Card.Body>
+      </Card>
     </div>
   );
 };
