@@ -109,4 +109,72 @@ export const generateReport = async (
       message: `Failed to generate ${format.toUpperCase()} report`
     };
   }
-}; 
+};
+
+/**
+ * Export data to JSON format
+ * @param dataType Type of data being exported
+ * @param filters Filters to apply to data
+ * @returns Success status and file URL
+ */
+export const exportToJSON = async (dataType: string, filters: Record<string, any> = {}) => {
+  try {
+    const response = await axios.post(`${API_URL}/export/${dataType}/json`, { ...filters });
+    return {
+      success: true,
+      fileUrl: response.data.fileUrl,
+      message: 'Data exported to JSON successfully'
+    };
+  } catch (error) {
+    console.error('Error exporting to JSON:', error);
+    return {
+      success: false,
+      message: 'Failed to export data to JSON'
+    };
+  }
+};
+
+/**
+ * Direct export to CSV format (server-side generation)
+ * @param dataType Type of data being exported
+ * @param filters Filters to apply to data
+ * @returns Success status and file URL
+ */
+export const directExportToCSV = async (dataType: string, filters: Record<string, any> = {}) => {
+  try {
+    // For direct downloads, we need to handle differently
+    const response = await axios.post(`${API_URL}/export/${dataType}/csv`, { ...filters }, { responseType: 'blob' });
+    
+    // Create a download link and trigger it
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${dataType}_export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    
+    return {
+      success: true,
+      message: 'Data exported to CSV successfully'
+    };
+  } catch (error) {
+    console.error('Error exporting to CSV:', error);
+    return {
+      success: false,
+      message: 'Failed to export data to CSV'
+    };
+  }
+};
+
+// Default export with all export functions
+const exportService = {
+  exportToCSV,
+  exportToExcel,
+  exportGeoJSON,
+  generateReport,
+  exportToJSON,
+  directExportToCSV
+};
+
+export default exportService; 

@@ -41,10 +41,14 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
   );
 };
 
+// Export the hook with both names for backward compatibility
 export const useInventory = (): InventoryContextType => {
   const context = useContext(InventoryContext);
   if (context === undefined) {
     throw new Error('useInventory must be used within an InventoryProvider');
   }
   return context;
-}; 
+};
+
+// Renamed hook to match the import in InventoryMain.tsx
+export const useInventoryContext = useInventory; 
