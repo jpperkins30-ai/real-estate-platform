@@ -13,9 +13,15 @@ import authRoutes from './routes/auth';
 import propertyRoutes from './routes/property';
 import userRoutes from './routes/user';
 import logsRoutes from './routes/logs';
+import usMapRoutes from './routes/usmap.routes';
+import stateRoutes from './routes/state.routes';
+import countyRoutes from './routes/county.routes';
 import helmet from 'helmet';
 import { specs } from './swagger';
 import config from './config';
+import controllerRoutes from './routes/controller.routes';
+import collectionRoutes from './routes/collection.routes';
+import exportRoutes from './routes/export.routes';
 
 // Load environment variables
 dotenv.config();
@@ -121,6 +127,12 @@ app.use('/api/auth', authRoutes);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/logs', logsRoutes);
+app.use('/api/usmap', usMapRoutes);
+app.use('/api/states', stateRoutes);
+app.use('/api/counties', countyRoutes);
+app.use('/api/controllers', controllerRoutes);
+app.use('/api/collections', collectionRoutes);
+app.use('/api/export', exportRoutes);
 
 // Test route
 app.get('/api/test', (req, res) => {
