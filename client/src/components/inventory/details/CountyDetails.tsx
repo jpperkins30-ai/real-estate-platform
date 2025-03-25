@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Table, Button, Badge, Nav, Tab, Alert } from 'react-bootstrap';
+import { Card, Row, Col, Table, Button, Badge, Nav, Tab, Alert, Form } from 'react-bootstrap';
 import { CountyObject } from '../../../types/inventory';
+import MapComponent from '../../maps/MapComponent';
+import { useInventoryContext } from '../../../context/InventoryContext';
 
 // Mock data for development
 const mockCounties: Record<string, CountyObject> = {
@@ -49,7 +51,131 @@ const mockCounties: Record<string, CountyObject> = {
         },
       },
     ],
-    properties: [],
+    properties: [
+      {
+        id: 'property-1',
+        type: 'property',
+        parentId: 'county-1',
+        countyId: 'county-1',
+        stateId: 'state-1',
+        createdAt: new Date('2023-01-15'),
+        updatedAt: new Date('2023-06-20'),
+        geometry: {
+          type: 'Point',
+          coordinates: [-118.2437, 34.0522],
+        },
+        metadata: {
+          propertyType: 'Residential',
+          yearBuilt: 1985,
+          landArea: 5500,
+          landAreaUnit: 'sqft',
+          buildingArea: 2200,
+          buildingAreaUnit: 'sqft',
+          taxStatus: 'Delinquent',
+          assessedValue: 450000,
+          marketValue: 520000,
+          saleAmount: 410000,
+          saleDate: new Date('2018-05-15'),
+          taxAmount: 5200,
+          taxYear: 2023,
+          taxDueDate: new Date('2023-12-10'),
+          liens: [
+            {
+              id: 'lien-1',
+              amount: 8500,
+              interestRate: 0.18,
+              startDate: new Date('2023-01-15'),
+              redemptionDeadline: new Date('2024-01-15'),
+            },
+          ],
+        },
+        address: {
+          street: '123 Main St',
+          city: 'Los Angeles',
+          state: 'CA',
+          zipCode: '90001',
+        },
+      },
+      {
+        id: 'property-2',
+        type: 'property',
+        parentId: 'county-1',
+        countyId: 'county-1',
+        stateId: 'state-1',
+        createdAt: new Date('2023-02-10'),
+        updatedAt: new Date('2023-06-25'),
+        geometry: {
+          type: 'Point',
+          coordinates: [-118.3125, 34.0668],
+        },
+        metadata: {
+          propertyType: 'Commercial',
+          yearBuilt: 1978,
+          landArea: 12000,
+          landAreaUnit: 'sqft',
+          buildingArea: 8500,
+          buildingAreaUnit: 'sqft',
+          taxStatus: 'Current',
+          assessedValue: 780000,
+          marketValue: 850000,
+          saleAmount: 720000,
+          saleDate: new Date('2015-11-20'),
+          taxAmount: 9600,
+          taxYear: 2023,
+          taxDueDate: new Date('2023-12-10'),
+        },
+        address: {
+          street: '456 Oak Ave',
+          city: 'Los Angeles',
+          state: 'CA',
+          zipCode: '90002',
+        },
+      },
+      {
+        id: 'property-3',
+        type: 'property',
+        parentId: 'county-1',
+        countyId: 'county-1',
+        stateId: 'state-1',
+        createdAt: new Date('2023-03-05'),
+        updatedAt: new Date('2023-07-02'),
+        geometry: {
+          type: 'Point',
+          coordinates: [-118.4085, 33.9416],
+        },
+        metadata: {
+          propertyType: 'Residential',
+          yearBuilt: 1992,
+          landArea: 7200,
+          landAreaUnit: 'sqft',
+          buildingArea: 3100,
+          buildingAreaUnit: 'sqft',
+          taxStatus: 'Delinquent',
+          assessedValue: 620000,
+          marketValue: 680000,
+          saleAmount: 590000,
+          saleDate: new Date('2017-08-10'),
+          taxAmount: 7400,
+          taxYear: 2023,
+          taxDueDate: new Date('2023-12-10'),
+          liens: [
+            {
+              id: 'lien-3',
+              amount: 11200,
+              interestRate: 0.18,
+              startDate: new Date('2023-02-10'),
+              redemptionDeadline: new Date('2024-02-10'),
+            },
+          ],
+        },
+        address: {
+          street: '789 Pine St',
+          city: 'Manhattan Beach',
+          state: 'CA',
+          zipCode: '90266',
+        },
+      },
+    ],
   },
   'county-2': {
     id: 'county-2',
@@ -113,13 +239,61 @@ const mockCounties: Record<string, CountyObject> = {
   },
 };
 
+// Enhance mock data for visualization
+mockCounties['county-1'].properties.forEach((property, index) => {
+  // Add status based on tax status for visualization
+  if (property.metadata.taxStatus === 'Delinquent') {
+    // Make the first delinquent property a hot zone
+    if (index === 0) {
+      property.metadata.status = 'hot';
+      property.metadata.lastUpdated = new Date('2023-07-08'); // 1 day ago
+    } else {
+      property.metadata.status = 'new';
+      property.metadata.lastUpdated = new Date('2023-07-02'); // 7 days ago
+    }
+  } else {
+    property.metadata.status = 'verified';
+    property.metadata.lastUpdated = property.updatedAt;
+  }
+
+  // Enhance geometry for visualization
+  if (property.geometry.type === 'Point') {
+    property.geometry = {
+      type: 'Feature',
+      properties: {
+        id: property.id,
+        name: property.address.street,
+        status: property.metadata.status,
+        lastUpdated: property.metadata.lastUpdated,
+        value: property.metadata.marketValue || 0
+      },
+      geometry: property.geometry
+    };
+  }
+});
+
+// Enhance county geometry with properties needed for visualization
+mockCounties['county-1'].geometry = {
+  type: 'Feature',
+  properties: {
+    id: mockCounties['county-1'].id,
+    name: mockCounties['county-1'].name,
+    status: 'verified',
+    lastUpdated: mockCounties['county-1'].updatedAt,
+    value: mockCounties['county-1'].metadata.statistics.totalValue || 0
+  },
+  geometry: mockCounties['county-1'].geometry
+};
+
 interface CountyDetailsProps {
   countyId: string;
 }
 
 const CountyDetails: React.FC<CountyDetailsProps> = ({ countyId }) => {
+  const { selectNode } = useInventoryContext();
   const [county, setCounty] = useState<CountyObject | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [darkMode, setDarkMode] = useState<boolean>(false);
 
   useEffect(() => {
     // Simulating API fetch
@@ -153,6 +327,18 @@ const CountyDetails: React.FC<CountyDetailsProps> = ({ countyId }) => {
       </Card>
     );
   }
+
+  const handlePropertySelect = (propertyId: string) => {
+    const property = county?.properties.find(p => p.id === propertyId);
+    if (property) {
+      selectNode({
+        id: property.id,
+        name: property.address?.street || `Property ${property.id}`,
+        type: 'property',
+        data: property
+      });
+    }
+  };
 
   return (
     <div className="county-details">
@@ -210,10 +396,13 @@ const CountyDetails: React.FC<CountyDetailsProps> = ({ countyId }) => {
         </Col>
       </Row>
 
-      <Tab.Container defaultActiveKey="properties">
+      <Tab.Container defaultActiveKey="map">
         <Nav variant="tabs" className="mb-3">
           <Nav.Item>
             <Nav.Link eventKey="properties">Properties</Nav.Link>
+          </Nav.Item>
+          <Nav.Item>
+            <Nav.Link eventKey="map">Map View</Nav.Link>
           </Nav.Item>
           <Nav.Item>
             <Nav.Link eventKey="search">Search Configuration</Nav.Link>
@@ -247,15 +436,16 @@ const CountyDetails: React.FC<CountyDetailsProps> = ({ countyId }) => {
                       <tr>
                         <th>Address</th>
                         <th>Type</th>
-                        <th>Tax Status</th>
+                        <th>Status</th>
                         <th>Value</th>
+                        <th>Last Updated</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {county.properties.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="text-center py-3">
+                          <td colSpan={6} className="text-center py-3">
                             No properties added yet. 
                             <Button variant="link" size="sm">Import properties</Button> or 
                             <Button variant="link" size="sm">Add manually</Button>
@@ -267,19 +457,74 @@ const CountyDetails: React.FC<CountyDetailsProps> = ({ countyId }) => {
                             <td>{property.address.street}</td>
                             <td>{property.metadata.propertyType}</td>
                             <td>
-                              <Badge bg={property.metadata.taxStatus === 'Delinquent' ? 'danger' : 'success'}>
-                                {property.metadata.taxStatus}
+                              <Badge bg={
+                                property.metadata.status === 'new' ? 'warning' :
+                                property.metadata.status === 'hot' ? 'danger' :
+                                property.metadata.status === 'verified' ? 'primary' :
+                                property.metadata.taxStatus === 'Delinquent' ? 'danger' : 'success'
+                              }>
+                                {property.metadata.status ? 
+                                  property.metadata.status.charAt(0).toUpperCase() + property.metadata.status.slice(1) :
+                                  property.metadata.taxStatus}
                               </Badge>
                             </td>
                             <td>${property.metadata.marketValue?.toLocaleString()}</td>
+                            <td>{(property.metadata.lastUpdated || property.updatedAt).toLocaleDateString()}</td>
                             <td>
-                              <Button variant="outline-primary" size="sm">View</Button>
+                              <Button 
+                                variant="outline-primary" 
+                                size="sm"
+                                onClick={() => handlePropertySelect(property.id)}>
+                                View
+                              </Button>
                             </td>
                           </tr>
                         ))
                       )}
                     </tbody>
                   </Table>
+                </div>
+              </Card.Body>
+            </Card>
+          </Tab.Pane>
+          
+          <Tab.Pane eventKey="map">
+            <Card>
+              <Card.Body>
+                <div className="d-flex justify-content-between mb-3">
+                  <Card.Title>Interactive Map of {county?.name}</Card.Title>
+                  <div className="d-flex align-items-center">
+                    <Form.Check 
+                      type="switch"
+                      id="dark-mode-switch"
+                      label="Dark Mode"
+                      checked={darkMode}
+                      onChange={(e) => setDarkMode(e.target.checked)}
+                      className="me-3"
+                    />
+                    <Button variant="outline-secondary" size="sm">
+                      <i className="bi bi-arrows-fullscreen me-1"></i>
+                      Full Screen
+                    </Button>
+                  </div>
+                </div>
+                
+                <MapComponent 
+                  type="county"
+                  data={{
+                    geometry: county?.geometry,
+                    properties: county?.properties || []
+                  }}
+                  onSelect={handlePropertySelect}
+                  darkMode={darkMode}
+                />
+                
+                <div className="mt-3">
+                  <Alert variant="info">
+                    <i className="bi bi-info-circle me-2"></i>
+                    Click on markers to view property details. Pulsing red markers indicate hot properties with urgent delinquent taxes.
+                    Orange markers are new tax sales (0-7 days), and blue markers are verified active properties.
+                  </Alert>
                 </div>
               </Card.Body>
             </Card>

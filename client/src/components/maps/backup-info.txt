@@ -1,0 +1,51 @@
+# Map Component Backup Information
+
+This file serves as a record of the enhanced map component files that should be backed up.
+
+## Files to Back Up
+
+1. **MapComponent.tsx**
+   - Location: `client/src/components/maps/MapComponent.tsx`
+   - Purpose: Main React component that renders the interactive map with all enhanced features
+   - Last Updated: Current version implements vibrant visuals, animations, and interactive elements
+
+2. **MapComponent.css**
+   - Location: `client/src/components/maps/MapComponent.css`
+   - Purpose: Styling for the map component, custom controls, and animations
+   - Key Elements: Animation keyframes, custom markers, responsive layout, dark mode theming
+
+3. **leaflet-types.ts**
+   - Location: `client/src/components/maps/leaflet-types.ts`
+   - Purpose: TypeScript definitions for Leaflet to resolve type errors
+   - Contains: Custom type definitions for map, layers, controls, and events
+
+4. **README.md**
+   - Location: `client/src/components/maps/README.md`
+   - Purpose: User-friendly documentation with examples and usage instructions
+   - Includes: Component overview, props, features, and customization options
+
+5. **DOCUMENTATION.md**
+   - Location: `client/src/components/maps/DOCUMENTATION.md`
+   - Purpose: Comprehensive technical documentation
+   - Includes: Detailed implementation notes, architecture, troubleshooting, and best practices
+
+## How to Restore from Backup
+
+If you need to restore these files from backups:
+
+1. Retrieve the files from the version control system (Git)
+2. Use the most recent version of each file with a timestamp in the filename
+3. Copy files back to their original locations
+
+## Version Information
+
+- Map Component Version: 2.0.0
+- Last Major Update: Visual enhancements, animations, and dashboard features
+- Dependencies: 
+  - Leaflet 1.9.4
+  - React 18+
+  - Bootstrap Icons
+
+## Contact
+
+For questions about the map component implementation, contact the development team. 

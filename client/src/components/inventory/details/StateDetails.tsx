@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Table, Button, Badge, Nav, Tab } from 'react-bootstrap';
+import { Card, Row, Col, Table, Button, Badge, Nav, Tab, Form } from 'react-bootstrap';
 import { StateObject } from '../../../types/inventory';
+import MapComponent from '../../maps/MapComponent';
+import { useInventoryContext } from '../../../context/InventoryContext';
 
 // Mock data for development
 const mockStates: Record<string, StateObject> = {
@@ -40,7 +42,58 @@ const mockStates: Record<string, StateObject> = {
         },
       },
     ],
-    counties: [],
+    counties: [
+      {
+        id: 'county-1',
+        name: 'Los Angeles County',
+        type: 'county',
+        parentId: 'state-1',
+        stateId: 'state-1',
+        createdAt: new Date('2023-01-01'),
+        updatedAt: new Date('2023-05-15'),
+        metadata: {
+          totalProperties: 450,
+          statistics: {
+            totalTaxLiens: 56,
+            totalValue: 1200000,
+            averagePropertyValue: 380000,
+            totalPropertiesWithLiens: 56,
+            lastUpdated: new Date('2023-05-15'),
+          }
+        },
+        geometry: { 
+          type: 'Polygon',
+          coordinates: []
+        },
+        properties: [],
+        controllers: []
+      },
+      {
+        id: 'county-2',
+        name: 'San Diego County',
+        type: 'county',
+        parentId: 'state-1',
+        stateId: 'state-1',
+        createdAt: new Date('2023-01-01'),
+        updatedAt: new Date('2023-06-10'),
+        metadata: {
+          totalProperties: 325,
+          statistics: {
+            totalTaxLiens: 38,
+            totalValue: 950000,
+            averagePropertyValue: 420000,
+            totalPropertiesWithLiens: 38,
+            lastUpdated: new Date('2023-06-10'),
+          }
+        },
+        geometry: { 
+          type: 'Polygon',
+          coordinates: []
+        },
+        properties: [],
+        controllers: []
+      },
+    ],
   },
   'state-2': {
     id: 'state-2',
@@ -70,13 +123,62 @@ const mockStates: Record<string, StateObject> = {
   },
 };
 
+// Add mock status and last updated data to the counties
+mockStates['state-1'].counties[0].metadata.status = 'hot';
+mockStates['state-1'].counties[0].metadata.lastUpdated = new Date('2023-07-02'); // 7 days ago
+mockStates['state-1'].counties[1].metadata.status = 'new';
+mockStates['state-1'].counties[1].metadata.lastUpdated = new Date('2023-07-07'); // 2 days ago
+
+// Add some properties to mock enhanced data visualization
+mockStates['state-1'].counties.forEach(county => {
+  // Enhance geometry for visualization
+  county.geometry = {
+    type: 'Feature',
+    properties: {
+      id: county.id,
+      name: county.name,
+      status: county.metadata.status || 'verified',
+      lastUpdated: county.metadata.lastUpdated || county.updatedAt,
+      value: county.metadata.statistics?.totalValue || 0
+    },
+    geometry: county.geometry
+  };
+});
+
+// Enhance state geometries with properties needed for visualization
+mockStates['state-1'].geometry = {
+  type: 'Feature',
+  properties: {
+    id: mockStates['state-1'].id,
+    name: mockStates['state-1'].name,
+    status: 'verified',
+    lastUpdated: mockStates['state-1'].updatedAt,
+    value: mockStates['state-1'].metadata.statistics?.totalValue || 0
+  },
+  geometry: mockStates['state-1'].geometry
+};
+
+mockStates['state-2'].geometry = {
+  type: 'Feature',
+  properties: {
+    id: mockStates['state-2'].id,
+    name: mockStates['state-2'].name,
+    status: 'dormant',
+    lastUpdated: mockStates['state-2'].updatedAt,
+    value: mockStates['state-2'].metadata.statistics?.totalValue || 0
+  },
+  geometry: mockStates['state-2'].geometry
+};
+
 interface StateDetailsProps {
   stateId: string;
 }
 
 const StateDetails: React.FC<StateDetailsProps> = ({ stateId }) => {
+  const { selectNode } = useInventoryContext();
   const [state, setState] = useState<StateObject | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [darkMode, setDarkMode] = useState<boolean>(false);
 
   useEffect(() => {
     // Simulating API fetch
@@ -110,6 +212,18 @@ const StateDetails: React.FC<StateDetailsProps> = ({ stateId }) => {
       </Card>
     );
   }
+
+  const handleCountySelect = (countyId: string) => {
+    const county = state?.counties.find(c => c.id === countyId);
+    if (county) {
+      selectNode({
+        id: county.id,
+        name: county.name,
+        type: 'county',
+        data: county
+      });
+    }
+  };
 
   return (
     <div className="state-details">
@@ -164,10 +278,13 @@ const StateDetails: React.FC<StateDetailsProps> = ({ stateId }) => {
         </Col>
       </Row>
 
-      <Tab.Container defaultActiveKey="counties">
+      <Tab.Container defaultActiveKey="map">
         <Nav variant="tabs" className="mb-3">
           <Nav.Item>
             <Nav.Link eventKey="counties">Counties</Nav.Link>
+          </Nav.Item>
+          <Nav.Item>
+            <Nav.Link eventKey="map">Map View</Nav.Link>
           </Nav.Item>
           <Nav.Item>
             <Nav.Link eventKey="collectors">Data Collectors</Nav.Link>
@@ -187,6 +304,7 @@ const StateDetails: React.FC<StateDetailsProps> = ({ stateId }) => {
                     <thead>
                       <tr>
                         <th>County Name</th>
+                        <th>Status</th>
                         <th>Properties</th>
                         <th>Tax Liens</th>
                         <th>Last Updated</th>
@@ -196,7 +314,7 @@ const StateDetails: React.FC<StateDetailsProps> = ({ stateId }) => {
                     <tbody>
                       {state.counties.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="text-center py-3">
+                          <td colSpan={6} className="text-center py-3">
                             No counties added yet. 
                             <Button variant="link" size="sm">Add a county</Button>
                           </td>
@@ -205,17 +323,71 @@ const StateDetails: React.FC<StateDetailsProps> = ({ stateId }) => {
                         state.counties.map(county => (
                           <tr key={county.id}>
                             <td>{county.name}</td>
+                            <td>
+                              {county.metadata.status && (
+                                <Badge bg={
+                                  county.metadata.status === 'new' ? 'warning' :
+                                  county.metadata.status === 'hot' ? 'danger' :
+                                  county.metadata.status === 'verified' ? 'primary' :
+                                  'secondary'
+                                }>
+                                  {county.metadata.status.charAt(0).toUpperCase() + county.metadata.status.slice(1)}
+                                </Badge>
+                              )}
+                            </td>
                             <td>{county.metadata.totalProperties}</td>
-                            <td>{county.metadata.statistics.totalTaxLiens}</td>
+                            <td>{county.metadata.statistics?.totalTaxLiens}</td>
                             <td>{county.updatedAt.toLocaleDateString()}</td>
                             <td>
-                              <Button variant="outline-primary" size="sm">View</Button>
+                              <Button variant="outline-primary" size="sm" onClick={() => handleCountySelect(county.id)}>View</Button>
                             </td>
                           </tr>
                         ))
                       )}
                     </tbody>
                   </Table>
+                </div>
+              </Card.Body>
+            </Card>
+          </Tab.Pane>
+          
+          <Tab.Pane eventKey="map">
+            <Card>
+              <Card.Body>
+                <div className="d-flex justify-content-between mb-3">
+                  <Card.Title>Interactive Map of {state?.name}</Card.Title>
+                  <div className="d-flex align-items-center">
+                    <Form.Check 
+                      type="switch"
+                      id="dark-mode-switch"
+                      label="Dark Mode"
+                      checked={darkMode}
+                      onChange={(e) => setDarkMode(e.target.checked)}
+                      className="me-3"
+                    />
+                    <Button variant="outline-secondary" size="sm">
+                      <i className="bi bi-arrows-fullscreen me-1"></i>
+                      Full Screen
+                    </Button>
+                  </div>
+                </div>
+                
+                <MapComponent 
+                  type="state"
+                  data={{
+                    geometry: state?.geometry,
+                    counties: state?.counties || []
+                  }}
+                  onSelect={handleCountySelect}
+                  darkMode={darkMode}
+                />
+                
+                <div className="mt-3">
+                  <p className="text-muted">
+                    <i className="bi bi-info-circle me-2"></i>
+                    Click on counties to view detailed information. Orange counties indicate new tax sales (0-7 days),
+                    yellow for recent sales (8-14 days), red for hot zones, and blue for verified active counties.
+                  </p>
                 </div>
               </Card.Body>
             </Card>

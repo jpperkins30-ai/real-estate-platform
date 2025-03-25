@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Table, Button, Badge, Nav, Tab } from 'react-bootstrap';
+import { Card, Row, Col, Table, Button, Badge, Nav, Tab, Form } from 'react-bootstrap';
 import { PropertyObject } from '../../../types/inventory';
+import MapComponent from '../../maps/MapComponent';
 
 // Mock data for development
 const mockProperties: Record<string, PropertyObject> = {
@@ -46,6 +47,8 @@ const mockProperties: Record<string, PropertyObject> = {
           redemptionDeadline: new Date('2024-01-15'),
         },
       ],
+      status: 'hot', // Status for visualization
+      lastUpdated: new Date('2023-07-08'), // 1 day ago
     },
     controllers: [],
   },
@@ -74,7 +77,7 @@ const mockProperties: Record<string, PropertyObject> = {
       landAreaUnit: 'sqft',
       buildingArea: 8500,
       buildingAreaUnit: 'sqft',
-      taxStatus: 'Delinquent',
+      taxStatus: 'Current',
       assessedValue: 780000,
       marketValue: 850000,
       saleAmount: 720000,
@@ -91,10 +94,33 @@ const mockProperties: Record<string, PropertyObject> = {
           redemptionDeadline: new Date('2023-06-15'),
         },
       ],
+      status: 'verified', // Status for visualization
+      lastUpdated: new Date('2023-06-25'),
     },
     controllers: [],
   },
 };
+
+// Enhance property geometry for visualization
+for (const id in mockProperties) {
+  const property = mockProperties[id];
+  if (property.geometry?.type === 'Point') {
+    property.geometry = {
+      type: 'Feature',
+      properties: {
+        id: property.id,
+        name: property.address?.street || 'Unknown',
+        status: property.metadata.status || (property.metadata.taxStatus === 'Delinquent' ? 'hot' : 'verified'),
+        lastUpdated: property.metadata.lastUpdated || property.updatedAt,
+        value: property.metadata.marketValue || 0
+      },
+      geometry: {
+        type: 'Point',
+        coordinates: property.geometry.coordinates
+      }
+    };
+  }
+}
 
 interface PropertyDetailsProps {
   propertyId: string;
@@ -103,6 +129,7 @@ interface PropertyDetailsProps {
 const PropertyDetails: React.FC<PropertyDetailsProps> = ({ propertyId }) => {
   const [property, setProperty] = useState<PropertyObject | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [darkMode, setDarkMode] = useState<boolean>(false);
 
   useEffect(() => {
     // Simulating API fetch
@@ -136,6 +163,27 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ propertyId }) => {
       </Card>
     );
   }
+
+  // Get status display for badges
+  const getStatusBadgeVariant = () => {
+    if (property.metadata.status === 'hot' || property.metadata.taxStatus === 'Delinquent') {
+      return 'danger';
+    } else if (property.metadata.status === 'new') {
+      return 'warning';
+    } else if (property.metadata.status === 'verified') {
+      return 'primary';
+    } else {
+      return 'success';
+    }
+  };
+
+  const getStatusDisplayText = () => {
+    if (property.metadata.status) {
+      return property.metadata.status.charAt(0).toUpperCase() + property.metadata.status.slice(1);
+    } else {
+      return property.metadata.taxStatus;
+    }
+  };
 
   return (
     <div className="property-details">
@@ -187,14 +235,24 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ propertyId }) => {
         <Col md={6} lg={3}>
           <Card className="h-100">
             <Card.Body>
-              <h6 className="text-muted">Tax Status</h6>
+              <h6 className="text-muted">Status</h6>
               <div className="d-flex align-items-center">
-                <i className="bi bi-exclamation-triangle me-2" style={{ fontSize: '1.5rem', color: property.metadata.taxStatus === 'Delinquent' ? '#dc3545' : '#198754' }}></i>
+                <i className={`bi ${property.metadata.status === 'hot' || property.metadata.taxStatus === 'Delinquent' 
+                    ? 'bi-exclamation-triangle' 
+                    : 'bi-check-circle'
+                  } me-2`} 
+                  style={{ 
+                    fontSize: '1.5rem', 
+                    color: property.metadata.status === 'hot' || property.metadata.taxStatus === 'Delinquent' 
+                      ? '#dc3545' 
+                      : '#198754' 
+                  }}>
+                </i>
                 <Badge 
-                  bg={property.metadata.taxStatus === 'Delinquent' ? 'danger' : 'success'}
+                  bg={getStatusBadgeVariant()}
                   className="fs-6 py-2"
                 >
-                  {property.metadata.taxStatus}
+                  {getStatusDisplayText()}
                 </Badge>
               </div>
             </Card.Body>
@@ -215,10 +273,13 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ propertyId }) => {
         </Col>
       </Row>
 
-      <Tab.Container defaultActiveKey="details">
+      <Tab.Container defaultActiveKey="map">
         <Nav variant="tabs" className="mb-3">
           <Nav.Item>
             <Nav.Link eventKey="details">Property Details</Nav.Link>
+          </Nav.Item>
+          <Nav.Item>
+            <Nav.Link eventKey="map">Map View</Nav.Link>
           </Nav.Item>
           <Nav.Item>
             <Nav.Link eventKey="liens">Tax Liens</Nav.Link>
@@ -296,24 +357,64 @@ const PropertyDetails: React.FC<PropertyDetailsProps> = ({ propertyId }) => {
                     </Table>
                   </Col>
                 </Row>
-                
-                <hr />
-                
-                <div className="d-flex justify-content-between align-items-center">
-                  <h5 className="mb-0">Location</h5>
-                  <Button variant="outline-secondary" size="sm">
-                    <i className="bi bi-map me-1"></i> View on Map
-                  </Button>
-                </div>
-                
-                <div className="mt-3 bg-light" style={{ height: '300px' }}>
-                  <div className="w-100 h-100 d-flex justify-content-center align-items-center text-muted">
-                    <div className="text-center">
-                      <i className="bi bi-map" style={{ fontSize: '48px' }}></i>
-                      <p>Map Preview Placeholder</p>
-                      <p>Coordinates: {property.geometry.coordinates.join(', ')}</p>
-                    </div>
+              </Card.Body>
+            </Card>
+          </Tab.Pane>
+          
+          <Tab.Pane eventKey="map">
+            <Card>
+              <Card.Body>
+                <div className="d-flex justify-content-between mb-3">
+                  <h5>Interactive Property Location</h5>
+                  <div className="d-flex align-items-center">
+                    <Form.Check 
+                      type="switch"
+                      id="dark-mode-switch"
+                      label="Dark Mode"
+                      checked={darkMode}
+                      onChange={(e) => setDarkMode(e.target.checked)}
+                      className="me-3"
+                    />
+                    <Button variant="outline-secondary" size="sm">
+                      <i className="bi bi-arrows-fullscreen me-1"></i>
+                      Full Screen
+                    </Button>
                   </div>
+                </div>
+                <MapComponent 
+                  type="property"
+                  data={{
+                    geometry: property.geometry,
+                    properties: [property]
+                  }}
+                  darkMode={darkMode}
+                />
+                <div className="mt-3">
+                  <Table className="table-sm" bordered>
+                    <tbody>
+                      <tr>
+                        <th>Status</th>
+                        <td>
+                          <Badge bg={getStatusBadgeVariant()}>
+                            {getStatusDisplayText()}
+                          </Badge>
+                          {property.metadata.lastUpdated && (
+                            <small className="text-muted ms-2">
+                              Updated: {property.metadata.lastUpdated.toLocaleDateString()}
+                            </small>
+                          )}
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>Coordinates</th>
+                        <td>{property.geometry.coordinates?.join(', ')}</td>
+                      </tr>
+                      <tr>
+                        <th>Address</th>
+                        <td>{property.address.street}, {property.address.city}, {property.address.state} {property.address.zipCode}</td>
+                      </tr>
+                    </tbody>
+                  </Table>
                 </div>
               </Card.Body>
             </Card>
