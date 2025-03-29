@@ -1,17 +1,119 @@
+/**
+ * Controller model - represents a data collection controller
+ * Consolidated from Controller.ts and controller.model.ts
+ */
+
 // @ts-nocheck
 import mongoose, { Schema, Document } from 'mongoose';
 import { ControllerObject, ControllerType, ControllerExecutionStatus } from '../types/inventory';
 
-// Extend the ControllerObject interface to include Mongoose document properties
-export interface IController extends Omit<ControllerObject, '_id'>, Document {}
+// Define the Controller interface
+export interface IController extends Omit<ControllerObject, '_id'>, Document {
+  name: string;
+  type: string;
+  controllerType: string;
+  description: string;
+  configTemplate?: {
+    requiredFields: string[];
+    optionalFields: any;
+  };
+  enabled: boolean;
+  attachedTo?: Array<{
+    objectId: mongoose.Types.ObjectId;
+    objectType: string;
+  }>;
+  implementation?: {
+    collectorType: string;
+    supportedSourceTypes: string[];
+    additionalConfig: any;
+  };
+  config?: {
+    schedule: {
+      enabled: boolean;
+      cronExpression?: string;
+      timezone?: string;
+    };
+    retryPolicy: {
+      enabled: boolean;
+      maxAttempts?: number;
+      delayMs?: number;
+      backoffMultiplier?: number;
+    };
+    notificationSettings: {
+      email?: string[];
+      slack?: string[];
+      webhook?: string[];
+      onSuccess?: boolean;
+      onFailure?: boolean;
+    };
+    filters: {
+      objectTypes?: string[];
+      objectIds?: string[];
+      additionalFilters?: any;
+    };
+    parameters?: any;
+  };
+  lastRun?: Date;
+  nextScheduledRun?: Date;
+  executionHistory?: [{
+    id: string;
+    timestamp: Date;
+    status: string;
+    duration?: number;
+    error?: string;
+    result?: any;
+    metadata?: {
+      objectsProcessed?: number;
+      objectsUpdated?: number;
+      objectsFailed?: number;
+      additionalInfo?: any;
+    };
+  }];
+  attachedObjects?: [{
+    objectId: string;
+    objectType: string;
+    attachedAt: Date;
+    lastProcessed?: Date;
+  }];
+  createdAt: Date;
+  updatedAt: Date;
+  metadata?: {
+    version?: string;
+    author?: string;
+    tags?: string[];
+    notes?: string[];
+  };
+}
 
 // Create the Controller schema
 const ControllerSchema = new Schema<IController>({
   id: { type: String, required: true, unique: true },
   name: { type: String, required: true },
-  type: { type: String, required: true, enum: ['Tax Sale', 'Map', 'Property', 'Demographics'] },
-  description: String,
+  type: { type: String, required: true, default: 'controller' },
+  controllerType: { 
+    type: String, 
+    required: true, 
+    enum: ['Tax Sale', 'Map', 'Property', 'Demographics'] 
+  },
+  description: { type: String, required: true },
   enabled: { type: Boolean, required: true, default: true },
+  configTemplate: {
+    requiredFields: [{ type: String }],
+    optionalFields: Schema.Types.Mixed
+  },
+  attachedTo: [{
+    objectId: { type: Schema.Types.ObjectId, required: true },
+    objectType: { 
+      type: String, 
+      required: true, 
+      enum: ['us_map', 'state', 'county', 'property'] 
+    }
+  }],
+  implementation: {
+    collectorType: { type: String, required: true },
+    supportedSourceTypes: [{ type: String }],
+    additionalConfig: Schema.Types.Mixed
+  },
   config: {
     schedule: {
       enabled: { type: Boolean, default: false },
@@ -79,11 +181,20 @@ ControllerSchema.pre('save', function(next) {
 });
 
 // Create indexes for common search fields
+ControllerSchema.index({ name: 1 });
 ControllerSchema.index({ type: 1 });
+ControllerSchema.index({ controllerType: 1 });
 ControllerSchema.index({ enabled: 1 });
+ControllerSchema.index({ 'implementation.collectorType': 1 });
 ControllerSchema.index({ 'config.schedule.enabled': 1 });
 ControllerSchema.index({ 'attachedObjects.objectType': 1 });
 ControllerSchema.index({ 'metadata.tags': 1 });
 
+// Create a compound index for attachedTo queries
+ControllerSchema.index({ "attachedTo.objectType": 1, "attachedTo.objectId": 1 });
+
 // Create and export the model
-export const Controller = mongoose.model<IController>('Controller', ControllerSchema); 
+export const Controller = mongoose.models.Controller || mongoose.model<IController>('Controller', ControllerSchema);
+
+// Default export for backward compatibility
+export default Controller; 

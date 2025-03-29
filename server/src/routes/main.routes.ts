@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { auth } from '../middleware/auth';
 import { Property } from '../models/property.model';
-import { State } from '../models/State';
+import { State } from '../models/state.model';
 import { County } from '../models/County';
 import { USMap } from '../models/USMap';
 import express from 'express';

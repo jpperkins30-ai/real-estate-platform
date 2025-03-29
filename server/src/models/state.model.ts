@@ -1,5 +1,6 @@
 /**
  * State model - represents a US state in the geographic hierarchy
+ * Consolidated from State.ts and state.model.ts
  */
 
 import mongoose, { Schema, Document } from 'mongoose';
@@ -32,7 +33,14 @@ export interface IState extends Document {
     updatedAt?: Date;
     lastModifiedBy?: string;
   };
-  controllers?: Array<any>;
+  controllers?: Array<{
+    controllerId: mongoose.Types.ObjectId;
+    controllerType: string;
+    enabled: boolean;
+    lastRun?: Date;
+    nextScheduledRun?: Date;
+    configuration?: any;
+  }>;
   counties?: mongoose.Types.ObjectId[];
   properties?: mongoose.Types.ObjectId[];
   createdAt: Date;
@@ -76,6 +84,14 @@ const StateSchema = new Schema<IState>({
   timestamps: true
 });
 
+// Create indexes for common search fields
+StateSchema.index({ name: 1 }, { unique: true });
+StateSchema.index({ abbreviation: 1 }, { unique: true });
+StateSchema.index({ 'metadata.totalProperties': 1 });
+
+// Create a 2dsphere index for geospatial queries
+StateSchema.index({ "geometry": "2dsphere" });
+
 // Create a compound index for efficient lookups
 StateSchema.index({ name: 1, abbreviation: 1 }, { unique: true });
 
@@ -113,5 +129,5 @@ StateSchema.set('toObject', { virtuals: true });
 // Create and export the model
 export const State = mongoose.models.State || mongoose.model<IState>('State', StateSchema);
 
-// Default export for compatibility
+// Default export for backward compatibility
 export default State; 

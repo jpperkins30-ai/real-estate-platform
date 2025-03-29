@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import mongoose from 'mongoose';
-import { Controller } from '../models/Controller';
+import { Controller } from '../models/controller.model';
 import { County } from '../models/County';
 import logger from '../utils/logger';
 
