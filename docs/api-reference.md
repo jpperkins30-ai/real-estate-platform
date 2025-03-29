@@ -90,14 +90,14 @@ GET /states/:stateId
     "type": "MultiPolygon",
     "coordinates": [...]
   },
-  "metadata": {
+      "metadata": {
     "regionalInfo": {
       "region": "Region Name",
       "subregion": "Subregion Name"
     },
     "totalCounties": 50,
     "totalProperties": 1000,
-    "statistics": {
+        "statistics": {
       "totalTaxLiens": 250,
       "totalValue": 150000000
     }

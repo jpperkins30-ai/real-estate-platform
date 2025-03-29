@@ -84,4 +84,16 @@ export async function hashPassword(password: string): Promise<string> {
  */
 export async function comparePassword(password: string, hash: string): Promise<boolean> {
   return bcrypt.compare(password, hash);
-} 
+}
+
+/**
+ * Helper function to safely get the JWT secret
+ * This ensures we always have a valid value for jwt.sign
+ */
+export const getJwtSecret = (): Buffer => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET is not defined in environment variables');
+  }
+  return Buffer.from(secret);
+}; 

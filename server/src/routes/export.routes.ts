@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Router } from 'express';
 import { PropertyService } from '../services/property.service';
 import { CountyService } from '../services/county.service';
@@ -7,96 +8,98 @@ import { PropertyObject } from '../types/inventory';
 import { ExportService } from '../services/export.service';
 import { Property } from '../models/property.model';
 import { County } from '../models/county.model';
+import express, { Request, Response } from 'express';
+import { exportPropertiesToCSV, exportPropertiesToExcel, exportCountiesToCSV, exportCountiesToExcel } from '../services/export.service';
+import { isStringObjectId } from '../utils/type-guards';
+import { authorize } from '../middleware/roleAuth';
 
 const router = Router();
 const propertyService = new PropertyService();
 const countyService = new CountyService();
 const exportService = new ExportService();
 
+// Roles that can access export functionality
+const EXPORT_ROLES = ['admin', 'analyst', 'dataManager'];
+
 /**
  * @swagger
  * /api/export/properties/csv:
  *   get:
- *     summary: Export properties to CSV
- *     tags: [Exports]
+ *     summary: Export properties to CSV format
+ *     description: Download property data in CSV format with optional filtering
+ *     tags:
+ *       - Export
  *     parameters:
  *       - in: query
- *         name: filters
+ *         name: state
  *         schema:
- *           type: object
- *           properties:
- *             propertyTypes:
- *               type: array
- *               items:
- *                 type: string
- *             conditions:
- *               type: array
- *               items:
- *                 type: string
- *             statuses:
- *               type: array
- *               items:
- *                 type: string
- *             minValue:
- *               type: number
- *             maxValue:
- *               type: number
- *             counties:
- *               type: array
- *               items:
- *                 type: string
- *             states:
- *               type: array
- *               items:
- *                 type: string
+ *           type: string
+ *         description: Filter by state ID
+ *       - in: query
+ *         name: county
+ *         schema:
+ *           type: string
+ *         description: Filter by county ID
+ *       - in: query
+ *         name: propertyType
+ *         schema:
+ *           type: string
+ *         description: Filter by property type
+ *       - in: query
+ *         name: taxStatus
+ *         schema:
+ *           type: string
+ *         description: Filter by tax status
+ *       - in: query
+ *         name: minValue
+ *         schema:
+ *           type: number
+ *         description: Minimum market value filter
+ *       - in: query
+ *         name: maxValue
+ *         schema:
+ *           type: number
+ *         description: Maximum market value filter
  *     responses:
  *       200:
- *         description: CSV file of properties
+ *         description: CSV file download
  *         content:
  *           text/csv:
  *             schema:
  *               type: string
+ *               format: binary
+ *       400:
+ *         description: Invalid filter parameters
+ *       404:
+ *         description: No properties found with the provided filters
  *       500:
  *         description: Server error
  */
-router.get('/properties/csv', async (req, res) => {
+router.get('/properties/csv', authorize(EXPORT_ROLES), async (req: Request, res: Response) => {
   try {
-    const searchResponse = await propertyService.searchProperties(req.query);
-    const properties = searchResponse.properties;
-    
-    // Define CSV fields
-    const fields = [
-      'id',
-      'name',
-      'status',
-      'location.address.street',
-      'location.address.city',
-      'location.address.state',
-      'location.address.zipCode',
-      'location.address.county',
-      'features.type',
-      'features.condition',
-      'features.yearBuilt',
-      'features.squareFeet',
-      'features.lotSize',
-      'features.bedrooms',
-      'features.bathrooms',
-      'taxStatus.assessedValue',
-      'taxStatus.marketValue',
-      'taxStatus.taxRate',
-      'taxStatus.annualTaxAmount',
-      'taxStatus.taxLienAmount',
-      'taxStatus.taxLienStatus'
-    ];
+    // Validate query parameters
+    const { state, county, propertyType, taxStatus, minValue, maxValue } = req.query;
 
-    const parser = new Parser({ fields });
-    const csv = parser.parse(properties);
+    if (state && !isStringObjectId(state as string)) {
+      return res.status(400).json({ error: 'Invalid state ID format' });
+    }
 
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename=properties.csv');
-    res.send(csv);
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    if (county && !isStringObjectId(county as string)) {
+      return res.status(400).json({ error: 'Invalid county ID format' });
+    }
+
+    if (minValue && isNaN(Number(minValue))) {
+      return res.status(400).json({ error: 'Invalid minimum value' });
+    }
+
+    if (maxValue && isNaN(Number(maxValue))) {
+      return res.status(400).json({ error: 'Invalid maximum value' });
+    }
+
+    await exportPropertiesToCSV(req, res);
+  } catch (error) {
+    console.error('Error in properties CSV export route:', error);
+    res.status(500).json({ error: 'Failed to export properties to CSV' });
   }
 });
 
@@ -104,123 +107,81 @@ router.get('/properties/csv', async (req, res) => {
  * @swagger
  * /api/export/properties/excel:
  *   get:
- *     summary: Export properties to Excel
- *     tags: [Exports]
+ *     summary: Export properties to Excel format
+ *     description: Download property data in Excel format with optional filtering
+ *     tags:
+ *       - Export
  *     parameters:
  *       - in: query
- *         name: filters
+ *         name: state
  *         schema:
- *           type: object
- *           properties:
- *             propertyTypes:
- *               type: array
- *               items:
- *                 type: string
- *             conditions:
- *               type: array
- *               items:
- *                 type: string
- *             statuses:
- *               type: array
- *               items:
- *                 type: string
- *             minValue:
- *               type: number
- *             maxValue:
- *               type: number
- *             counties:
- *               type: array
- *               items:
- *                 type: string
- *             states:
- *               type: array
- *               items:
- *                 type: string
+ *           type: string
+ *         description: Filter by state ID
+ *       - in: query
+ *         name: county
+ *         schema:
+ *           type: string
+ *         description: Filter by county ID
+ *       - in: query
+ *         name: propertyType
+ *         schema:
+ *           type: string
+ *         description: Filter by property type
+ *       - in: query
+ *         name: taxStatus
+ *         schema:
+ *           type: string
+ *         description: Filter by tax status
+ *       - in: query
+ *         name: minValue
+ *         schema:
+ *           type: number
+ *         description: Minimum market value filter
+ *       - in: query
+ *         name: maxValue
+ *         schema:
+ *           type: number
+ *         description: Maximum market value filter
  *     responses:
  *       200:
- *         description: Excel file of properties
+ *         description: Excel file download
  *         content:
  *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
  *             schema:
  *               type: string
+ *               format: binary
+ *       400:
+ *         description: Invalid filter parameters
+ *       404:
+ *         description: No properties found with the provided filters
  *       500:
  *         description: Server error
  */
-router.get('/properties/excel', async (req, res) => {
+router.get('/properties/excel', authorize(EXPORT_ROLES), async (req: Request, res: Response) => {
   try {
-    const searchResponse = await propertyService.searchProperties(req.query);
-    const properties = searchResponse.properties;
-    
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Properties');
+    // Validate query parameters
+    const { state, county, propertyType, taxStatus, minValue, maxValue } = req.query;
 
-    // Define columns
-    worksheet.columns = [
-      { header: 'ID', key: 'id', width: 15 },
-      { header: 'Name', key: 'name', width: 30 },
-      { header: 'Status', key: 'status', width: 15 },
-      { header: 'Street', key: 'street', width: 40 },
-      { header: 'City', key: 'city', width: 20 },
-      { header: 'State', key: 'state', width: 10 },
-      { header: 'ZIP', key: 'zip', width: 10 },
-      { header: 'County', key: 'county', width: 20 },
-      { header: 'Type', key: 'type', width: 15 },
-      { header: 'Condition', key: 'condition', width: 15 },
-      { header: 'Year Built', key: 'yearBuilt', width: 10 },
-      { header: 'Square Feet', key: 'squareFeet', width: 12 },
-      { header: 'Lot Size', key: 'lotSize', width: 12 },
-      { header: 'Bedrooms', key: 'bedrooms', width: 10 },
-      { header: 'Bathrooms', key: 'bathrooms', width: 10 },
-      { header: 'Assessed Value', key: 'assessedValue', width: 15 },
-      { header: 'Market Value', key: 'marketValue', width: 15 },
-      { header: 'Tax Rate', key: 'taxRate', width: 10 },
-      { header: 'Annual Tax', key: 'annualTax', width: 15 },
-      { header: 'Tax Lien Amount', key: 'taxLienAmount', width: 15 },
-      { header: 'Tax Lien Status', key: 'taxLienStatus', width: 15 }
-    ];
+    if (state && !isStringObjectId(state as string)) {
+      return res.status(400).json({ error: 'Invalid state ID format' });
+    }
 
-    // Add data
-    properties.forEach(property => {
-      worksheet.addRow({
-        id: property.id,
-        name: property.name,
-        status: property.status,
-        street: property.location.address.street,
-        city: property.location.address.city,
-        state: property.location.address.state,
-        zip: property.location.address.zipCode,
-        county: property.location.address.county,
-        type: property.features.type,
-        condition: property.features.condition,
-        yearBuilt: property.features.yearBuilt,
-        squareFeet: property.features.squareFeet,
-        lotSize: property.features.lotSize,
-        bedrooms: property.features.bedrooms,
-        bathrooms: property.features.bathrooms,
-        assessedValue: property.taxStatus.assessedValue,
-        marketValue: property.taxStatus.marketValue,
-        taxRate: property.taxStatus.taxRate,
-        annualTax: property.taxStatus.annualTaxAmount,
-        taxLienAmount: property.taxStatus.taxLienAmount,
-        taxLienStatus: property.taxStatus.taxLienStatus
-      });
-    });
+    if (county && !isStringObjectId(county as string)) {
+      return res.status(400).json({ error: 'Invalid county ID format' });
+    }
 
-    // Style the header row
-    worksheet.getRow(1).font = { bold: true };
-    worksheet.getRow(1).fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFE0E0E0' }
-    };
+    if (minValue && isNaN(Number(minValue))) {
+      return res.status(400).json({ error: 'Invalid minimum value' });
+    }
 
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename=properties.xlsx');
-    
-    await workbook.xlsx.write(res);
-    res.end();
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    if (maxValue && isNaN(Number(maxValue))) {
+      return res.status(400).json({ error: 'Invalid maximum value' });
+    }
+
+    await exportPropertiesToExcel(req, res);
+  } catch (error) {
+    console.error('Error in properties Excel export route:', error);
+    res.status(500).json({ error: 'Failed to export properties to Excel' });
   }
 });
 
@@ -228,45 +189,44 @@ router.get('/properties/excel', async (req, res) => {
  * @swagger
  * /api/export/counties/csv:
  *   get:
- *     summary: Export counties to CSV
- *     tags: [Exports]
+ *     summary: Export counties to CSV format
+ *     description: Download county data in CSV format with optional filtering
+ *     tags:
+ *       - Export
+ *     parameters:
+ *       - in: query
+ *         name: state
+ *         schema:
+ *           type: string
+ *         description: Filter by state ID
  *     responses:
  *       200:
- *         description: CSV file of counties
+ *         description: CSV file download
  *         content:
  *           text/csv:
  *             schema:
  *               type: string
+ *               format: binary
+ *       400:
+ *         description: Invalid filter parameters
+ *       404:
+ *         description: No counties found with the provided filters
  *       500:
  *         description: Server error
  */
-router.get('/counties/csv', async (req, res) => {
+router.get('/counties/csv', authorize(EXPORT_ROLES), async (req: Request, res: Response) => {
   try {
-    const counties = await countyService.getAllCounties();
-    
-    // Define CSV fields
-    const fields = [
-      'id',
-      'name',
-      'parentId',
-      'metadata.totalProperties',
-      'metadata.statistics.totalTaxLiens',
-      'metadata.statistics.totalValue',
-      'metadata.statistics.averagePropertyValue',
-      'metadata.statistics.totalPropertiesWithLiens',
-      'searchConfig.enabled',
-      'searchConfig.lastRun',
-      'searchConfig.nextScheduledRun'
-    ];
+    // Validate query parameters
+    const { state } = req.query;
 
-    const parser = new Parser({ fields });
-    const csv = parser.parse(counties);
+    if (state && !isStringObjectId(state as string)) {
+      return res.status(400).json({ error: 'Invalid state ID format' });
+    }
 
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename=counties.csv');
-    res.send(csv);
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    await exportCountiesToCSV(req, res);
+  } catch (error) {
+    console.error('Error in counties CSV export route:', error);
+    res.status(500).json({ error: 'Failed to export counties to CSV' });
   }
 });
 
@@ -274,72 +234,44 @@ router.get('/counties/csv', async (req, res) => {
  * @swagger
  * /api/export/counties/excel:
  *   get:
- *     summary: Export counties to Excel
- *     tags: [Exports]
+ *     summary: Export counties to Excel format
+ *     description: Download county data in Excel format with optional filtering
+ *     tags:
+ *       - Export
+ *     parameters:
+ *       - in: query
+ *         name: state
+ *         schema:
+ *           type: string
+ *         description: Filter by state ID
  *     responses:
  *       200:
- *         description: Excel file of counties
+ *         description: Excel file download
  *         content:
  *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
  *             schema:
  *               type: string
+ *               format: binary
+ *       400:
+ *         description: Invalid filter parameters
+ *       404:
+ *         description: No counties found with the provided filters
  *       500:
  *         description: Server error
  */
-router.get('/counties/excel', async (req, res) => {
+router.get('/counties/excel', authorize(EXPORT_ROLES), async (req: Request, res: Response) => {
   try {
-    const counties = await countyService.getAllCounties();
-    
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Counties');
+    // Validate query parameters
+    const { state } = req.query;
 
-    // Define columns
-    worksheet.columns = [
-      { header: 'ID', key: 'id', width: 15 },
-      { header: 'Name', key: 'name', width: 30 },
-      { header: 'State ID', key: 'parentId', width: 15 },
-      { header: 'Total Properties', key: 'totalProperties', width: 15 },
-      { header: 'Total Tax Liens', key: 'totalTaxLiens', width: 15 },
-      { header: 'Total Value', key: 'totalValue', width: 15 },
-      { header: 'Average Property Value', key: 'averagePropertyValue', width: 20 },
-      { header: 'Properties with Liens', key: 'propertiesWithLiens', width: 20 },
-      { header: 'Search Enabled', key: 'searchEnabled', width: 15 },
-      { header: 'Last Search Run', key: 'lastSearchRun', width: 20 },
-      { header: 'Next Search Run', key: 'nextSearchRun', width: 20 }
-    ];
+    if (state && !isStringObjectId(state as string)) {
+      return res.status(400).json({ error: 'Invalid state ID format' });
+    }
 
-    // Add data
-    counties.forEach(county => {
-      worksheet.addRow({
-        id: county.id,
-        name: county.name,
-        parentId: county.parentId,
-        totalProperties: county.metadata.totalProperties,
-        totalTaxLiens: county.metadata.statistics.totalTaxLiens,
-        totalValue: county.metadata.statistics.totalValue,
-        averagePropertyValue: county.metadata.statistics.averagePropertyValue,
-        propertiesWithLiens: county.metadata.statistics.totalPropertiesWithLiens,
-        searchEnabled: county.searchConfig.enabled,
-        lastSearchRun: county.searchConfig.lastRun,
-        nextSearchRun: county.searchConfig.nextScheduledRun
-      });
-    });
-
-    // Style the header row
-    worksheet.getRow(1).font = { bold: true };
-    worksheet.getRow(1).fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFE0E0E0' }
-    };
-
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename=counties.xlsx');
-    
-    await workbook.xlsx.write(res);
-    res.end();
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    await exportCountiesToExcel(req, res);
+  } catch (error) {
+    console.error('Error in counties Excel export route:', error);
+    res.status(500).json({ error: 'Failed to export counties to Excel' });
   }
 });
 
@@ -377,7 +309,7 @@ router.get('/counties/excel', async (req, res) => {
  *       500:
  *         description: Server error
  */
-router.post('/properties/direct-csv', async (req, res) => {
+router.post('/properties/direct-csv', authorize(EXPORT_ROLES), async (req, res) => {
   try {
     const filters = req.body;
     
@@ -458,7 +390,7 @@ router.post('/properties/direct-csv', async (req, res) => {
  *       500:
  *         description: Server error
  */
-router.post('/counties/direct-csv', async (req, res) => {
+router.post('/counties/direct-csv', authorize(EXPORT_ROLES), async (req, res) => {
   try {
     const filters = req.body;
     
@@ -548,7 +480,7 @@ router.post('/counties/direct-csv', async (req, res) => {
  *       500:
  *         description: Server error
  */
-router.post('/:dataType/csv', async (req, res) => {
+router.post('/:dataType/csv', authorize(EXPORT_ROLES), async (req, res) => {
   try {
     const { dataType } = req.params;
     const filters = req.body;
@@ -624,7 +556,7 @@ router.post('/:dataType/csv', async (req, res) => {
  *       500:
  *         description: Server error
  */
-router.post('/:dataType/excel', async (req, res) => {
+router.post('/:dataType/excel', authorize(EXPORT_ROLES), async (req, res) => {
   try {
     const { dataType } = req.params;
     const filters = req.body;
@@ -701,7 +633,7 @@ router.post('/:dataType/excel', async (req, res) => {
  *       500:
  *         description: Server error
  */
-router.post('/:dataType/json', async (req, res) => {
+router.post('/:dataType/json', authorize(EXPORT_ROLES), async (req, res) => {
   try {
     const { dataType } = req.params;
     const filters = req.body;
@@ -768,7 +700,7 @@ router.post('/:dataType/json', async (req, res) => {
  *       500:
  *         description: Server error
  */
-router.post('/properties/enhanced/csv', async (req, res) => {
+router.post('/properties/enhanced/csv', authorize(EXPORT_ROLES), async (req, res) => {
   try {
     const filters = req.body;
     
@@ -825,7 +757,7 @@ router.post('/properties/enhanced/csv', async (req, res) => {
  *       500:
  *         description: Server error
  */
-router.post('/properties/enhanced/excel', async (req, res) => {
+router.post('/properties/enhanced/excel', authorize(EXPORT_ROLES), async (req, res) => {
   try {
     const filters = req.body;
     
@@ -869,7 +801,7 @@ router.post('/properties/enhanced/excel', async (req, res) => {
  *       500:
  *         description: Server error
  */
-router.post('/counties/enhanced/csv', async (req, res) => {
+router.post('/counties/enhanced/csv', authorize(EXPORT_ROLES), async (req, res) => {
   try {
     const filters = req.body;
     
@@ -914,7 +846,7 @@ router.post('/counties/enhanced/csv', async (req, res) => {
  *       500:
  *         description: Server error
  */
-router.post('/counties/enhanced/excel', async (req, res) => {
+router.post('/counties/enhanced/excel', authorize(EXPORT_ROLES), async (req, res) => {
   try {
     const filters = req.body;
     

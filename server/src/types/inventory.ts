@@ -1,3 +1,5 @@
+import { Document, Schema } from 'mongoose';
+
 /**
  * Types of controllers supported in the system
  */
@@ -7,12 +9,12 @@ export type ControllerType = 'Tax Sale' | 'Map' | 'Property' | 'Demographics';
  * Reference to a controller that manages this object
  */
 export interface ControllerReference {
-  controllerId: string;
+  controllerId: Schema.Types.ObjectId;
   controllerType: ControllerType;
   enabled: boolean;
   lastRun?: Date;
   nextScheduledRun?: Date;
-  configuration: Record<string, any>;
+  configuration?: any;
 }
 
 /**
@@ -21,9 +23,6 @@ export interface ControllerReference {
 export interface USMapStatistics {
   totalTaxLiens: number;
   totalValue: number;
-  averagePropertyValue?: number;
-  totalPropertiesWithLiens?: number;
-  lastUpdated: Date;
 }
 
 /**
@@ -44,10 +43,10 @@ export interface USMapObject {
   id: string;    // Business ID
   name: string;
   type: 'us_map';
-  createdAt: Date;
-  updatedAt: Date;
   metadata: USMapMetadata;
   controllers: ControllerReference[];
+  createdAt: Date;
+  updatedAt: Date;
   states: string[];  // Array of state IDs
 }
 
@@ -119,6 +118,12 @@ export interface CountyStatistics {
 export interface CountyMetadata {
   totalProperties: number;
   statistics: CountyStatistics;
+  searchConfig: {
+    searchUrl?: string;
+    lookupMethod?: 'account_number' | 'parcel_id';
+    selectors?: any;
+    lienUrl?: string;
+  };
 }
 
 /**
@@ -569,4 +574,169 @@ export interface CollectionExecutionRequest {
     dryRun?: boolean;
     priority?: 'low' | 'normal' | 'high';
   };
+}
+
+export interface Geometry {
+  type: 'Point' | 'Polygon' | 'MultiPolygon';
+  coordinates: number[] | number[][] | number[][][];
+}
+
+export interface USMapDocument extends Document {
+  name: string;
+  type: string;
+  metadata: {
+    totalStates: number;
+    totalCounties: number;
+    totalProperties: number;
+    statistics: {
+      totalTaxLiens: number;
+      totalValue: number;
+    }
+  };
+  controllers: [{
+    controllerId: Schema.Types.ObjectId;
+    controllerType: string;
+    enabled: boolean;
+    lastRun: Date;
+    nextScheduledRun: Date;
+    configuration: any;
+  }];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface StateDocument extends Document {
+  name: string;
+  abbreviation: string;
+  type: string;
+  parentId: string;
+  geometry: Geometry;
+  metadata: StateMetadata;
+  controllers: ControllerReference[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CountyDocument extends Document {
+  name: string;
+  type: string;
+  parentId: string;
+  stateId: string;
+  geometry: Geometry;
+  metadata: CountyMetadata;
+  controllers: ControllerReference[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PropertyMetadata {
+  propertyType: string;
+  yearBuilt?: number;
+  landArea?: number;
+  landAreaUnit?: string;
+  buildingArea?: number;
+  buildingAreaUnit?: string;
+  taxStatus: 'Paid' | 'Delinquent' | 'Unknown';
+  assessedValue?: number;
+  marketValue?: number;
+  taxDue?: number;
+  saleType?: 'Tax Lien' | 'Deed' | 'Conventional' | 'Other';
+  saleAmount?: number;
+  saleDate?: Date;
+  lastUpdated: Date;
+  dataSource?: string;
+  lookupMethod?: 'account_number' | 'parcel_id';
+  rawData?: any;
+}
+
+export interface PropertyDocument extends Document {
+  parcelId: string;
+  taxAccountNumber: string;
+  type: string;
+  parentId: string;
+  countyId: string;
+  stateId: string;
+  ownerName: string;
+  propertyAddress: string;
+  city?: string;
+  zipCode?: string;
+  geometry: Geometry;
+  metadata: PropertyMetadata;
+  controllers: ControllerReference[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ControllerDocument extends Document {
+  name: string;
+  type: string;
+  controllerType: 'Tax Sale' | 'Map' | 'Property' | 'Demographics';
+  description: string;
+  configTemplate: {
+    requiredFields: string[];
+    optionalFields: any;
+  };
+  attachedTo: {
+    objectId: string;
+    objectType: 'us_map' | 'state' | 'county' | 'property';
+  }[];
+  implementation: {
+    collectorType: string;
+    supportedSourceTypes: string[];
+    additionalConfig: any;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface DataSourceDocument extends Document {
+  name: string;
+  type: 'county-website' | 'state-records' | 'tax-database' | 'api' | 'pdf';
+  url: string;
+  region: {
+    state: string;
+    county?: string;
+  };
+  collectorType: string;
+  schedule: {
+    frequency: 'hourly' | 'daily' | 'weekly' | 'monthly' | 'manual';
+    dayOfWeek?: number;
+    dayOfMonth?: number;
+  };
+  metadata: {
+    lookupMethod: 'account_number' | 'parcel_id';
+    selectors?: any;
+    lienUrl?: string;
+  };
+  status: 'active' | 'inactive' | 'error';
+  lastCollected?: Date;
+  errorMessage?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CollectionDocument extends Document {
+  sourceId: Schema.Types.ObjectId;
+  timestamp: Date;
+  status: 'success' | 'partial' | 'error';
+  stats: {
+    duration: number;
+    itemCount: number;
+    successCount: number;
+    errorCount: number;
+    memoryUsage?: number;
+  };
+  errorLog: {
+    message: string;
+    timestamp: Date;
+    stackTrace?: string;
+  }[];
+  properties: Schema.Types.ObjectId[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Statistics {
+  totalTaxLiens: number;
+  totalValue: number;
 } 

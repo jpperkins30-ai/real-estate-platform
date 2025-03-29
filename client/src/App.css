@@ -1,3 +1,220 @@
+/* Base styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+  background-color: #f7f8fa;
+  color: #333;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Header styles */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.app-logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #4a86e8;
+  text-decoration: none;
+}
+
+.app-nav {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.app-nav a {
+  text-decoration: none;
+  color: #555;
+  padding: 0.5rem 0;
+  font-weight: 500;
+  position: relative;
+}
+
+.app-nav a:hover {
+  color: #4a86e8;
+}
+
+.app-nav a::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: 0;
+  left: 0;
+  background-color: #4a86e8;
+  transition: width 0.3s ease;
+}
+
+.app-nav a:hover::after,
+.app-nav a.active::after {
+  width: 100%;
+}
+
+/* Content styles */
+.app-content {
+  flex: 1;
+  padding: 1.5rem;
+}
+
+/* Dashboard styles */
+.dashboard {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.dashboard h1 {
+  margin-bottom: 1.5rem;
+  color: #333;
+}
+
+.states-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.state-card {
+  background-color: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.state-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+}
+
+.state-card h2 {
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+}
+
+.view-link {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: #4a86e8;
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.view-link:hover {
+  background-color: #3a76d8;
+}
+
+.error {
+  padding: 1rem;
+  background-color: #ffdddd;
+  border: 1px solid #ffaaaa;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+/* Inventory layout */
+.inventory-layout {
+  display: flex;
+  height: calc(100vh - 4.5rem);
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+.inventory-sidebar {
+  width: 250px;
+  background-color: #f5f7fa;
+  border-right: 1px solid #e0e0e0;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.inventory-sidebar h3 {
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  color: #333;
+}
+
+.sidebar-nav ul {
+  list-style: none;
+  margin-bottom: 1.5rem;
+}
+
+.sidebar-nav li {
+  margin-bottom: 0.5rem;
+}
+
+.sidebar-nav a {
+  display: block;
+  padding: 0.5rem;
+  text-decoration: none;
+  color: #555;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.sidebar-nav a:hover {
+  background-color: #e8f0fe;
+  color: #4a86e8;
+}
+
+.sidebar-section {
+  margin-top: 1.5rem;
+}
+
+.sidebar-section h4 {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.inventory-content {
+  flex: 1;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.inventory-module h2 {
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+/* Inventory tree styles */
+.inventory-tree {
+  margin-top: 1rem;
+}
+
+.inventory-tree-node {
+  margin-bottom: 0.25rem;
+}
+
 /* App layout */
 .app {
   display: flex;
@@ -70,4 +287,47 @@ footer {
 .table th {
   background-color: #f8f9fa;
   font-weight: 600;
+}
+
+.App {
+  text-align: center;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.container-fluid {
+  padding: 20px;
+  flex: 1;
+}
+
+/* Bootstrap overrides */
+.nav-link {
+  color: #495057;
+}
+
+.nav-link.active {
+  color: #007bff !important;
+}
+
+/* Basic layout styles */
+.row {
+  margin-bottom: 1rem;
+}
+
+.card {
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .container-fluid {
+    padding: 10px;
+  }
 }

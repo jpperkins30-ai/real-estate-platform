@@ -8,6 +8,7 @@
   * [Architecture](architecture.md)
   * [API Reference](api-reference.md)
   * [Database Schema](database-schema.md)
+  * [Geographic Data Management](geo-data-management.md)
   * [Security](security.md)
   * [Error Handling](error-handling.md)
   * [Troubleshooting](troubleshooting.md)
@@ -21,6 +22,14 @@
   * [Authentication Setup](authentication-setup.md)
   * [Property Management](property-management.md)
   * [Testing](testing.md)
+
+* Components
+  * [Inventory Module](inventory-module.md)
+  * [Controller Wizard](components-wizard.md)
+  * [US Map](components-map.md)
+
+* Features
+  * [Export to Excel](features/export-excel.md)
 
 * Admin Dashboard
   * [Overview](admin/overview.md)

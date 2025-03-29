@@ -128,11 +128,11 @@ export interface Property {
 // Controller Reference
 export interface ControllerReference {
   controllerId: string;
-  controllerType: 'Tax Sale' | 'Map' | 'Property' | 'Demographics';
+  controllerType: ControllerType;
   enabled: boolean;
   lastRun?: string;
   nextScheduledRun?: string;
-  configuration?: Record<string, any>;
+  configuration: Record<string, any>;
 }
 
 // Data Source
@@ -238,12 +238,12 @@ export interface Controller {
 /**
  * Types of controllers supported in the system
  */
-export type ControllerType = 'Tax Sale' | 'Map' | 'Property' | 'Demographics';
+export type ControllerType = 'data_collector' | 'tax_lien_monitor' | 'property_valuation' | 'report_generator' | string;
 
 /**
  * Types of objects that can have controllers attached
  */
-export type ControllableObjectType = 'us_map' | 'state' | 'county' | 'property';
+export type ControllableObjectType = 'state' | 'county' | 'property';
 
 /**
  * Configuration template for a controller

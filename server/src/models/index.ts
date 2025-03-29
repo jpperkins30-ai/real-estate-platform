@@ -1,19 +1,6 @@
-/**
- * Model exports
- */
-
-import USMap from './USMap';
-import State from './State';
-import County from './County';
-
-// Export all models
-export {
-  USMap,
-  State,
-  County
-};
-
-// Export model interfaces
-export type { USMapDocument } from './USMap';
-export type { StateDocument } from './State';
-export type { CountyDocument } from './County'; 
+// Export all models from a single entry point
+export { Property } from './property.model';
+export { State } from './state.model';
+export { County } from './county.model';
+export { USMap } from './usmap.model';
+export { Controller } from './controller.model'; 

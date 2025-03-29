@@ -1,0 +1,46 @@
+/**
+ * Logger wrapper to ensure compatibility
+ * This is a temporary fix that wraps the original logger
+ */
+
+import originalLogger from './logger.original';
+
+// Export the original logger as default
+const logger = originalLogger;
+
+// Explicitly define all exported functions to ensure they're available
+export const logInfo = (message, meta) => {
+  if (typeof originalLogger.info === 'function') {
+    return originalLogger.info(message, meta);
+  }
+};
+
+export const logError = (message, error) => {
+  if (typeof originalLogger.error === 'function') {
+    if (error instanceof Error) {
+      return originalLogger.error(`${message}: ${error.message}`, { stack: error.stack });
+    } else {
+      return originalLogger.error(message, error);
+    }
+  }
+};
+
+export const logWarn = (message, meta) => {
+  if (typeof originalLogger.warn === 'function') {
+    return originalLogger.warn(message, meta);
+  }
+};
+
+export const logDebug = (message, meta) => {
+  if (typeof originalLogger.debug === 'function') {
+    return originalLogger.debug(message, meta);
+  }
+};
+
+// Make sure all functions are attached to the default export as well
+logger.logInfo = logInfo;
+logger.logError = logError;
+logger.logWarn = logWarn;
+logger.logDebug = logDebug;
+
+export default logger;

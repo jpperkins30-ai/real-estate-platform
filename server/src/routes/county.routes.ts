@@ -93,7 +93,7 @@ router.get('/', async (req, res) => {
       }
     });
   } catch (error: any) {
-    logError('Error fetching counties:', error);
+    logError('Error fetching counties:', error as Error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
@@ -215,36 +215,24 @@ router.get('/byName/:stateAbbr/:countyName', async (req, res) => {
  */
 router.get('/:id/geojson', async (req, res) => {
   try {
-    // Find county and populate state information
-    const county = await County.findById(req.params.id).populate('stateId', 'name abbreviation');
+    const county = await County.findById(req.params.id);
     
     if (!county) {
       return res.status(404).json({ message: 'County not found' });
     }
     
-    if (!county.geometry) {
-      return res.status(404).json({ message: 'County geometry not found' });
-    }
-    
-    // Create GeoJSON Feature
-    const state = county.stateId as any; // Use type assertion to access the populated fields
     const feature = objectToGeoJSONFeature(
-      county.toObject(),
-      {
-        state: state.abbreviation,
-        stateName: state.name,
-        countyName: county.name,
-        totalProperties: county.metadata?.totalProperties || 0,
-        totalTaxLiens: county.metadata?.statistics?.totalTaxLiens || 0,
-        totalValue: county.metadata?.statistics?.totalValue || 0
+      county,
+      { 
+        stateName: county.parentName,
+        stateId: county.stateId 
       }
     );
     
     res.json(feature);
-  } catch (error: unknown) {
-    logError(`Error fetching county GeoJSON for ${req.params.id}:`, error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    res.status(500).json({ message: 'Server error', error: errorMessage });
+  } catch (error) {
+    logError(`Error fetching county GeoJSON for ${req.params.id}:`, error as Error);
+    res.status(500).json({ message: 'Server error', error: (error as Error).message });
   }
 });
 
@@ -272,21 +260,16 @@ router.get('/:id/geojson', async (req, res) => {
  */
 router.get('/:id/statistics', async (req, res) => {
   try {
-    const county = await County.findById(req.params.id);
+    const statistics = await countyService.getCountyStatistics(req.params.id);
     
-    if (!county) {
-      return res.status(404).json({ message: 'County not found' });
+    if (!statistics) {
+      return res.status(404).json({ message: 'County statistics not found' });
     }
     
-    res.json({
-      totalProperties: county.metadata.totalProperties,
-      totalTaxLiens: county.metadata.statistics.totalTaxLiens,
-      totalValue: county.metadata.statistics.totalValue
-    });
-  } catch (error: unknown) {
-    logError(`Error fetching statistics for county ${req.params.id}:`, error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    res.status(500).json({ message: 'Server error', error: errorMessage });
+    res.json(statistics);
+  } catch (error) {
+    logError(`Error fetching statistics for county ${req.params.id}:`, error as Error);
+    res.status(500).json({ message: 'Server error', error: (error as Error).message });
   }
 });
 

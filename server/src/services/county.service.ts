@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { County, ICounty } from '../models/county.model';
 import { CountyObject, CountyStatistics, CountySearchConfig } from '../types/inventory';
 

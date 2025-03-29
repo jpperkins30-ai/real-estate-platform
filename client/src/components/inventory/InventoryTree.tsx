@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { FaHome, FaMapMarkerAlt, FaFolder, FaBars, FaAngleRight, FaAngleDown, FaCity, FaFlag } from 'react-icons/fa';
-import { InventoryTreeNode } from './InventoryTreeNode';
+import InventoryTreeNode from './InventoryTreeNode';
 import { Tree, TreeNode } from '../common/Tree';
 import axios from 'axios';
 import './InventoryModule.css';
@@ -52,9 +52,36 @@ interface TreeItem {
   metadata?: any;
 }
 
-export const InventoryTree: React.FC = () => {
+interface InventoryTreeProps {
+  initialData?: TreeItem[];
+}
+
+const InventoryTree: React.FC<InventoryTreeProps> = ({ initialData = [] }) => {
   const navigate = useNavigate();
-  const [treeData, setTreeData] = useState<TreeItem[]>([]);
+  const [treeData, setTreeData] = useState<TreeItem[]>(initialData.length > 0 ? initialData : [
+    {
+      id: 'ca',
+      name: 'California',
+      type: 'state',
+      childCount: 0,
+      children: [],
+      metadata: {
+        abbreviation: '',
+        totalProperties: 0
+      }
+    },
+    {
+      id: 'ny',
+      name: 'New York',
+      type: 'state',
+      childCount: 0,
+      children: [],
+      metadata: {
+        abbreviation: '',
+        totalProperties: 0
+      }
+    }
+  ]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set([]));
@@ -282,4 +309,6 @@ export const InventoryTree: React.FC = () => {
       </div>
     </div>
   );
-}; 
+};
+
+export default InventoryTree; 

@@ -1,0 +1,21 @@
+.App {
+  text-align: center;
+}
+
+.App-header {
+  background-color: #282c34;
+  color: white;
+}
+
+.card {
+  margin-bottom: 1rem;
+  border-radius: 8px;
+}
+
+button {
+  margin-right: 0.5rem;
+}
+
+footer {
+  margin-top: auto;
+} 

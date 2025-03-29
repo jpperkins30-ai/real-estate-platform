@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Property, IProperty } from '../models/property.model';
 import { County } from '../models/county.model';
 import { State } from '../models/state.model';

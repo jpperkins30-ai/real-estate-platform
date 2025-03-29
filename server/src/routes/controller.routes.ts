@@ -1,10 +1,13 @@
-import { Router } from 'express';
+import express from 'express';
+import { auth } from '../middleware/auth';
+import { logError } from '../utils/logger';
 import { ControllerService } from '../services/controller.service';
 import { ControllerObject, ControllerObjectReference, ControllerExecutionRequest } from '../types/inventory';
 
-const router = Router();
-const typesRouter = Router();
-const collectorTypesRouter = Router();
+// Create main router
+const mainRouter = express.Router();
+const typesRouter = express.Router();
+const collectorTypesRouter = express.Router();
 const controllerService = new ControllerService();
 
 /**
@@ -23,12 +26,13 @@ const controllerService = new ControllerService();
  *               items:
  *                 $ref: '#/components/schemas/ControllerObject'
  */
-router.get('/', async (req, res) => {
+mainRouter.get('/', auth, async (req, res) => {
   try {
     const controllers = await controllerService.getAllControllers();
     res.json(controllers);
   } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    logError('Error fetching controllers', error);
+    res.status(500).json({ error: 'Error fetching controllers' });
   }
 });
 
@@ -54,7 +58,7 @@ router.get('/', async (req, res) => {
  *       404:
  *         description: Controller not found
  */
-router.get('/:id', async (req, res) => {
+mainRouter.get('/:id', async (req, res) => {
   try {
     const controller = await controllerService.getControllerById(req.params.id);
     if (!controller) {
@@ -86,7 +90,7 @@ router.get('/:id', async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/ControllerObject'
  */
-router.post('/', async (req, res) => {
+mainRouter.post('/', async (req, res) => {
   try {
     const controller = await controllerService.createController(req.body);
     res.status(201).json(controller);
@@ -123,7 +127,7 @@ router.post('/', async (req, res) => {
  *       404:
  *         description: Controller not found
  */
-router.put('/:id', async (req, res) => {
+mainRouter.put('/:id', async (req, res) => {
   try {
     const controller = await controllerService.updateController(req.params.id, req.body);
     if (!controller) {
@@ -153,7 +157,7 @@ router.put('/:id', async (req, res) => {
  *       404:
  *         description: Controller not found
  */
-router.delete('/:id', async (req, res) => {
+mainRouter.delete('/:id', async (req, res) => {
   try {
     const success = await controllerService.deleteController(req.params.id);
     if (!success) {
@@ -189,7 +193,7 @@ router.delete('/:id', async (req, res) => {
  *       404:
  *         description: Controller not found
  */
-router.get('/:id/attachedObjects', async (req, res) => {
+mainRouter.get('/:id/attachedObjects', async (req, res) => {
   try {
     const attachedObjects = await controllerService.getAttachedObjects(req.params.id);
     res.json(attachedObjects);
@@ -231,7 +235,7 @@ router.get('/:id/attachedObjects', async (req, res) => {
  *       404:
  *         description: Controller not found
  */
-router.post('/:id/attach', async (req, res) => {
+mainRouter.post('/:id/attach', async (req, res) => {
   try {
     const objects = req.body as ControllerObjectReference[];
     const controller = await controllerService.attachObjects(req.params.id, objects);
@@ -274,7 +278,7 @@ router.post('/:id/attach', async (req, res) => {
  *       404:
  *         description: Controller not found
  */
-router.delete('/:id/detach', async (req, res) => {
+mainRouter.delete('/:id/detach', async (req, res) => {
   try {
     const objectIds = req.body as string[];
     const controller = await controllerService.detachObjects(req.params.id, objectIds);
@@ -317,7 +321,7 @@ router.delete('/:id/detach', async (req, res) => {
  *       400:
  *         description: Controller is disabled
  */
-router.post('/:id/execute', async (req, res) => {
+mainRouter.post('/:id/execute', async (req, res) => {
   try {
     const request = req.body as ControllerExecutionRequest;
     const controller = await controllerService.executeController(req.params.id, request);
@@ -357,7 +361,7 @@ router.post('/:id/execute', async (req, res) => {
  *       404:
  *         description: Controller not found
  */
-router.get('/:id/history', async (req, res) => {
+mainRouter.get('/:id/history', async (req, res) => {
   try {
     const history = await controllerService.getExecutionHistory(req.params.id);
     res.json(history);
@@ -387,7 +391,7 @@ router.get('/:id/history', async (req, res) => {
  *       404:
  *         description: Controller not found
  */
-router.post('/:id/validate', async (req, res) => {
+mainRouter.post('/:id/validate', async (req, res) => {
   try {
     // Get the controller
     const controller = await controllerService.getControllerById(req.params.id);
@@ -428,7 +432,7 @@ router.post('/:id/validate', async (req, res) => {
  *       404:
  *         description: Controller not found
  */
-router.post('/:id/test', async (req, res) => {
+mainRouter.post('/:id/test', async (req, res) => {
   try {
     // Get the controller
     const controller = await controllerService.getControllerById(req.params.id);
@@ -469,7 +473,7 @@ router.post('/:id/test', async (req, res) => {
  *       404:
  *         description: Controller not found
  */
-router.post('/:id/docs', async (req, res) => {
+mainRouter.post('/:id/docs', async (req, res) => {
   try {
     // Get the controller
     const controller = await controllerService.getControllerById(req.params.id);
@@ -506,15 +510,14 @@ router.post('/:id/docs', async (req, res) => {
 typesRouter.get('/', async (req, res) => {
   try {
     const controllerTypes = [
-      { id: 'tax_sale', name: 'Tax Sale', description: 'Manages tax sale data collection' },
-      { id: 'map', name: 'Map', description: 'Manages geographical data collection' },
-      { id: 'property', name: 'Property', description: 'Manages property data collection' },
-      { id: 'demographics', name: 'Demographics', description: 'Manages demographic data collection' }
+      { id: 'data', name: 'Data Controller', description: 'Collects data from external sources' },
+      { id: 'processing', name: 'Processing Controller', description: 'Processes collected data' }
     ];
     
     res.json(controllerTypes);
   } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    logError('Error fetching controller types', error);
+    res.status(500).json({ error: 'Error fetching controller types' });
   }
 });
 
@@ -532,21 +535,20 @@ typesRouter.get('/', async (req, res) => {
 collectorTypesRouter.get('/', async (req, res) => {
   try {
     const collectorTypes = [
-      { id: 'web_scraper', name: 'Web Scraper', description: 'Collects data by scraping websites', supportedSourceTypes: ['county-website', 'state-records'] },
-      { id: 'api_client', name: 'API Client', description: 'Collects data from APIs', supportedSourceTypes: ['api'] },
-      { id: 'file_parser', name: 'File Parser', description: 'Parses files like PDFs or CSVs', supportedSourceTypes: ['pdf', 'csv'] },
-      { id: 'database_connector', name: 'Database Connector', description: 'Connects to external databases', supportedSourceTypes: ['tax-database'] }
+      { id: 'web', name: 'Web Scraper', description: 'Collects data by scraping websites' },
+      { id: 'api', name: 'API Connector', description: 'Collects data from external APIs' }
     ];
     
     res.json(collectorTypes);
   } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    logError('Error fetching collector types', error);
+    res.status(500).json({ error: 'Error fetching collector types' });
   }
 });
 
 // Export controllers
 export default {
-  main: router,
+  main: mainRouter,
   types: typesRouter,
   collectorTypes: collectorTypesRouter
 }; 

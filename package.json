@@ -5,12 +5,12 @@
   "main": "server/dist/index.js",
   "scripts": {
     "start": "node server/dist/index.js",
-    "dev": "nodemon --exec ts-node server/src/index.ts",
+    "dev": "nodemon --exec ts-node --transpile-only server/src/index.ts",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm run dev",
     "build": "tsc -p server/tsconfig.json",
     "lint": "eslint 'server/src/**/*.{ts,tsx}'",
-    "test": "jest",
-    "poc": "ts-node server/src/poc.ts",
-    "logs": "ts-node server/src/scripts/log-tools.ts"
+    "test": "jest"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.69.0",
@@ -58,6 +58,7 @@
     "supertest": "^6.3.3",
     "ts-jest": "^29.1.1",
     "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.3.3"
   },
   "engines": {

@@ -15,21 +15,26 @@ import {
   useRunController, 
   useControllers 
 } from '../../../services/inventoryService';
-import { ControllerReference } from '../../../types/inventory';
+import { ControllerReference, ControllableObjectType } from '../../../types/inventory';
 import { FaPlay, FaPause, FaTrash, FaPlus, FaEdit, FaCog } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 
-interface AttachedControllersProps {
-  objectType: 'state' | 'county' | 'property';
-  objectId: string;
-  controllers?: ControllerReference[];
-  onControllerUpdate?: () => void;
+interface Controller {
+  id: string;
+  name: string;
+  type: string;
+  status: 'active' | 'paused' | 'scheduled';
+  lastRun?: string;
 }
 
-const AttachedControllers: React.FC<AttachedControllersProps> = ({
-  objectType,
-  objectId,
-  controllers = [],
-  onControllerUpdate
+interface AttachedControllersProps {
+  entityId: string;
+  entityType: 'state' | 'county' | 'property';
+}
+
+export const AttachedControllers: React.FC<AttachedControllersProps> = ({ 
+  entityId, 
+  entityType 
 }) => {
   const [showModal, setShowModal] = useState(false);
   const [selectedControllerId, setSelectedControllerId] = useState<string>('');
@@ -59,17 +64,21 @@ const AttachedControllers: React.FC<AttachedControllersProps> = ({
     }
 
     try {
+      const selectedController = availableControllers?.find(c => c.id === selectedControllerId);
+      if (!selectedController) {
+        setConfigError('Selected controller not found');
+        return;
+      }
+
       await attachController.mutateAsync({
         controllerId: selectedControllerId,
-        objectType,
-        objectId,
+        objectType: entityType,
+        objectId: entityId,
+        controllerType: selectedController.type,
         configuration
       });
       
       handleClose();
-      if (onControllerUpdate) {
-        onControllerUpdate();
-      }
     } catch (error) {
       console.error('Error attaching controller:', error);
       setConfigError('Failed to attach controller. Please try again.');
@@ -80,13 +89,9 @@ const AttachedControllers: React.FC<AttachedControllersProps> = ({
     try {
       await detachController.mutateAsync({
         controllerId,
-        objectType,
-        objectId
+        objectType: entityType,
+        objectId: entityId
       });
-      
-      if (onControllerUpdate) {
-        onControllerUpdate();
-      }
     } catch (error) {
       console.error('Error detaching controller:', error);
     }
@@ -96,13 +101,9 @@ const AttachedControllers: React.FC<AttachedControllersProps> = ({
     try {
       await runController.mutateAsync({
         controllerId,
-        objectType,
-        objectId
+        objectType: entityType,
+        objectId: entityId
       });
-      
-      if (onControllerUpdate) {
-        onControllerUpdate();
-      }
     } catch (error) {
       console.error('Error running controller:', error);
     }
@@ -112,17 +113,14 @@ const AttachedControllers: React.FC<AttachedControllersProps> = ({
     try {
       await attachController.mutateAsync({
         controllerId: controller.controllerId,
-        objectType,
-        objectId,
+        objectType: entityType,
+        objectId: entityId,
+        controllerType: controller.controllerType,
         configuration: {
           ...controller.configuration,
           enabled: !controller.enabled
         }
       });
-      
-      if (onControllerUpdate) {
-        onControllerUpdate();
-      }
     } catch (error) {
       console.error('Error updating controller:', error);
     }
@@ -152,70 +150,106 @@ const AttachedControllers: React.FC<AttachedControllersProps> = ({
     return <Spinner animation="border" />;
   }
 
+  // Mock data - in a real app this would come from an API call
+  const controllers: Controller[] = [
+    {
+      id: 'ctrl-1',
+      name: 'Basic Data Collector',
+      type: 'data-collection',
+      status: 'active',
+      lastRun: '2025-03-25T14:30:00Z'
+    },
+    {
+      id: 'ctrl-2',
+      name: 'Tax Lien Monitor',
+      type: 'monitoring',
+      status: 'scheduled'
+    }
+  ];
+
   return (
-    <>
-      <Card className="mb-4">
-        <Card.Header className="d-flex justify-content-between align-items-center">
-          <h5 className="mb-0">Attached Controllers</h5>
-          <Button variant="primary" size="sm" onClick={handleShow}>
-            <FaPlus className="me-1" /> Attach Controller
-          </Button>
-        </Card.Header>
-        {controllers.length === 0 ? (
-          <Card.Body>
-            <p className="text-muted">No controllers attached to this {objectType}.</p>
-          </Card.Body>
-        ) : (
-          <ListGroup variant="flush">
-            {controllers.map((controller) => (
-              <ListGroup.Item key={controller.controllerId} className="d-flex justify-content-between align-items-center">
-                <div>
-                  <div className="d-flex align-items-center">
-                    <h6 className="mb-0 me-2">{controller.controllerType}</h6>
-                    <Badge bg={controller.enabled ? 'success' : 'secondary'}>
-                      {controller.enabled ? 'Enabled' : 'Disabled'}
-                    </Badge>
-                  </div>
-                  <small className="text-muted d-block">
-                    Last Run: {formatDate(controller.lastRun)}
-                  </small>
-                  <small className="text-muted d-block">
-                    Next Run: {formatDate(controller.nextScheduledRun)}
-                  </small>
+    <div className="attached-controllers">
+      <div className="controllers-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <h3>Attached Controllers</h3>
+        <Link 
+          to={`/inventory/controllers/wizard?${entityType}=${entityId}`}
+          style={{
+            display: 'inline-block',
+            padding: '6px 12px',
+            backgroundColor: '#4a86e8',
+            color: 'white',
+            textDecoration: 'none',
+            borderRadius: '4px',
+            fontSize: '14px'
+          }}
+        >
+          + Add Controller
+        </Link>
+      </div>
+
+      {controllers.length > 0 ? (
+        <div className="controllers-list">
+          {controllers.map(controller => (
+            <div 
+              key={controller.id}
+              style={{
+                border: '1px solid #e0e0e0',
+                borderRadius: '6px',
+                padding: '12px',
+                marginBottom: '12px',
+                backgroundColor: 'white'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <h4 style={{ margin: '0 0 8px 0' }}>{controller.name}</h4>
+                <span 
+                  style={{ 
+                    padding: '4px 8px', 
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    backgroundColor: 
+                      controller.status === 'active' ? '#e6f4ea' : 
+                      controller.status === 'paused' ? '#feefc3' : '#e8f0fe',
+                    color: 
+                      controller.status === 'active' ? '#137333' : 
+                      controller.status === 'paused' ? '#ea8600' : '#1967d2'
+                  }}
+                >
+                  {controller.status.charAt(0).toUpperCase() + controller.status.slice(1)}
+                </span>
+              </div>
+              <div style={{ color: '#5f6368', fontSize: '14px', marginBottom: '8px' }}>
+                Type: {controller.type}
+              </div>
+              {controller.lastRun && (
+                <div style={{ fontSize: '13px', color: '#80868b' }}>
+                  Last run: {new Date(controller.lastRun).toLocaleString()}
                 </div>
-                <div>
-                  <Button 
-                    variant="outline-primary" 
-                    size="sm" 
-                    className="me-1"
-                    onClick={() => handleRun(controller.controllerId)}
-                    title="Run Now"
-                  >
-                    <FaPlay />
-                  </Button>
-                  <Button 
-                    variant={controller.enabled ? 'outline-warning' : 'outline-success'} 
-                    size="sm" 
-                    className="me-1"
-                    onClick={() => handleToggleEnabled(controller)}
-                    title={controller.enabled ? 'Disable' : 'Enable'}
-                  >
-                    {controller.enabled ? <FaPause /> : <FaPlay />}
-                  </Button>
-                  <Button 
-                    variant="outline-danger" 
-                    size="sm"
-                    onClick={() => handleDetach(controller.controllerId)}
-                    title="Detach"
-                  >
-                    <FaTrash />
-                  </Button>
-                </div>
-              </ListGroup.Item>
-            ))}
-          </ListGroup>
-        )}
-      </Card>
+              )}
+              <div style={{ marginTop: '12px' }}>
+                <button style={{ marginRight: '8px', padding: '4px 8px', fontSize: '13px' }}>
+                  Run Now
+                </button>
+                <button style={{ marginRight: '8px', padding: '4px 8px', fontSize: '13px' }}>
+                  Edit
+                </button>
+                <button style={{ padding: '4px 8px', fontSize: '13px' }}>
+                  Remove
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#5f6368' }}>
+          No controllers are attached to this {entityType}.
+          <div style={{ marginTop: '10px' }}>
+            <Link to={`/inventory/controllers/wizard?${entityType}=${entityId}`}>
+              Add your first controller
+            </Link>
+          </div>
+        </div>
+      )}
 
       <Modal show={showModal} onHide={handleClose}>
         <Modal.Header closeButton>
@@ -272,7 +306,7 @@ const AttachedControllers: React.FC<AttachedControllersProps> = ({
           </Button>
         </Modal.Footer>
       </Modal>
-    </>
+    </div>
   );
 };
 

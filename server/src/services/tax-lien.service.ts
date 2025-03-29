@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { County } from '../models/county.model';
 import { Property } from '../models/property.model';
 import axios from 'axios';

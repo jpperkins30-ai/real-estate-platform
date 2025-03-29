@@ -1,84 +1,45 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
+import { CollectionDocument } from '../types/inventory';
 
 const ErrorLogEntrySchema = new Schema({
-  message: String,
-  timestamp: {
-    type: Date,
-    default: Date.now
-  },
+  message: { type: String, required: true },
+  timestamp: { type: Date, required: true, default: Date.now },
   stackTrace: String
 }, { _id: false });
 
 const CollectionStatsSchema = new Schema({
-  duration: Number, // in milliseconds
-  itemCount: Number,
-  successCount: Number,
-  errorCount: Number,
+  duration: { type: Number, required: true },
+  itemCount: { type: Number, required: true },
+  successCount: { type: Number, required: true },
+  errorCount: { type: Number, required: true },
   memoryUsage: Number
 }, { _id: false });
 
-const CollectionSchema = new Schema({
-  sourceId: {
-    type: Schema.Types.ObjectId,
-    ref: 'DataSource',
-    required: true,
-    index: true
-  },
-  timestamp: {
-    type: Date,
-    default: Date.now,
-    index: true
-  },
-  status: {
-    type: String,
+const CollectionSchema = new Schema<CollectionDocument>({
+  sourceId: { type: Schema.Types.ObjectId, required: true, ref: 'DataSource' },
+  timestamp: { type: Date, required: true, default: Date.now },
+  status: { 
+    type: String, 
+    required: true, 
     enum: ['success', 'partial', 'error'],
-    default: 'success',
-    index: true
+    default: 'success'
   },
-  stats: {
-    type: CollectionStatsSchema,
-    default: () => ({
-      duration: 0,
-      itemCount: 0,
-      successCount: 0,
-      errorCount: 0,
-      memoryUsage: 0
-    })
-  },
+  stats: CollectionStatsSchema,
   errorLog: [ErrorLogEntrySchema],
-  properties: [{
-    type: Schema.Types.ObjectId,
-    ref: 'Property'
-  }]
+  properties: [{ type: Schema.Types.ObjectId, ref: 'Property' }]
 }, {
   timestamps: true
 });
 
-// Create compound indexes for efficient queries
-CollectionSchema.index({ sourceId: 1, timestamp: -1 });
-CollectionSchema.index({ status: 1, timestamp: -1 });
+// Create indexes for common search fields
+CollectionSchema.index({ sourceId: 1 });
+CollectionSchema.index({ timestamp: 1 });
+CollectionSchema.index({ status: 1 });
+CollectionSchema.index({ 'stats.successCount': 1 });
+CollectionSchema.index({ 'stats.errorCount': 1 });
 
-export interface CollectionDocument extends Document {
-  sourceId: mongoose.Types.ObjectId;
-  timestamp: Date;
-  status: 'success' | 'partial' | 'error';
-  stats: {
-    duration: number;
-    itemCount: number;
-    successCount?: number;
-    errorCount?: number;
-    memoryUsage?: number;
-  };
-  errorLog?: Array<{
-    message: string;
-    timestamp: Date;
-    stackTrace?: string;
-  }>;
-  properties: mongoose.Types.ObjectId[];
-  createdAt: Date;
-  updatedAt: Date;
-}
+// Create a compound index for sourceId and timestamp
+CollectionSchema.index({ "sourceId": 1, "timestamp": -1 });
 
-const Collection = mongoose.model<CollectionDocument>('Collection', CollectionSchema);
-
-export default Collection; 
+// Create and export the model
+export default mongoose.model<CollectionDocument>('Collection', CollectionSchema); 

@@ -1,22 +1,32 @@
 @echo off
 echo Starting Real Estate Platform...
-echo.
 
-echo ======================================
-echo Step 1: Starting the backend server
-echo ======================================
+:: Check if server directory exists
+if not exist "server" (
+    echo Error: Server directory not found
+    exit /b 1
+)
+
+:: Check if client directory exists
+if not exist "client" (
+    echo Error: Client directory not found
+    exit /b 1
+)
+
+:: Start the server in a new window
+echo Starting server...
 start cmd /k "cd server && npm run dev"
-echo Server starting on http://localhost:4000
-echo.
 
-timeout /t 5 /nobreak
+:: Give the server time to start
+echo Waiting for server to initialize (5 seconds)...
+timeout /t 5 /nobreak > nul
 
-echo ======================================
-echo Step 2: Starting the frontend client
-echo ======================================
-start cmd /k "cd client && npm run dev"
-echo Client starting on http://localhost:5173
-echo.
+:: Start the client in a new window
+echo Starting client...
+start cmd /k "cd client && npm start"
+
+echo Application started in separate windows!
+echo Use open-component.bat to test specific components
 
 echo ======================================
 echo Application URLs:

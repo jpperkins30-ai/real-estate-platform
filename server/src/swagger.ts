@@ -8,7 +8,7 @@ const options: swaggerJSDoc.Options = {
     info: {
       title: 'Real Estate Platform API',
       version: '1.0.0',
-      description: 'API for real estate property management, data collection, and transformation',
+      description: 'API documentation for Real Estate Platform',
       contact: {
         name: 'API Support',
         email: 'support@realestate-platform.com'
@@ -16,7 +16,7 @@ const options: swaggerJSDoc.Options = {
     },
     servers: [
       {
-        url: `http://localhost:${config.server.port}`,
+        url: 'http://localhost:4000',
         description: 'Development server'
       }
     ],

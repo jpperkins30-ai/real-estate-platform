@@ -32,6 +32,49 @@ Before running the application, ensure you have the following installed:
 
 This will start both the server and client applications in separate windows.
 
+### Special Instructions for Windows PowerShell Users
+
+If you're using Windows PowerShell and encounter the following error:
+
+```
+The token '&&' is not a valid statement separator in this version.
+```
+
+This occurs because PowerShell uses a different command syntax than CMD. To fix this, use one of the following options:
+
+#### Option 1: Use the Windows-Compatible PowerShell Script (Recommended)
+
+```powershell
+.\run-windows-app.ps1
+```
+
+This script is specifically designed for Windows PowerShell and will properly start both server and client.
+
+#### Option 2: Fix TypeScript Errors and Start Components Separately
+
+```powershell
+# First, run the TypeScript error fixing script
+.\fix-typescript-errors.ps1
+
+# Then start the server in one PowerShell window
+cd server
+npm run dev
+
+# And start the client in another PowerShell window
+cd client
+npm run dev
+```
+
+#### Option 3: Use PowerShell Syntax Manually
+
+In PowerShell, use semicolons (`;`) instead of ampersands (`&&`) to chain commands:
+
+```powershell
+cd server; npm run dev
+```
+
+For more detailed instructions on using PowerShell with this application, see `POWERSHELL-GUIDE.md`.
+
 ### Option 2: Manual Setup
 
 If the scripts don't work, you can start each component manually:

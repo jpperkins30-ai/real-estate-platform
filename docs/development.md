@@ -15,36 +15,36 @@ This guide provides instructions for developers working on the Real Estate Platf
 ### Setup
 
 1. Clone the repository:
-   ```bash
+```bash
    git clone https://github.com/your-organization/real-estate-platform.git
-   cd real-estate-platform
-   ```
+cd real-estate-platform
+```
 
 2. Install dependencies:
-   ```bash
+```bash
    # Install server dependencies
    cd server
    npm install
 
    # Install client dependencies
    cd ../client
-   npm install
-   ```
+npm install
+```
 
 3. Configure environment variables:
    - Copy `.env.example` to `.env` in both the server and client directories
    - Update the environment variables as needed
 
 4. Start the development servers:
-   ```bash
+```bash
    # Start server
    cd server
    npm run dev
 
    # In a new terminal, start client
    cd client
-   npm run dev
-   ```
+npm run dev
+```
 
 ## Architecture Overview
 
@@ -90,7 +90,7 @@ When working with the hierarchical structure, you'll commonly need to:
    ```
 
 3. **Populate related entities**:
-   ```typescript
+```typescript
    // Get a property with county and state populated
    const property = await Property.findById(propertyId)
      .populate('countyId')
@@ -407,7 +407,7 @@ describe('Export API', () => {
       }));
       
       // Act
-      const response = await request(app)
+    const response = await request(app)
         .post('/api/export/properties/enhanced/csv')
         .send({ stateId: 'state-id' });
       
@@ -456,7 +456,7 @@ describe('Export Functionality', () => {
    ```
 
 3. Push the branch to remote:
-   ```bash
+```bash
    git push -u origin feature/export-service
    ```
 
@@ -504,7 +504,7 @@ The API is documented using Swagger. To update the documentation when adding new
 Follow these guidelines for code documentation:
 
 1. Use JSDoc for all functions/methods:
-   ```typescript
+```typescript
    /**
     * Export properties to CSV format
     * @param properties - Array of property objects

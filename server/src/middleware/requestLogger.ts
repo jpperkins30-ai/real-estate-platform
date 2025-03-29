@@ -1,7 +1,7 @@
 import expressWinston from 'express-winston';
 import winston from 'winston';
-import { Request, Response } from 'express';
-import logger, { httpLogFormat } from '../utils/logger';
+import { Request, Response, NextFunction } from 'express';
+import logger, { logInfo, logError, logWarn } from '../utils/logger';
 
 // Custom tokenizer function to mask sensitive data
 const maskSensitiveData = (req: Request): any => {
@@ -26,36 +26,64 @@ const maskSensitiveData = (req: Request): any => {
   return masked;
 };
 
-// Request logging middleware
-export const requestLogger = expressWinston.logger({
-  winstonInstance: logger,
-  format: httpLogFormat,
-  meta: true,
-  msg: 'HTTP {{req.method}} {{req.url}} {{res.statusCode}} {{res.responseTime}}ms',
-  expressFormat: false,
-  colorize: false,
-  requestFilter: (req: Request, propName: string) => {
-    if (propName === 'body') {
-      return maskSensitiveData(req);
-    }
-    return req[propName as keyof Request];
-  },
-  // Skip logging for static assets and health checks
-  ignoredRoutes: ['/public', '/assets', '/health', '/favicon.ico'],
-  // Skip logging for successful static file requests
-  skip: (req: Request, res: Response) => {
-    return req.url.startsWith('/public/') && res.statusCode < 400;
-  },
-});
+// Define an interface for our log metadata to fix TypeScript errors
+interface LogMetadata {
+  statusCode?: number;
+  method?: string;
+  url?: string;
+  duration?: number;
+  userAgent?: string;
+  stack?: string;
+  error?: string;
+}
 
-// Error logging middleware - logs errors with full stack traces
-export const errorLogger = expressWinston.errorLogger({
-  winstonInstance: logger,
-  format: httpLogFormat,
-  meta: true,
-  msg: 'HTTP Error {{err.message}}',
-  // Custom log level function based on response status code
-  level: (req, res) => res.statusCode >= 500 ? 'error' : 'warn'
-});
+/**
+ * Request logging middleware
+ */
+export const requestLogger = (req: Request, res: Response, next: NextFunction) => {
+  const start = Date.now();
+  
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    const statusCode = res.statusCode;
+    const method = req.method;
+    const url = req.originalUrl;
+    const userAgent = req.get('user-agent') || 'unknown';
+    
+    // Format: METHOD URL StatusCode Duration ms
+    const message = `${method} ${url} ${statusCode} - ${duration}ms - ${userAgent}`;
+    
+    // Log based on status code
+    if (statusCode >= 500) {
+      // For server errors, create an Error object
+      const err = new Error(`Server error: ${statusCode}`);
+      logError(message, err);
+    } else if (statusCode >= 400) {
+      logWarn(message);
+    } else {
+      logInfo(message);
+    }
+  });
+  
+  next();
+};
+
+/**
+ * Error logging middleware
+ */
+export const errorLogger = (err: any, req: Request, res: Response, next: NextFunction) => {
+  const statusCode = err.statusCode || 500;
+  const message = err.message || 'Internal server error';
+  const errorInfo = `Error processing request: ${req.method} ${req.originalUrl} - ${message}`;
+  
+  // Log the error with the correct signature
+  logError(errorInfo, err);
+  
+  res.status(statusCode).json({
+    status: 'error',
+    message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
+};
 
 export default { requestLogger, errorLogger }; 

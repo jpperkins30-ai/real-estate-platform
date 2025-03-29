@@ -1,0 +1,75 @@
+/**
+ * Simplified logger utility that works with index.ts imports
+ */
+import winston from 'winston';
+import path from 'path';
+import fs from 'fs';
+
+// Ensure logs directory exists
+const logDir = 'logs';
+if (!fs.existsSync(logDir)) {
+  fs.mkdirSync(logDir, { recursive: true });
+}
+
+// Create winston logger
+const logger = winston.createLogger({
+  level: process.env.LOG_LEVEL || 'info',
+  format: winston.format.combine(
+    winston.format.timestamp({
+      format: 'YYYY-MM-DD HH:mm:ss:SSS'
+    }),
+    winston.format.errors({ stack: true }),
+    winston.format.json()
+  ),
+  defaultMeta: { service: 'real-estate-api' },
+  transports: [
+    new winston.transports.File({ 
+      filename: path.join(logDir, 'error.log'), 
+      level: 'error' 
+    }),
+    new winston.transports.File({ 
+      filename: path.join(logDir, 'all.log')
+    }),
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.simple()
+      )
+    })
+  ]
+});
+
+// Define core logging functions that match the imports in index.ts
+export function logInfo(message, meta) {
+  logger.info(message, meta);
+}
+
+export function logError(message, error) {
+  if (error instanceof Error) {
+    logger.error(`${message}: ${error.message}`, { stack: error.stack });
+  } else {
+    logger.error(message, error);
+  }
+}
+
+export function logWarn(message, meta) {
+  logger.warn(message, meta);
+}
+
+export function logDebug(message, meta) {
+  logger.debug(message, meta);
+}
+
+// Also attach these functions to the logger object for flexibility
+logger.logInfo = logInfo;
+logger.logError = logError;
+logger.logWarn = logWarn;
+logger.logDebug = logDebug;
+
+// HTTP logging format for expressWinston if needed
+export const httpLogFormat = winston.format.combine(
+  winston.format.timestamp(),
+  winston.format.json()
+);
+
+export default logger;

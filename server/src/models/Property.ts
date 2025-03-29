@@ -84,6 +84,20 @@ const PropertySchema = new Schema({
   zipCode: String,
   location: GeoLocationSchema,
   
+  // Relationships to other entities
+  countyId: { 
+    type: Schema.Types.ObjectId, 
+    ref: 'County',
+    required: true,
+    index: true
+  },
+  stateId: { 
+    type: Schema.Types.ObjectId, 
+    ref: 'State',
+    required: true,
+    index: true
+  },
+  
   // Property details
   propertyType: {
     type: String,
@@ -98,6 +112,19 @@ const PropertySchema = new Schema({
   // Sale information
   saleInfo: SaleInfoSchema,
   
+  // GeoJSON for mapping
+  geometry: {
+    type: {
+      type: String,
+      enum: ['Point', 'Polygon', 'MultiPolygon'],
+      required: false
+    },
+    coordinates: {
+      type: Schema.Types.Mixed, // Can be [number, number] for Point or more complex for Polygons
+      required: false
+    }
+  },
+  
   // Metadata and collection tracking
   metadata: {
     sourceId: Schema.Types.ObjectId,
@@ -111,15 +138,24 @@ const PropertySchema = new Schema({
   strict: false  // Allow additional fields not defined in schema
 });
 
-// Create indexes for efficient queries
-PropertySchema.index({ state: 1, county: 1 });
+// Create base indexes for common search fields
 PropertySchema.index({ propertyAddress: 1 });
-PropertySchema.index({ ownerName: 1 });
 PropertySchema.index({ parcelId: 1 });
-PropertySchema.index({ 'location.coordinates': '2dsphere' });
+PropertySchema.index({ taxAccountNumber: 1 });
 PropertySchema.index({ 'saleInfo.saleDate': 1 });
 PropertySchema.index({ createdAt: 1 });
 PropertySchema.index({ updatedAt: 1 });
+
+// Create compound indexes for efficient queries
+PropertySchema.index({ "countyId": 1, "parcelId": 1 }, { unique: true });
+PropertySchema.index({ "countyId": 1, "taxAccountNumber": 1 });
+PropertySchema.index({ "stateId": 1, "countyId": 1 });
+
+// Create a text index for searching
+PropertySchema.index({ "ownerName": "text", "propertyAddress": "text" });
+
+// Create a 2dsphere index for geospatial queries
+PropertySchema.index({ "geometry": "2dsphere" }, { sparse: true });
 
 // Define the TypeScript interface for the Property document
 export interface PropertyDocument extends Document {
@@ -132,6 +168,8 @@ export interface PropertyDocument extends Document {
   state: string;
   county: string;
   zipCode?: string;
+  countyId: mongoose.Types.ObjectId;
+  stateId: mongoose.Types.ObjectId;
   propertyType: string;
   propertyDetails?: {
     landArea?: number;
@@ -168,6 +206,10 @@ export interface PropertyDocument extends Document {
     latitude?: number;
     longitude?: number;
     coordinates?: [number, number];
+  };
+  geometry?: {
+    type?: 'Point' | 'Polygon' | 'MultiPolygon';
+    coordinates?: any;
   };
   metadata?: {
     sourceId?: mongoose.Types.ObjectId;

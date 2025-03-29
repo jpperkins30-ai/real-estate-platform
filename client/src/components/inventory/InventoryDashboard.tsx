@@ -1,171 +1,202 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { 
-  Container, 
-  Row, 
-  Col, 
+  Grid, 
+  Paper, 
+  Typography, 
+  Box, 
+  Button, 
   Card, 
-  Button,
-  ListGroup
-} from 'react-bootstrap';
+  CardContent, 
+  CardActions,
+  Divider
+} from '@mui/material';
 import { 
-  FaGlobe, 
-  FaMapMarkedAlt, 
-  FaHome, 
-  FaChartBar, 
-  FaSearch, 
-  FaPlus 
-} from 'react-icons/fa';
-import { useStates } from '../../services/inventoryService';
+  Map as MapIcon,
+  Home as HomeIcon,
+  LocationCity as CityIcon,
+  TrendingUp as TrendingUpIcon,
+  Add as AddIcon
+} from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import { useInventoryContext } from './InventoryModule';
+
+const StatCard = ({ title, value, icon, color }: { 
+  title: string; 
+  value: string | number; 
+  icon: React.ReactNode;
+  color?: string;
+}) => (
+  <Paper elevation={2} sx={{ height: '100%' }}>
+    <Box 
+      sx={{ 
+        display: 'flex', 
+        p: 2,
+        bgcolor: color || 'primary.main',
+        color: 'white'
+      }}
+    >
+      <Box sx={{ mr: 2 }}>{icon}</Box>
+      <Typography variant="h6">{title}</Typography>
+    </Box>
+    <Box sx={{ p: 3, textAlign: 'center' }}>
+      <Typography variant="h3">{value}</Typography>
+    </Box>
+  </Paper>
+);
 
 const InventoryDashboard: React.FC = () => {
-  const { data: states, isLoading } = useStates();
-
+  const navigate = useNavigate();
+  const { usMap, states } = useInventoryContext();
+  
+  const formatNumber = (num: number) => {
+    return num.toLocaleString();
+  };
+  
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0
+    }).format(value);
+  };
+  
   return (
-    <Container className="my-4">
-      <h1 className="mb-4">Inventory Management Dashboard</h1>
+    <Box>
+      <Typography variant="h4" sx={{ mb: 3 }}>Inventory Dashboard</Typography>
       
-      <Row className="mb-4">
-        <Col md={4}>
-          <Card className="h-100">
-            <Card.Header className="bg-primary text-white">
-              <div className="d-flex align-items-center">
-                <FaGlobe className="me-2" size={20} />
-                <h5 className="mb-0">States</h5>
-              </div>
-            </Card.Header>
-            <Card.Body>
-              <Card.Text>
-                Browse and manage states in the inventory system.
-              </Card.Text>
-              <div className="d-flex justify-content-between mt-3">
-                <div>
-                  {isLoading ? (
-                    <p>Loading...</p>
-                  ) : (
-                    <h4>{states?.length || 0} States</h4>
-                  )}
-                </div>
-                <Link to="/inventory/states" className="btn btn-outline-primary">
-                  View States
-                </Link>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col md={4}>
-          <Card className="h-100">
-            <Card.Header className="bg-success text-white">
-              <div className="d-flex align-items-center">
-                <FaMapMarkedAlt className="me-2" size={20} />
-                <h5 className="mb-0">Counties</h5>
-              </div>
-            </Card.Header>
-            <Card.Body>
-              <Card.Text>
-                Browse and manage counties within states.
-              </Card.Text>
-              <div className="mt-4">
-                <Link to="/inventory/states" className="btn btn-outline-success w-100">
-                  Select a State to View Counties
-                </Link>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col md={4}>
-          <Card className="h-100">
-            <Card.Header className="bg-info text-white">
-              <div className="d-flex align-items-center">
-                <FaHome className="me-2" size={20} />
-                <h5 className="mb-0">Properties</h5>
-              </div>
-            </Card.Header>
-            <Card.Body>
-              <Card.Text>
-                Browse and manage properties within counties.
-              </Card.Text>
-              <div className="mt-4">
-                <Link to="/inventory/states" className="btn btn-outline-info w-100">
-                  Navigate to Properties
-                </Link>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-
-      <Row className="mb-4">
-        <Col>
+      {/* Stats overview */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard 
+            title="States" 
+            value={usMap?.metadata?.totalStates || 0} 
+            icon={<MapIcon />}
+            color="#1976d2"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard 
+            title="Counties" 
+            value={formatNumber(usMap?.metadata?.totalCounties || 0)} 
+            icon={<CityIcon />}
+            color="#2e7d32"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard 
+            title="Properties" 
+            value={formatNumber(usMap?.metadata?.totalProperties || 0)} 
+            icon={<HomeIcon />}
+            color="#d32f2f"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard 
+            title="Total Value" 
+            value={formatCurrency(usMap?.metadata?.statistics?.totalValue || 0)} 
+            icon={<TrendingUpIcon />}
+            color="#7b1fa2"
+          />
+        </Grid>
+      </Grid>
+      
+      {/* Quick actions */}
+      <Typography variant="h5" sx={{ mb: 2 }}>Quick Actions</Typography>
+      <Grid container spacing={2} sx={{ mb: 4 }}>
+        <Grid item xs={12} sm={6} md={4}>
           <Card>
-            <Card.Header className="bg-dark text-white">
-              <div className="d-flex align-items-center">
-                <FaChartBar className="me-2" size={20} />
-                <h5 className="mb-0">Quick Actions</h5>
-              </div>
-            </Card.Header>
-            <ListGroup variant="flush">
-              <ListGroup.Item action as={Link} to="/inventory/states">
-                <div className="d-flex align-items-center">
-                  <FaSearch className="me-3" />
-                  Browse States
-                </div>
-              </ListGroup.Item>
-              <ListGroup.Item action as="button">
-                <div className="d-flex align-items-center">
-                  <FaPlus className="me-3" />
-                  Add New Property
-                </div>
-              </ListGroup.Item>
-              <ListGroup.Item action as="button">
-                <div className="d-flex align-items-center">
-                  <FaSearch className="me-3" />
-                  Advanced Property Search
-                </div>
-              </ListGroup.Item>
-              <ListGroup.Item action as="button">
-                <div className="d-flex align-items-center">
-                  <FaChartBar className="me-3" />
-                  View Analytics
-                </div>
-              </ListGroup.Item>
-            </ListGroup>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Create Controller
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Set up new data collectors for inventory objects.
+              </Typography>
+            </CardContent>
+            <CardActions>
+              <Button 
+                size="small" 
+                startIcon={<AddIcon />}
+                onClick={() => navigate('/inventory/controllers/wizard')}
+              >
+                New Controller
+              </Button>
+            </CardActions>
           </Card>
-        </Col>
-      </Row>
-
-      <Row>
-        <Col md={6}>
+        </Grid>
+        
+        <Grid item xs={12} sm={6} md={4}>
           <Card>
-            <Card.Header>Recent Updates</Card.Header>
-            <Card.Body>
-              <p className="text-muted">No recent updates found.</p>
-            </Card.Body>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Search Properties
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Find specific properties in the inventory.
+              </Typography>
+            </CardContent>
+            <CardActions>
+              <Button 
+                size="small"
+                onClick={() => navigate('/inventory/search')}
+              >
+                Search
+              </Button>
+            </CardActions>
           </Card>
-        </Col>
-        <Col md={6}>
+        </Grid>
+        
+        <Grid item xs={12} sm={6} md={4}>
           <Card>
-            <Card.Header>System Status</Card.Header>
-            <Card.Body>
-              <div className="d-flex justify-content-between mb-2">
-                <span>API Status:</span>
-                <span className="badge bg-success">Online</span>
-              </div>
-              <div className="d-flex justify-content-between mb-2">
-                <span>Data Collection:</span>
-                <span className="badge bg-success">Active</span>
-              </div>
-              <div className="d-flex justify-content-between">
-                <span>Last Update:</span>
-                <span>{new Date().toLocaleString()}</span>
-              </div>
-            </Card.Body>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                View US Map
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Explore states and counties visually.
+              </Typography>
+            </CardContent>
+            <CardActions>
+              <Button 
+                size="small"
+                onClick={() => navigate('/inventory/usmap')}
+              >
+                Open Map
+              </Button>
+            </CardActions>
           </Card>
-        </Col>
-      </Row>
-    </Container>
+        </Grid>
+      </Grid>
+      
+      {/* Recent States */}
+      <Typography variant="h5" sx={{ mb: 2 }}>States</Typography>
+      <Grid container spacing={2}>
+        {states.slice(0, 6).map(state => (
+          <Grid item xs={12} sm={6} md={4} key={state.id}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6">{state.name}</Typography>
+                <Typography variant="subtitle1" color="text.secondary">
+                  {state.abbreviation}
+                </Typography>
+                <Divider sx={{ my: 1 }} />
+                <Typography variant="body2">
+                  Counties: {state.totalCounties}
+                </Typography>
+              </CardContent>
+              <CardActions>
+                <Button 
+                  size="small"
+                  onClick={() => navigate(`/inventory/state/${state.id}`)}
+                >
+                  View Details
+                </Button>
+              </CardActions>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+    </Box>
   );
 };
 

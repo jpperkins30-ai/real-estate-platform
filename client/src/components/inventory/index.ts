@@ -8,6 +8,7 @@ import InventoryTreeNode from './InventoryTreeNode';
 import StateDetails from './details/StateDetails';
 import CountyDetails from './details/CountyDetails';
 import PropertyDetails from './details/PropertyDetails';
+import PropertySearchBox from './PropertySearchBox';
 import inventoryRoutes from './routes';
 
 // Main components
@@ -22,6 +23,7 @@ export {
   StateDetails,
   CountyDetails,
   PropertyDetails,
+  PropertySearchBox,
   inventoryRoutes
 };
 
@@ -29,5 +31,4 @@ export {
 export default InventoryModule;
 
 export { default as ControllerWizard } from './details/ControllerWizard';
-export { default as PropertySearchBox } from './PropertySearchBox';
 export { default as TaxLienStatusCheck } from './TaxLienStatusCheck'; 

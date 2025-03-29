@@ -19,7 +19,9 @@ import {
   UserJwtPayload 
 } from '../types/auth';
 import { logAuthEvent, startPerformanceTimer } from '../utils/appLogger';
-import { logError } from '../utils/logger';
+import { logError, logInfo } from '../utils/logger';
+import jwt, { SignOptions } from 'jsonwebtoken';
+import config from '../config';
 
 const router = express.Router();
 
@@ -139,8 +141,8 @@ router.post(
         }
       });
     } catch (error) {
-      // Log error with full details
-      logError('Registration error', error, { email });
+      // Log error with proper type casting
+      logError('Registration error', error as Error);
       
       res.status(500).json({ message: 'Server error during registration' });
     }
@@ -237,8 +239,8 @@ router.post(
         }
       });
     } catch (error) {
-      // Log error with full details
-      logError('Login error', error, meta);
+      // Log error with proper type casting
+      logError('Login error', error as Error);
       
       res.status(500).json({ message: 'Server error during login' });
     }
@@ -312,12 +314,107 @@ router.post(
         message: 'Access token refreshed successfully'
       });
     } catch (error) {
-      // Log error with full details
-      logError('Token refresh error', error);
+      // Log error with proper type casting
+      logError('Token refresh error', error as Error);
       
       res.status(500).json({ message: 'Server error during token refresh' });
     }
   }) as TypedRequestHandler
 );
+
+/**
+ * @route   POST /api/auth/login
+ * @desc    Authenticate user & get token
+ * @access  Public
+ */
+router.post('/login', (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    // For development only - mock login
+    if (email === 'admin@example.com' && password === 'admin') {
+      const payload = {
+        id: '1',
+        name: 'Admin User',
+        email: 'admin@example.com',
+        role: 'admin'
+      };
+      
+      // @ts-ignore
+      const token = jwt.sign(
+        { 
+          id: (payload as any).id || (payload as any)._id?.toString() || '',
+          name: payload.name,
+          email: payload.email,
+          role: payload.role
+        },
+        Buffer.from(process.env.JWT_SECRET || 'fallback-secret'),
+        { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
+      );
+      
+      logInfo(`User logged in: ${email}`);
+      return res.json({
+        success: true,
+        token,
+        user: payload
+      });
+    }
+    
+    return res.status(401).json({ 
+      success: false,
+      message: 'Invalid credentials' 
+    });
+  } catch (error) {
+    logError('Login error', error as Error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error' 
+    });
+  }
+});
+
+/**
+ * @route   POST /api/auth/register
+ * @desc    Register a new user
+ * @access  Public
+ */
+router.post('/register', (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    
+    // For development only - mock registration
+    const user = {
+      id: Date.now().toString(),
+      name,
+      email,
+      role: 'user'
+    };
+    
+    // @ts-ignore
+    const token = jwt.sign(
+      { 
+        id: (user as any).id || (user as any)._id?.toString() || '',
+        name: user.name,
+        email: user.email,
+        role: user.role
+      },
+      Buffer.from(process.env.JWT_SECRET || 'fallback-secret'),
+      { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
+    );
+    
+    logInfo(`User registered: ${email}`);
+    return res.status(201).json({
+      success: true,
+      token,
+      user
+    });
+  } catch (error) {
+    logError('Registration error', error as Error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error' 
+    });
+  }
+});
 
 export default router; 

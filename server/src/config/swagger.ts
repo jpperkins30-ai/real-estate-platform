@@ -1,5 +1,7 @@
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
+import { Express, Request, Response } from 'express';
+import logger from '../utils/logger';
 
 const options: swaggerJsdoc.Options = {
   definition: {
@@ -7,16 +9,14 @@ const options: swaggerJsdoc.Options = {
     info: {
       title: 'Real Estate Platform API',
       version: '1.0.0',
-      description: 'API documentation for the Real Estate Platform',
-      contact: {
-        name: 'API Support',
-        email: 'support@example.com',
-      },
+      description: 'API documentation for Real Estate Platform',
     },
     servers: [
       {
-        url: 'http://localhost:4000/api',
-        description: 'Development server',
+        url: process.env.NODE_ENV === 'production' 
+          ? 'https://your-production-url.com' 
+          : 'http://localhost:4000',
+        description: process.env.NODE_ENV === 'production' ? 'Production Server' : 'Development Server',
       },
     ],
     components: {
@@ -186,9 +186,25 @@ const options: swaggerJsdoc.Options = {
       },
     },
   },
-  apis: ['./src/routes/*.ts'],
+  apis: ['./src/routes/*.js', './src/routes/*.ts', './src/models/*.js', './src/models/*.ts'],
 };
 
-const specs = swaggerJsdoc(options);
+const swaggerSpec = swaggerJsdoc(options);
 
-export { specs, swaggerUi }; 
+const setupSwagger = (app: Express): void => {
+  // Serve Swagger spec as JSON endpoint
+  app.get('/api-docs.json', (req: Request, res: Response) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(swaggerSpec);
+  });
+
+  // Setup Swagger UI
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    explorer: true,
+    customCss: '.swagger-ui .topbar { display: none }',
+  }));
+
+  logger.info('Swagger documentation initialized');
+};
+
+export { setupSwagger, swaggerSpec }; 

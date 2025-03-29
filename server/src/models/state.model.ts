@@ -1,51 +1,117 @@
+/**
+ * State model - represents a US state in the geographic hierarchy
+ */
+
 import mongoose, { Schema, Document } from 'mongoose';
-import { StateObject, StateMetadata, StateStatistics, StateGeometry } from '../types/inventory';
+import { geometrySchema, stateMetadataSchema, controllerSchema } from './geo-schemas';
 
-// Extend the StateObject interface to include Mongoose document properties
-export interface IState extends Omit<StateObject, '_id'>, Document {}
-
-// Create the State schema
-const StateSchema = new Schema<IState>({
-  id: { type: String, required: true, unique: true },
-  name: { type: String, required: true },
-  abbreviation: { type: String, required: true },
-  type: { type: String, required: true, default: 'state' },
-  parentId: { type: String, required: true },  // Reference to US Map Object
-  createdAt: { type: Date, required: true, default: Date.now },
-  updatedAt: { type: Date, required: true, default: Date.now },
+// Interface for State document
+export interface IState extends Document {
+  id: string; // Custom ID field (lowercase state abbreviation)
+  name: string;
+  abbreviation: string;
+  type: string;
+  parentId: mongoose.Types.ObjectId | string;
   geometry: {
-    type: { type: String, required: true, enum: ['Polygon', 'MultiPolygon'] },
-    coordinates: { type: [[[Number]]], required: true }
-  },
+    type: string;
+    coordinates: any[];
+  };
   metadata: {
-    totalCounties: { type: Number, required: true, default: 0 },
-    totalProperties: { type: Number, required: true, default: 0 },
+    regionalInfo?: {
+      region?: string;
+      subregion?: string;
+    };
+    totalCounties: number;
+    totalProperties: number;
     statistics: {
-      totalTaxLiens: { type: Number, required: true, default: 0 },
-      totalValue: { type: Number, required: true, default: 0 },
-      averagePropertyValue: { type: Number },
-      totalPropertiesWithLiens: { type: Number },
-      lastUpdated: { type: Date, required: true, default: Date.now }
-    }
+      totalTaxLiens: number;
+      totalValue: number;
+      lastUpdated?: Date;
+    };
+    createdAt?: Date;
+    updatedAt?: Date;
+    lastModifiedBy?: string;
+  };
+  controllers?: Array<any>;
+  counties?: mongoose.Types.ObjectId[];
+  properties?: mongoose.Types.ObjectId[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// State Schema
+const StateSchema = new Schema<IState>({
+  // Custom string ID field (lowercase state abbreviation)
+  id: { 
+    type: String, 
+    required: true, 
+    unique: true,
+    lowercase: true,
+    trim: true
   },
-  controllers: [{
-    controllerId: { type: String, required: true },
-    controllerType: { type: String, required: true },
-    enabled: { type: Boolean, required: true },
-    lastRun: { type: Date },
-    nextScheduledRun: { type: Date },
-    configuration: { type: Schema.Types.Mixed }
-  }],
-  counties: [{ type: Schema.Types.ObjectId, ref: 'County' }]
+  name: { type: String, required: true },
+  abbreviation: { type: String, required: true, uppercase: true, trim: true, index: true },
+  type: { type: String, default: 'state' },
+  parentId: { 
+    type: Schema.Types.Mixed, // Can be string or ObjectId
+    required: true, 
+    ref: 'USMap'
+  },
+  geometry: { 
+    type: geometrySchema,
+    required: true,
+    default: () => ({
+      type: 'MultiPolygon',
+      coordinates: [[[[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]]]]
+    })
+  },
+  metadata: { 
+    type: stateMetadataSchema,
+    default: () => ({})
+  },
+  controllers: [controllerSchema],
+  counties: [{ type: Schema.Types.ObjectId, ref: 'County' }],
+  properties: [{ type: Schema.Types.ObjectId, ref: 'Property' }]
 }, {
   timestamps: true
 });
 
-// Update the updatedAt timestamp before saving
+// Create a compound index for efficient lookups
+StateSchema.index({ name: 1, abbreviation: 1 }, { unique: true });
+
+// Generate slug-based ID from abbreviation if not provided
 StateSchema.pre('save', function(next) {
-  this.updatedAt = new Date();
+  // Ensure the ID is set to lowercase state abbreviation if not provided
+  if (!this.id && this.abbreviation) {
+    this.id = this.abbreviation.toLowerCase();
+  }
+  
+  // Set updatedAt timestamp
+  this.set('updatedAt', new Date());
   next();
 });
 
+// Remove the conflicting _id virtual
+// StateSchema.virtual('_id').get(function() {
+//   return this._id;
+// });
+
+// Make sure virtuals are included in JSON output
+StateSchema.set('toJSON', { 
+  virtuals: true,
+  transform: (doc, ret) => {
+    // Ensure id is always the custom id field, not MongoDB _id
+    ret.id = doc.id;
+    // Remove MongoDB _id for cleaner API responses
+    delete ret._id;
+    delete ret.__v;
+    return ret;
+  }
+});
+StateSchema.set('toObject', { virtuals: true });
+
 // Create and export the model
-export const State = mongoose.model<IState>('State', StateSchema); 
+export const State = mongoose.models.State || mongoose.model<IState>('State', StateSchema);
+
+// Default export for compatibility
+export default State; 

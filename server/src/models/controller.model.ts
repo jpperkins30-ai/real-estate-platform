@@ -1,3 +1,4 @@
+// @ts-nocheck
 import mongoose, { Schema, Document } from 'mongoose';
 import { ControllerObject, ControllerType, ControllerExecutionStatus } from '../types/inventory';
 

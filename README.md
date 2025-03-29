@@ -60,6 +60,46 @@ The platform consists of several key components:
    npm start
    ```
 
+## Getting Started with PowerShell Scripts
+
+This project includes several PowerShell scripts to make development easier, especially on Windows systems where the `&&` operator in command lines isn't supported.
+
+### Quick Start
+
+To quickly get up and running:
+
+1. Run the setup script (first-time setup):
+   ```powershell
+   .\setup.ps1
+   ```
+
+2. Start the full application (server & client):
+   ```powershell
+   .\start-app.ps1
+   ```
+
+### Interactive Menu
+
+For an interactive menu of all available commands:
+```powershell
+.\run.ps1
+```
+
+### Available Scripts
+
+- `run.ps1` - Interactive menu with all commands
+- `setup.ps1` - First-time setup (installs dependencies, creates .env file, initializes data)
+- `start-app.ps1` - Starts both server and client applications
+- `server\scripts\start-server.ps1` - Starts just the server
+- `server\scripts\create-usmap.ps1` - Initializes the US Map in the database
+- `server\scripts\check-swagger.ps1` - Checks if Swagger documentation is working
+
+## Accessing the Application
+
+- **Backend API**: http://localhost:4000/api
+- **Swagger Documentation**: http://localhost:4000/api-docs
+- **Frontend Client**: http://localhost:5173 (or the port configured in your client)
+
 ## Logging System
 
 The platform includes a comprehensive logging system for monitoring, troubleshooting, and auditing:
@@ -252,4 +292,58 @@ claude -p "Generate a React component that displays a counter"
 
 - If Docker isn't running, start Docker Desktop
 - If you encounter permission issues, run your terminal as Administrator
-- If the container fails to start, check your internet connection 
+- If the container fails to start, check your internet connection
+
+# PowerShell Scripts for Windows Development
+
+This project includes several PowerShell scripts to make development easier on Windows systems where the `&&` operator isn't supported for command chaining.
+
+## Quick Start
+
+1. First-time setup:
+   ```powershell
+   .\setup.ps1
+   ```
+
+2. Start the application:
+   ```powershell
+   .\run.ps1  # Interactive menu
+   # OR
+   .\start-app.ps1  # Full application (server + client)
+   # OR
+   .\server\scripts\start-server.ps1  # Server only
+   ```
+
+## Available Scripts
+
+- `run.ps1`: Interactive menu for all commands
+- `setup.ps1`: First-time setup script 
+- `start-app.ps1`: Starts both server and client
+
+### Server Scripts
+
+- `server\scripts\start-server.ps1`: Starts the server in TypeScript mode
+- `server\scripts\run-simple-server.ps1`: Runs a simple Express server for testing
+- `server\scripts\fix-env.ps1`: Checks and fixes environment variables
+- `server\scripts\create-usmap.ps1`: Initializes the US Map in the database
+- `server\scripts\check-swagger.ps1`: Tests Swagger documentation
+
+## Troubleshooting
+
+If you encounter any issues with the TypeScript server:
+
+1. Run the environment checker:
+   ```powershell
+   .\server\scripts\fix-env.ps1
+   ```
+
+2. Try the simple server for basic functionality:
+   ```powershell
+   .\server\scripts\run-simple-server.ps1
+   ```
+
+## API Access
+
+- API: http://localhost:4000/api
+- Swagger Docs: http://localhost:4000/api-docs
+- Health Check: http://localhost:4000/api/health 

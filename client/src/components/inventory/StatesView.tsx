@@ -1,63 +1,91 @@
 import React from 'react';
+import { Row, Col, Card, Spinner, Alert, Button } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
-import { Card, Container, Row, Col, Spinner, Alert } from 'react-bootstrap';
-import { useStates } from '../../services/inventoryService';
+import { useInventory } from '../../context/InventoryContext';
+import { FaArrowRight, FaSync } from 'react-icons/fa';
 
 const StatesView: React.FC = () => {
-  const { data: states, isLoading, error } = useStates();
+  const { states, isLoading, error, refreshStates, setSelectedState } = useInventory();
+
+  const handleStateClick = (state: any) => {
+    setSelectedState(state);
+  };
 
   if (isLoading) {
     return (
-      <Container className="my-4 text-center">
+      <div className="text-center p-5">
         <Spinner animation="border" role="status">
           <span className="visually-hidden">Loading...</span>
         </Spinner>
-      </Container>
+        <p className="mt-3">Loading states...</p>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Container className="my-4">
-        <Alert variant="danger">
-          Error loading states: {error instanceof Error ? error.message : 'Unknown error'}
-        </Alert>
-      </Container>
+      <Alert variant="danger">
+        <Alert.Heading>Error Loading States</Alert.Heading>
+        <p>{error.message || 'An unknown error occurred.'}</p>
+        <Button variant="outline-danger" onClick={() => refreshStates()}>
+          <FaSync className="me-2" /> Try Again
+        </Button>
+      </Alert>
     );
   }
 
   if (!states || states.length === 0) {
     return (
-      <Container className="my-4">
-        <Alert variant="info">No states found in the system.</Alert>
-      </Container>
+      <div>
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <h1>States</h1>
+          <Button variant="primary" onClick={() => refreshStates()}>
+            <FaSync className="me-2" /> Refresh
+          </Button>
+        </div>
+        <Alert variant="info">
+          <p className="mb-0">No states found. Please add states to view them here.</p>
+        </Alert>
+      </div>
     );
   }
 
   return (
-    <Container className="my-4">
-      <h1 className="mb-4">States</h1>
+    <div>
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h1>States</h1>
+        <Button variant="primary" onClick={() => refreshStates()}>
+          <FaSync className="me-2" /> Refresh
+        </Button>
+      </div>
+      
       <Row xs={1} md={2} lg={3} className="g-4">
         {states.map((state) => (
           <Col key={state.id}>
-            <Card className="h-100">
+            <Card className="h-100 shadow-sm">
               <Card.Body>
                 <Card.Title>{state.name}</Card.Title>
                 <Card.Subtitle className="mb-2 text-muted">{state.abbreviation}</Card.Subtitle>
-                {state.region && (
-                  <Card.Text>Region: {state.region}</Card.Text>
-                )}
+                <Card.Text>
+                  {state.metadata?.totalCounties || 0} counties
+                  <br />
+                  {state.metadata?.totalProperties || 0} properties
+                </Card.Text>
               </Card.Body>
-              <Card.Footer>
-                <Link to={`/inventory/states/${state.id}`} className="btn btn-primary">
-                  View Counties
+              <Card.Footer className="bg-white">
+                <Link 
+                  to={`/inventory/states/${state.id}`} 
+                  className="btn btn-outline-primary w-100"
+                  onClick={() => handleStateClick(state)}
+                >
+                  View Counties <FaArrowRight className="ms-2" />
                 </Link>
               </Card.Footer>
             </Card>
           </Col>
         ))}
       </Row>
-    </Container>
+    </div>
   );
 };
 

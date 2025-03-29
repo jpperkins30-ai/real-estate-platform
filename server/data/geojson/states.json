@@ -1,0 +1,185 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "California",
+        "abbreviation": "CA"
+      },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [
+          [
+            [
+              [
+                0,
+                0
+              ],
+              [
+                0,
+                1
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                1,
+                0
+              ],
+              [
+                0,
+                0
+              ]
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Florida",
+        "abbreviation": "FL"
+      },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [
+          [
+            [
+              [
+                10,
+                10
+              ],
+              [
+                10,
+                11
+              ],
+              [
+                11,
+                11
+              ],
+              [
+                11,
+                10
+              ],
+              [
+                10,
+                10
+              ]
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "New York",
+        "abbreviation": "NY"
+      },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [
+          [
+            [
+              [
+                20,
+                20
+              ],
+              [
+                20,
+                21
+              ],
+              [
+                21,
+                21
+              ],
+              [
+                21,
+                20
+              ],
+              [
+                20,
+                20
+              ]
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Texas",
+        "abbreviation": "TX"
+      },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [
+          [
+            [
+              [
+                30,
+                30
+              ],
+              [
+                30,
+                31
+              ],
+              [
+                31,
+                31
+              ],
+              [
+                31,
+                30
+              ],
+              [
+                30,
+                30
+              ]
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Maryland",
+        "abbreviation": "MD"
+      },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [
+          [
+            [
+              [
+                40,
+                40
+              ],
+              [
+                40,
+                41
+              ],
+              [
+                41,
+                41
+              ],
+              [
+                41,
+                40
+              ],
+              [
+                40,
+                40
+              ]
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

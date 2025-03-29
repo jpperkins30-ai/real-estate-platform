@@ -384,4 +384,166 @@ This module follows semantic versioning for its API:
 - Minor version changes (1.0.0 → 1.1.0) indicate new features without breaking changes
 - Patch version changes (1.0.0 → 1.0.1) indicate bug fixes
 
-API endpoints are versioned in the URL structure: `/api/v1/states`, `/api/v2/states`, etc. 
+API endpoints are versioned in the URL structure: `/api/v1/states`, `/api/v2/states`, etc.
+
+# Map and Geographic Data Integration
+
+## Map Component Integration
+
+The inventory module now integrates with the map component through a comprehensive set of utilities and services:
+
+### GeoJSON Processing 
+
+The platform includes a robust GeoJSON processing utility (`geoJsonProcessor.ts`) that handles:
+
+- Loading and validating GeoJSON data
+- Ensuring coordinate arrays are properly structured
+- Processing features and feature collections
+- Creating and maintaining the GeoJSON directory structure
+
+```typescript
+import { 
+  processGeoJSON, 
+  loadGeoJSONFromFile, 
+  saveGeoJSONToFile 
+} from '../utils/geoJsonProcessor';
+
+// Loading and processing GeoJSON data
+const statesData = await loadGeoJSONFromFile('data/geojson/states.json');
+const processedData = processGeoJSON(statesData);
+```
+
+### Inventory-Map Data Flow
+
+The inventory module connects to the map component through the following data flow:
+
+1. Geographic entities (states, counties) are loaded from GeoJSON files
+2. Entities are processed and stored in the database with proper IDs and references
+3. The map component retrieves these entities for visualization
+4. User interactions with the map can trigger queries to the inventory module
+5. Changes in the inventory are reflected on the map through real-time updates
+
+## Controller Implementation
+
+### Controller Structure
+
+The inventory module includes controllers that manage the interaction between the UI components and the data layer:
+
+```typescript
+// Controller definition in models/geo-schemas.ts
+export const controllerSchema = new mongoose.Schema({
+  controllerId: { type: String, required: true },
+  controllerType: { type: String, required: true },
+  enabled: { type: Boolean, required: true, default: true },
+  lastRun: { type: Date },
+  nextScheduledRun: { type: Date },
+  configuration: { type: mongoose.Schema.Types.Mixed }
+}, { _id: false });
+```
+
+### Controller Types
+
+The system supports several controller types:
+
+1. **Map Controller**: Manages map visualization and user interactions
+2. **Property Controller**: Handles property data collection and updates
+3. **Tax Sale Controller**: Manages tax sale information
+4. **Demographics Controller**: Processes demographic data for regions
+
+### Controller Implementation
+
+Controllers are implemented as services that:
+
+1. Operate on specific entity types (states, counties, properties)
+2. Schedule and execute data collection tasks
+3. Process and validate incoming data
+4. Update entity metadata and statistics
+5. Trigger notifications based on configured rules
+
+## Geographic Data Structure
+
+### Entity Hierarchy
+
+The inventory module organizes geographic entities in a hierarchical structure:
+
+```
+USMap
+  └── States
+       └── Counties
+            └── Properties
+```
+
+Each entity type has:
+- Reference to its parent entity
+- Proper ID generation rules
+- Metadata for statistics and configuration
+- GeoJSON geometry for visualization
+
+### County ID Generation
+
+Counties are assigned IDs using a standardized format combining the state abbreviation and county name:
+
+```typescript
+const customId = `${stateAbbr.toLowerCase()}-${name.toLowerCase().replace(/\s+/g, '-')}`;
+```
+
+This ID format ensures:
+- Consistency across the application
+- Human-readable identifiers
+- Uniqueness within the system
+- Easy state association
+
+### Data Validation
+
+The inventory module includes comprehensive validation for geographic entities:
+
+1. **Structure Validation**: Ensures all required fields are present
+2. **Geometry Validation**: Verifies GeoJSON geometry is valid
+3. **Reference Validation**: Confirms parent-child relationships are valid
+4. **ID Validation**: Ensures IDs follow the required format
+
+## Data Export and Reporting
+
+The inventory module provides data export capabilities for states and counties:
+
+```typescript
+// Export counties to CSV
+const csvData = await exportService.exportCountiesToCsv(counties);
+
+// Export counties to Excel
+const excelBuffer = await exportService.exportCountiesToExcel(counties);
+```
+
+Export features include:
+- CSV and Excel format support
+- Filtering by various criteria
+- Including detailed metadata
+- Formatted reports with statistics
+
+## Inventory Module API
+
+The inventory module exposes the following API endpoints:
+
+### State Endpoints
+
+- `GET /api/states`: Retrieve all states
+- `GET /api/states/:id`: Get state by ID
+- `POST /api/states`: Create a new state
+- `PUT /api/states/:id`: Update a state
+- `DELETE /api/states/:id`: Delete a state
+
+### County Endpoints
+
+- `GET /api/counties`: Retrieve all counties
+- `GET /api/counties/:id`: Get county by ID
+- `POST /api/counties`: Create a new county
+- `PUT /api/counties/:id`: Update a county
+- `DELETE /api/counties/:id`: Delete a county
+- `GET /api/states/:stateId/counties`: Get all counties in a state
+
+### GeoJSON Endpoints
+
+- `GET /api/geojson/states`: Get GeoJSON for all states
+- `GET /api/geojson/states/:id`: Get GeoJSON for a specific state
+- `GET /api/geojson/counties`: Get GeoJSON for all counties
+- `GET /api/geojson/counties/:id`: Get GeoJSON for a specific county 

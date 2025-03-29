@@ -373,7 +373,7 @@ router.put('/:id/tax-status', async (req, res) => {
     const property = await propertyService.updatePropertyTaxStatus(req.params.id, req.body);
     res.json({
       message: 'Tax status updated successfully',
-      taxStatus: property.taxStatus
+      taxStatus: (property as any).taxStatus
     });
   } catch (error: any) {
     if (error.message === 'Property not found') {

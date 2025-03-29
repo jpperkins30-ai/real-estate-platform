@@ -11,13 +11,12 @@ import {
   ControllableObjectType,
   ControllerType
 } from '../types/inventory';
+import { API_BASE_URL, API_CONFIG } from '../config/api';
 
 // API client setup
 const apiClient = axios.create({
-  baseURL: '/api',
-  headers: {
-    'Content-Type': 'application/json'
-  }
+  baseURL: API_BASE_URL,
+  ...API_CONFIG
 });
 
 // Query hooks for Inventory Module

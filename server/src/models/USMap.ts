@@ -2,68 +2,75 @@
  * USMap model - represents the root geographic entity for the United States
  */
 
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
+import { USMapDocument, ControllerReference, Statistics } from '../types/inventory';
 
-export interface USMapDocument extends Document {
-  name: string;
-  type: string;
-  metadata: {
-    totalStates: number;
-    totalCounties: number;
-    totalProperties: number;
-    statistics: {
-      totalTaxLiens: number;
-      totalValue: number;
-    };
-  };
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-const USMapSchema: Schema = new Schema(
-  {
-    name: {
-      type: String,
-      required: true,
-      default: 'US Map',
-    },
-    type: {
-      type: String,
-      required: true,
-      default: 'us_map',
-      enum: ['us_map'],
-    },
-    metadata: {
-      totalStates: {
-        type: Number,
-        default: 0,
-      },
-      totalCounties: {
-        type: Number,
-        default: 0,
-      },
-      totalProperties: {
-        type: Number,
-        default: 0,
-      },
-      statistics: {
-        totalTaxLiens: {
-          type: Number,
-          default: 0,
-        },
-        totalValue: {
-          type: Number,
-          default: 0,
-        },
-      },
-    },
+const ControllerReferenceSchema = new Schema({
+  controllerId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Controller',
+    required: true
   },
-  {
-    timestamps: true,
+  controllerType: {
+    type: String,
+    enum: ['Tax Sale', 'Map', 'Property', 'Demographics'],
+    required: true
+  },
+  enabled: {
+    type: Boolean,
+    default: true
+  },
+  lastRun: Date,
+  nextScheduledRun: Date,
+  configuration: Schema.Types.Mixed
+}, { _id: false });
+
+const StatisticsSchema = new Schema({
+  totalTaxLiens: {
+    type: Number,
+    default: 0
+  },
+  totalValue: {
+    type: Number,
+    default: 0
   }
-);
+}, { _id: false });
 
-// Create index on type
-USMapSchema.index({ type: 1 });
+const USMapSchema = new Schema<USMapDocument>({
+  name: {
+    type: String,
+    required: true
+  },
+  type: {
+    type: String,
+    default: 'us_map'
+  },
+  metadata: {
+    totalStates: {
+      type: Number,
+      default: 0
+    },
+    totalCounties: {
+      type: Number,
+      default: 0
+    },
+    totalProperties: {
+      type: Number,
+      default: 0
+    },
+    statistics: {
+      type: StatisticsSchema,
+      default: () => ({})
+    }
+  },
+  controllers: [ControllerReferenceSchema]
+}, {
+  timestamps: true
+});
 
-export default mongoose.model<USMapDocument>('USMap', USMapSchema); 
+// Create indexes for common search fields
+USMapSchema.index({ name: 1 });
+USMapSchema.index({ 'metadata.totalProperties': 1 });
+
+// Create and export the model
+export const USMap = mongoose.models.USMap || mongoose.model<USMapDocument>('USMap', USMapSchema); 

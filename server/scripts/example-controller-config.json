@@ -1,0 +1,28 @@
+{
+  "enabled": true,
+  "schedule": {
+    "frequency": "daily",
+    "time": "02:00",
+    "timezone": "America/New_York"
+  },
+  "parameters": {
+    "maxResults": 1000,
+    "dataTypes": ["property", "tax", "deed"],
+    "filters": {
+      "yearBuilt": {
+        "min": 1950,
+        "max": 2023
+      },
+      "propertyTypes": ["residential", "commercial"]
+    }
+  },
+  "notifications": {
+    "onSuccess": ["email"],
+    "onFailure": ["email", "sms"],
+    "recipients": ["admin@example.com"]
+  },
+  "retryPolicy": {
+    "maxRetries": 3,
+    "retryInterval": 60
+  }
+} 

@@ -27,7 +27,7 @@ router.get(
       endTimer();
       res.json(user);
     } catch (error) {
-      logError('Error fetching user profile', error, { userId });
+      logError(`Error fetching user profile - metadata: { userId }`, error as Error);
       res.status(500).json({ message: 'Error fetching user profile' });
     }
   }
@@ -77,7 +77,7 @@ router.put(
       endTimer();
       res.json(updatedUser);
     } catch (error) {
-      logError('Error updating user profile', error, { userId });
+      logError(`Error updating user profile - metadata: { userId }`, error as Error);
       res.status(500).json({ message: 'Error updating user profile' });
     }
   }
@@ -98,7 +98,7 @@ router.get(
       endTimer();
       res.json(users);
     } catch (error) {
-      logError('Error fetching users list', error);
+      logError('Error fetching users list', error as Error);
       res.status(500).json({ message: 'Error fetching users list' });
     }
   }
@@ -123,7 +123,7 @@ router.get(
       endTimer();
       res.json(user);
     } catch (error) {
-      logError('Error fetching user', error, { userId: req.params.id });
+      logError(`Error fetching user - metadata: { userId: req.params.id }`, error as Error);
       res.status(500).json({ message: 'Error fetching user' });
     }
   }
@@ -163,7 +163,7 @@ router.put(
       endTimer();
       res.json(updatedUser);
     } catch (error) {
-      logError('Error updating user', error, { userId });
+      logError(`Error updating user - metadata: { userId }`, error as Error);
       res.status(500).json({ message: 'Error updating user' });
     }
   }
@@ -194,7 +194,7 @@ router.delete(
       endTimer();
       res.json({ message: 'User deleted successfully' });
     } catch (error) {
-      logError('Error deleting user', error, { userId });
+      logError(`Error deleting user - metadata: { userId }`, error as Error);
       res.status(500).json({ message: 'Error deleting user' });
     }
   }

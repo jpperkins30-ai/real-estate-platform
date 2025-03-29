@@ -4,7 +4,7 @@ import { StateObject } from '../types/inventory';
 import { State } from '../models';
 import { getSimplifiedStateGeometry, getCountyFeatureCollection } from '../utils/geoDataUtils';
 import logger, { logError } from '../utils/logger';
-import { objectToGeoJSONFeature, objectsToGeoJSONFeatureCollection } from '../utils/geoJSONUtils';
+import { GeoJSONUtils } from '../utils/geoJSONUtils';
 
 const router = Router();
 
@@ -12,11 +12,57 @@ const stateService = new StateService();
 
 /**
  * @swagger
+ * components:
+ *   schemas:
+ *     State:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *           description: The state ID
+ *         name:
+ *           type: string
+ *           description: The state name
+ *         abbreviation:
+ *           type: string
+ *           description: The state abbreviation
+ *         type:
+ *           type: string
+ *           enum: [state]
+ *           description: Object type
+ *         parentId:
+ *           type: string
+ *           description: Reference to the parent US map ID
+ *         region:
+ *           type: string
+ *           description: Geographic region
+ *         metadata:
+ *           type: object
+ *           properties:
+ *             totalCounties:
+ *               type: number
+ *               description: Total number of counties in the state
+ *             totalProperties:
+ *               type: number
+ *               description: Total number of properties in the state
+ *             statistics:
+ *               type: object
+ *               properties:
+ *                 totalTaxLiens:
+ *                   type: number
+ *                   description: Total number of tax liens
+ *                 totalValue:
+ *                   type: number
+ *                   description: Total property value
+ */
+
+/**
+ * @swagger
  * /api/states:
  *   get:
- *     summary: Get all states
+ *     summary: Retrieve all states
  *     description: Returns a list of all states with optional filters
- *     tags: [Geographic]
+ *     tags: [States]
  *     parameters:
  *       - in: query
  *         name: includeGeometry
@@ -25,7 +71,13 @@ const stateService = new StateService();
  *         description: Whether to include geometry in the response
  *     responses:
  *       200:
- *         description: List of states
+ *         description: A list of states
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/State'
  *       500:
  *         description: Server error
  */
@@ -51,7 +103,7 @@ router.get('/', async (req, res) => {
  *   get:
  *     summary: Get state by abbreviation
  *     description: Returns a state by its abbreviation
- *     tags: [Geographic]
+ *     tags: [States]
  *     parameters:
  *       - in: path
  *         name: abbreviation
@@ -62,6 +114,10 @@ router.get('/', async (req, res) => {
  *     responses:
  *       200:
  *         description: State object
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/State'
  *       404:
  *         description: State not found
  *       500:
@@ -90,7 +146,7 @@ router.get('/:abbreviation', async (req, res) => {
  *   get:
  *     summary: Get simplified geometry for a state
  *     description: Returns a simplified version of the state geometry
- *     tags: [Geographic]
+ *     tags: [States]
  *     parameters:
  *       - in: path
  *         name: abbreviation
@@ -130,7 +186,7 @@ router.get('/:abbreviation/simplified', async (req, res) => {
  *   get:
  *     summary: Get counties for a state
  *     description: Returns a list of counties for a state
- *     tags: [Geographic]
+ *     tags: [States]
  *     parameters:
  *       - in: path
  *         name: abbreviation
@@ -199,7 +255,7 @@ router.get('/:abbreviation/counties', async (req, res) => {
  *   get:
  *     summary: Get statistics for a state
  *     description: Returns statistics for a state
- *     tags: [Geographic]
+ *     tags: [States]
  *     parameters:
  *       - in: path
  *         name: abbreviation
@@ -242,6 +298,7 @@ router.get('/:abbreviation/statistics', async (req, res) => {
  * /api/states:
  *   post:
  *     summary: Create a new state
+ *     tags: [States]
  *     requestBody:
  *       required: true
  *       content:
@@ -251,6 +308,10 @@ router.get('/:abbreviation/statistics', async (req, res) => {
  *     responses:
  *       201:
  *         description: State created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/State'
  *       400:
  *         description: Error creating state
  *       404:
@@ -277,12 +338,14 @@ router.post('/', async (req, res) => {
  * /api/states/{id}:
  *   put:
  *     summary: Update a state
+ *     tags: [States]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
+ *         description: State ID
  *     requestBody:
  *       required: true
  *       content:
@@ -292,6 +355,10 @@ router.post('/', async (req, res) => {
  *     responses:
  *       200:
  *         description: State updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/State'
  *       404:
  *         description: State not found
  */
@@ -313,15 +380,25 @@ router.put('/:id', async (req, res) => {
  * /api/states/{id}:
  *   delete:
  *     summary: Delete a state
+ *     tags: [States]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
+ *         description: State ID
  *     responses:
  *       200:
  *         description: State deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: State deleted successfully
  *       400:
  *         description: Cannot delete state with counties
  *       404:
@@ -351,12 +428,14 @@ router.delete('/:id', async (req, res) => {
  * /api/states/{id}/counties:
  *   get:
  *     summary: Get counties for a state
+ *     tags: [States]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
+ *         description: State ID
  *       - in: query
  *         name: includeGeometry
  *         schema:
@@ -390,12 +469,14 @@ router.get('/:id/counties', async (req, res) => {
  * /api/states/{id}/statistics:
  *   get:
  *     summary: Get statistics for a state
+ *     tags: [States]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
+ *         description: State ID
  *     responses:
  *       200:
  *         description: State statistics
@@ -423,12 +504,14 @@ router.get('/:id/statistics', async (req, res) => {
  * /api/states/{id}/controllers:
  *   get:
  *     summary: Get controllers for a state
+ *     tags: [States]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
+ *         description: State ID
  *     responses:
  *       200:
  *         description: List of controllers
@@ -456,15 +539,27 @@ router.get('/:id/controllers', async (req, res) => {
  * /api/states/{id}/recalculate:
  *   post:
  *     summary: Recalculate state statistics based on counties
+ *     tags: [States]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
+ *         description: State ID
  *     responses:
  *       200:
  *         description: State statistics updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: State statistics updated successfully
+ *                 statistics:
+ *                   type: object
  *       404:
  *         description: State not found
  */

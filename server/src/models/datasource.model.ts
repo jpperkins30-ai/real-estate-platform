@@ -1,75 +1,92 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { DataSourceObject, DataSourceType, DataSourceAuthType } from '../types/inventory';
-
-// Extend the DataSourceObject interface to include Mongoose document properties
-export interface IDataSource extends Omit<DataSourceObject, '_id'>, Document {}
+import { DataSourceDocument } from '../types/inventory';
 
 // Create the DataSource schema
-const DataSourceSchema = new Schema<IDataSource>({
-  id: { type: String, required: true, unique: true },
-  name: { type: String, required: true },
-  description: String,
-  type: { type: String, required: true, enum: ['Tax Sale', 'Property Records', 'Demographics', 'Market Data', 'Custom'] },
-  enabled: { type: Boolean, required: true, default: true },
-  config: {
-    type: { type: String, required: true },
-    authType: { type: String, required: true, enum: ['None', 'API Key', 'OAuth2', 'Basic Auth', 'Custom'] },
-    baseUrl: { type: String, required: true },
-    endpoints: { type: Map, of: String },
-    auth: {
-      apiKey: String,
-      username: String,
-      password: String,
-      clientId: String,
-      clientSecret: String,
-      tokenUrl: String,
-      scope: [String]
-    },
-    headers: { type: Map, of: String },
-    parameters: Schema.Types.Mixed,
-    rateLimit: {
-      requestsPerMinute: Number,
-      burstSize: Number
-    },
-    retryPolicy: {
-      maxAttempts: Number,
-      delayMs: Number,
-      backoffMultiplier: Number
-    },
-    validation: {
-      enabled: { type: Boolean, default: false },
-      schema: Schema.Types.Mixed,
-      rules: Schema.Types.Mixed
-    }
+const DataSourceSchema = new Schema<DataSourceDocument>({
+  name: {
+    type: String,
+    required: true,
+    trim: true,
   },
-  lastSync: Date,
-  nextSync: Date,
-  status: { type: String, required: true, enum: ['Active', 'Inactive', 'Error', 'Syncing'], default: 'Inactive' },
-  error: String,
+  type: {
+    type: String,
+    required: true,
+    enum: ['county-website', 'state-records', 'tax-database', 'api', 'pdf'],
+  },
+  url: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  region: {
+    state: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    county: {
+      type: String,
+      trim: true,
+    },
+  },
+  collectorType: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  schedule: {
+    frequency: {
+      type: String,
+      required: true,
+      enum: ['hourly', 'daily', 'weekly', 'monthly', 'manual'],
+      default: 'daily',
+    },
+    dayOfWeek: {
+      type: Number,
+      min: 0,
+      max: 6,
+    },
+    dayOfMonth: {
+      type: Number,
+      min: 1,
+      max: 31,
+    },
+  },
   metadata: {
-    version: String,
-    author: String,
-    tags: [String],
-    notes: [String]
+    lookupMethod: {
+      type: String,
+      enum: ['account_number', 'parcel_id'],
+    },
+    selectors: {
+      type: Schema.Types.Mixed,
+    },
+    lienUrl: {
+      type: String,
+      trim: true,
+    },
   },
-  createdAt: { type: Date, required: true, default: Date.now },
-  updatedAt: { type: Date, required: true, default: Date.now }
+  status: {
+    type: String,
+    required: true,
+    enum: ['active', 'inactive', 'error'],
+    default: 'inactive',
+  },
+  lastCollected: {
+    type: Date,
+  },
+  errorMessage: {
+    type: String,
+  },
 }, {
   timestamps: true
 });
 
-// Update the updatedAt timestamp before saving
-DataSourceSchema.pre('save', function(next) {
-  this.updatedAt = new Date();
-  next();
-});
-
 // Create indexes for common search fields
+DataSourceSchema.index({ name: 1 }, { unique: true });
 DataSourceSchema.index({ type: 1 });
-DataSourceSchema.index({ enabled: 1 });
+DataSourceSchema.index({ collectorType: 1 });
+DataSourceSchema.index({ 'region.state': 1, 'region.county': 1 });
 DataSourceSchema.index({ status: 1 });
-DataSourceSchema.index({ 'config.type': 1 });
-DataSourceSchema.index({ 'metadata.tags': 1 });
 
 // Create and export the model
-export const DataSource = mongoose.model<IDataSource>('DataSource', DataSourceSchema); 
+export const DataSource = mongoose.model<DataSourceDocument>('DataSource', DataSourceSchema); 
