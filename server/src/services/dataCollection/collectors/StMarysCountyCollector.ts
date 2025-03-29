@@ -5,7 +5,7 @@ import path from 'path';
 import { CollectionResult, DataSource, ErrorType, CollectionError } from '../../../types/collector';
 import { BaseCollector } from '../BaseCollector';
 import { logger } from '../../../utils/collectorLogger';
-import Property from '../../../models/Property';
+import Property from '../../../models/property.model';
 import mongoose from 'mongoose';
 
 /**

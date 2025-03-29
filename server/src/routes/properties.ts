@@ -1,7 +1,7 @@
 // src/routes/properties.ts
 import express, { Request, Response, NextFunction } from 'express';
 import { authenticate } from '../middleware/auth';
-import Property from '../models/Property';
+import Property from '../models/property.model';
 import { propertyValidation } from '../middleware/validation';
 import { validationResult } from 'express-validator';
 import mongoose from 'mongoose';

@@ -1,22 +1,37 @@
-# State and Controller Model Consolidation
+# Model Consolidation
 
 ## Overview
 
-This document describes the successful consolidation of duplicate model files for both State and Controller entities in the codebase.
+This document describes the successful consolidation of duplicate model files for State, Controller, County, Property, and USMap entities in the codebase.
 
 ## Problem
 
+The codebase had duplicate model files for several key entities:
+
 ### State Model Duplication
 
-The codebase had two different model files for the State entity:
 - `server/src/models/State.ts` - Using default export
 - `server/src/models/state.model.ts` - Using named exports with enhanced functionality
 
 ### Controller Model Duplication
 
-Similarly, there were two different model files for the Controller entity:
 - `server/src/models/Controller.ts` - Using default export
 - `server/src/models/controller.model.ts` - Using named exports with enhanced functionality
+
+### County Model Duplication
+
+- `server/src/models/County.ts` - Using default export
+- `server/src/models/county.model.ts` - Using named exports with enhanced functionality
+
+### Property Model Duplication
+
+- `server/src/models/Property.ts` - Using default export 
+- `server/src/models/property.model.ts` - Using named exports with enhanced functionality
+
+### USMap Model Duplication
+
+- `server/src/models/USMap.ts` - Using default export
+- `server/src/models/usmap.model.ts` - Using named exports with enhanced functionality
 
 This duplication caused:
 1. Inconsistent import patterns across the codebase
@@ -26,7 +41,7 @@ This duplication caused:
 
 ## Solution Implemented
 
-We followed the same consolidation approach that was successful with the DataSource model:
+We followed the same consolidation approach for all models:
 
 ### State Model
 
@@ -63,6 +78,61 @@ We followed the same consolidation approach that was successful with the DataSou
 3. **Deleted Duplicate File**
    - Removed `server/src/models/Controller.ts` after successful consolidation and testing
 
+### County Model
+
+1. **Consolidated Models**
+   - Updated `server/src/models/county.model.ts` to include all functionality from both files
+   - Added detailed documentation in the file header to indicate consolidation
+   - Enhanced the searchConfig schema with fields from County.ts
+   - Added proper typing for controllers array
+   - Added additional indexes for common search fields
+
+2. **Updated Import Statements**
+   - Updated import statements in the following files:
+     - `server/src/index.ts`
+     - `server/src/routes/main.routes.ts`
+     - `server/src/utils/controller-utils.ts`
+
+3. **Deleted Duplicate File**
+   - Removed `server/src/models/County.ts` after successful consolidation and testing
+
+### Property Model
+
+1. **Consolidated Models**
+   - Updated `server/src/models/property.model.ts` to include all functionality from both files
+   - Added detailed documentation in the file header to indicate consolidation
+   - Added sub-schemas for property details, tax information, sale information, and geolocation
+   - Enhanced the property interface to include all possible fields
+   - Added indexes for efficient querying
+   - Added allowance for additional fields with `strict: false`
+
+2. **Updated Import Statements**
+   - Updated import statements in the following files:
+     - `server/src/routes/property.ts`
+     - `server/src/routes/properties.ts`
+     - `server/src/services/dataTransformation/TransformationPipeline.ts`
+     - `server/src/services/dataCollection/collectors/StMarysCountyCollector.ts`
+
+3. **Deleted Duplicate File**
+   - Removed `server/src/models/Property.ts` after successful consolidation and testing
+
+### USMap Model
+
+1. **Consolidated Models**
+   - Updated `server/src/models/usmap.model.ts` to include all functionality from both files
+   - Added detailed documentation in the file header to indicate consolidation
+   - Added the Statistics schema directly within the file
+   - Fixed controller reference schema to use ObjectId type and referencing
+   - Added proper typing for controllers array
+
+2. **Updated Import Statements**
+   - Updated import statements in the following files:
+     - `server/src/routes/main.routes.ts`
+     - `server/src/scripts/createSimpleData.ts`
+
+3. **Deleted Duplicate File**
+   - Removed `server/src/models/USMap.ts` after successful consolidation and testing
+
 ## Benefits Achieved
 
 - Consistent import patterns across the codebase
@@ -81,10 +151,10 @@ The consolidated models were tested by running the server and verifying that:
 ## Future Work
 
 Continue the effort to standardize model naming conventions across the codebase:
-- Consolidate the remaining models to use the `*.model.ts` naming convention (recommended)
+- Consolidate any remaining models to use the `*.model.ts` naming convention (recommended)
 - Update any remaining imports to use the consolidated model files
 - Add comprehensive documentation to all model files about their purpose and structure
 
 ## Conclusion
 
-The consolidation of State and Controller models was successfully completed, following the same pattern established with the DataSource consolidation. This helps establish a more consistent and maintainable codebase structure going forward. 
+The consolidation of all duplicate model files was successfully completed. This helps establish a more consistent and maintainable codebase structure going forward, with clear naming conventions and a single source of truth for each entity's schema. 

@@ -1,4 +1,4 @@
-import Property, { PropertyDocument } from '../../models/Property';
+import Property, { IProperty } from '../../models/property.model';
 import logger from '../../utils/logger';
 
 export class TransformationPipeline {
@@ -7,7 +7,7 @@ export class TransformationPipeline {
    * @param property The property to transform
    * @returns The transformed property
    */
-  public async transform(property: PropertyDocument): Promise<PropertyDocument> {
+  public async transform(property: IProperty): Promise<IProperty> {
     try {
       // Clone the property to avoid mutating the original
       const transformedProperty = JSON.parse(JSON.stringify(property));
@@ -31,10 +31,10 @@ export class TransformationPipeline {
    * @param property The property to validate
    * @throws Error if required fields are missing
    */
-  private validateRequiredFields(property: PropertyDocument): void {
+  private validateRequiredFields(property: IProperty): void {
     const requiredFields = ['propertyAddress', 'county', 'state'];
     
-    const missingFields = requiredFields.filter(field => !property[field as keyof PropertyDocument]);
+    const missingFields = requiredFields.filter(field => !property[field as keyof IProperty]);
     
     if (missingFields.length > 0) {
       throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
@@ -45,7 +45,7 @@ export class TransformationPipeline {
    * Normalizes the address format
    * @param property The property to normalize
    */
-  private normalizeAddress(property: PropertyDocument): void {
+  private normalizeAddress(property: IProperty): void {
     if (!property.propertyAddress) return;
     
     // Convert address to uppercase
@@ -93,7 +93,7 @@ export class TransformationPipeline {
    * Extracts numeric values from string fields and converts them to numbers
    * @param property The property to transform
    */
-  private extractNumericValues(property: PropertyDocument): void {
+  private extractNumericValues(property: IProperty): void {
     // Convert price string to number if it exists
     if (property.saleInfo?.saleAmount && typeof property.saleInfo.saleAmount === 'string') {
       const numericPrice = parseFloat((property.saleInfo.saleAmount as unknown as string).replace(/[$,]/g, ''));
@@ -148,7 +148,7 @@ export class TransformationPipeline {
    * Standardizes property types to use consistent terminology
    * @param property The property to standardize
    */
-  private standardizePropertyTypes(property: PropertyDocument): void {
+  private standardizePropertyTypes(property: IProperty): void {
     if (!property.propertyType) return;
     
     const propertyType = property.propertyType.toUpperCase();

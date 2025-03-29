@@ -31,7 +31,7 @@ import { typesRoutes } from './routes/types.routes';
 import { collectorTypesRoutes } from './routes/collectorTypes.routes';
 import { Property } from './models/property.model';
 import { State } from './models/state.model';
-import { County } from './models/County';
+import { County } from './models/county.model';
 import { USMap } from './models/usmap.model';
 import { Controller } from './models/controller.model';
 import { IDataSource } from './models/datasource.model';
