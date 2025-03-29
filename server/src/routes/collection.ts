@@ -1,6 +1,6 @@
 import express from 'express';
 import Collection from '../models/Collection';
-import DataSource from '../models/DataSource';
+import { DataSource } from '../models/datasource.model';
 import { collectorManager } from '../services/dataCollection/CollectorManager';
 import logger from '../utils/logger';
 

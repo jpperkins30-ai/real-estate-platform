@@ -2,7 +2,7 @@ import { ObjectId } from 'mongodb';
 import mongoose from 'mongoose';
 import logger from '../utils/logger';
 import Collection from '../models/Collection';
-import DataSource, { IDataSource } from '../models/DataSource';
+import { DataSource, IDataSource } from '../models/datasource.model';
 
 interface CollectionStats {
   duration: number;

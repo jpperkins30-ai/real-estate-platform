@@ -1,7 +1,7 @@
 import { ObjectId } from 'mongodb';
 import mongoose from 'mongoose';
 import logger from '../utils/logger';
-import DataSource, { IDataSource } from '../models/DataSource';
+import { DataSource, IDataSource } from '../models/datasource.model';
 import { recordCollectionRun } from './collection-utils';
 
 /**

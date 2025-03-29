@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { auth } from '../middleware/auth';
-import DataSource from '../models/DataSource';
+import { DataSource } from '../models/datasource.model';
 import Collection from '../models/Collection';
 
 const router = Router();

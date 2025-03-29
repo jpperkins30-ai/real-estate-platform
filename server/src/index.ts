@@ -34,7 +34,7 @@ import { State } from './models/State';
 import { County } from './models/County';
 import { USMap } from './models/usmap.model';
 import { Controller } from './models/Controller';
-import { IDataSource } from './models/DataSource';
+import { IDataSource } from './models/datasource.model';
 import Collection from './models/Collection';
 import connectDB from './config/database';
 import initUSMap from './scripts/initUSMap';

@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import { logger } from '../../utils/collectorLogger';
 import { CollectorDefinition, DataSource, CollectionResult } from '../../types/collector';
-import DataSourceModel from '../../models/DataSource';
+import { DataSource as DataSourceModel } from '../../models/datasource.model';
 import CollectionModel from '../../models/Collection';
 
 /**
