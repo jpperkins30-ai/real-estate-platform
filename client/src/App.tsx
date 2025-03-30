@@ -1,56 +1,59 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import api from './services/api';
-import { State, County, Property } from './types/api';
+import { State } from './types/api';
 import './App.css';
 
-// Import components for inventory module
-import InventoryModule from './components/inventory/InventoryModule';
-import InventorySidebar from './components/inventory/InventorySidebar';
-import PropertySearchPage from './pages/inventory/PropertySearchPage';
+import ErrorBoundary from './components/common/ErrorBoundary';
+import usePerformanceMonitor from './hooks/usePerformanceMonitor';
 
-// Mock data for testing
-const MOCK_STATES: State[] = [
-  {
-    id: '1',
-    name: 'California',
-    abbreviation: 'CA',
-    type: 'state',
-    metadata: {
-      totalCounties: 2,
-      totalProperties: 5,
-      statistics: {
-        totalTaxLiens: 0,
-        totalValue: 0,
-        averagePropertyValue: 0
-      }
-    },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: '2',
-    name: 'New York',
-    abbreviation: 'NY',
-    type: 'state',
-    metadata: {
-      totalCounties: 0,
-      totalProperties: 0,
-      statistics: {
-        totalTaxLiens: 0,
-        totalValue: 0,
-        averagePropertyValue: 0
-      }
-    },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  }
-];
+// Lazy load components with prefetching
+const InventoryModule = React.lazy(() => {
+  const module = import('./components/inventory').then(m => ({ default: m.InventoryModule }));
+  // Prefetch related components
+  import('./components/inventory').then(m => m.InventoryTree);
+  import('./components/inventory').then(m => m.StateDetails);
+  return module;
+});
+
+// Lazy load standalone components
+const InventorySidebar = React.lazy(() => import('./components/inventory').then(module => ({ default: module.InventorySidebar })));
+const InventoryTree = React.lazy(() => import('./components/inventory').then(module => ({ default: module.InventoryTree })));
+const InventoryDashboard = React.lazy(() => import('./components/inventory').then(module => ({ default: module.InventoryMain })));
+const StateDetails = React.lazy(() => import('./components/inventory').then(module => ({ default: module.StateDetails })));
+const CountyDetails = React.lazy(() => import('./components/inventory').then(module => ({ default: module.CountyDetails })));
+const PropertyDetails = React.lazy(() => import('./components/inventory').then(module => ({ default: module.PropertyDetails })));
+
+// Lazy load standalone components
+const CollectionHistory = React.lazy(() => import('./components/CollectionHistory'));
+const CollectorConfigurationForm = React.lazy(() => import('./components/CollectorConfigurationForm'));
+const HierarchyTree = React.lazy(() => import('./components/HierarchyTree'));
+const PropertyValuationPage = React.lazy(() => import('./pages/PropertyValuationPage'));
+
+// Loading and error fallback components
+const LoadingFallback = () => (
+  <div className="loading-spinner">
+    <p>Loading...</p>
+  </div>
+);
+
+const ErrorFallback = ({ error }: { error: Error }) => (
+  <div className="error-boundary">
+    <h2>Something went wrong</h2>
+    <p>{error.message}</p>
+    <button onClick={() => window.location.reload()} className="retry-button">
+      Reload Page
+    </button>
+  </div>
+);
 
 function App() {
   const [states, setStates] = useState<State[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Monitor app performance
+  const { logRender } = usePerformanceMonitor('App');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -58,15 +61,10 @@ function App() {
         const response = await api.getStates();
         if (response && response.length > 0) {
           setStates(response);
-        } else {
-          // Use mock data if the API doesn't return any states
-          setStates(MOCK_STATES);
         }
       } catch (err) {
         console.error('Error fetching states:', err);
         setError('Failed to load states');
-        // Use mock data on error
-        setStates(MOCK_STATES);
       } finally {
         setIsLoading(false);
       }
@@ -74,6 +72,11 @@ function App() {
 
     fetchData();
   }, []);
+
+  // Log render performance
+  useEffect(() => {
+    logRender();
+  });
 
   return (
     <Router>
@@ -83,46 +86,84 @@ function App() {
           <nav className="app-nav">
             <Link to="/">Dashboard</Link>
             <Link to="/inventory">Inventory</Link>
+            <Link to="/valuation">Property Valuation</Link>
+            <Link to="/collection">Collection History</Link>
           </nav>
         </header>
 
         <div className="app-content">
-          <Routes>
-            <Route path="/" element={
-              <div className="dashboard">
-                <h1>Real Estate Dashboard</h1>
-                {isLoading ? (
-                  <p>Loading states...</p>
-                ) : error ? (
-                  <p className="error">{error}</p>
-                ) : (
-                  <div className="states-grid">
-                    {states.map(state => (
-                      <div key={state.id} className="state-card">
-                        <h2>{state.name} ({state.abbreviation})</h2>
-                        <p>Counties: {state.metadata?.totalCounties || 0}</p>
-                        <p>Properties: {state.metadata?.totalProperties || 0}</p>
-                        <Link to={`/inventory/state/${state.id}`} className="view-link">View Details</Link>
+          <ErrorBoundary fallback={<ErrorFallback error={new Error('Application error')} />}>
+            <Suspense fallback={<LoadingFallback />}>
+              <Routes>
+                {/* Dashboard Route */}
+                <Route path="/" element={
+                  <div className="dashboard">
+                    <h1>Real Estate Dashboard</h1>
+                    {isLoading ? (
+                      <p>Loading states...</p>
+                    ) : error ? (
+                      <p className="error">{error}</p>
+                    ) : (
+                      <div className="states-grid">
+                        {states.map(state => (
+                          <div key={state.id} className="state-card">
+                            <h2>{state.name} ({state.abbreviation})</h2>
+                            <p>Counties: {state.metadata?.totalCounties || 0}</p>
+                            <p>Properties: {state.metadata?.totalProperties || 0}</p>
+                            <Link to={`/inventory/state/${state.id}`} className="view-link">View Details</Link>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
-                )}
-              </div>
-            } />
-            
-            <Route path="/inventory/*" element={
-              <div className="inventory-layout">
-                <InventorySidebar />
-                <div className="inventory-content">
-                  <InventoryModule />
-                </div>
-              </div>
-            } />
-          </Routes>
+                } />
+                
+                {/* Inventory Routes */}
+                <Route path="/inventory/*" element={
+                  <ErrorBoundary>
+                    <div className="inventory-layout">
+                      <Suspense fallback={<LoadingFallback />}>
+                        <InventorySidebar />
+                        <div className="inventory-content">
+                          <Routes>
+                            <Route index element={<InventoryDashboard />} />
+                            <Route path="tree" element={<InventoryTree />} />
+                            <Route path="hierarchy" element={<HierarchyTree />} />
+                            <Route path="state/:stateId" element={<StateDetails />} />
+                            <Route path="county/:countyId" element={<CountyDetails />} />
+                            <Route path="property/:propertyId" element={<PropertyDetails />} />
+                          </Routes>
+                        </div>
+                      </Suspense>
+                    </div>
+                  </ErrorBoundary>
+                } />
+
+                {/* Property Valuation Route */}
+                <Route path="/valuation" element={
+                  <ErrorBoundary>
+                    <PropertyValuationPage />
+                  </ErrorBoundary>
+                } />
+
+                {/* Collection Routes */}
+                <Route path="/collection" element={
+                  <ErrorBoundary>
+                    <CollectionHistory />
+                  </ErrorBoundary>
+                } />
+                <Route path="/collection/configure" element={
+                  <ErrorBoundary>
+                    <CollectorConfigurationForm />
+                  </ErrorBoundary>
+                } />
+              </Routes>
+            </Suspense>
+          </ErrorBoundary>
         </div>
       </div>
     </Router>
   );
 }
 
-export default App;
+export default App; 

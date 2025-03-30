@@ -9,22 +9,18 @@ import swaggerJsDoc from 'swagger-jsdoc';
 import logger, { logError, logInfo, logDebug } from './utils/logger';
 import { requestLogger, errorLogger } from './middleware/requestLogger';
 import authRoutes from './routes/auth';
-// Uncomment property routes since the file exists
 import propertyRoutes from './routes/property.routes';
 import userRoutes from './routes/user';
 import logsRoutes from './routes/logs';
-// Uncomment geo routes since geoJSONUtils exists
 import usMapRoutes from './routes/usmap.routes';
 import stateRoutes from './routes/state.routes';
 import countyRoutes from './routes/county.routes';
 import helmet from 'helmet';
-// Remove the import for specs
 import config from './config';
 import controllerRoutes from './routes/controller.routes';
 import collectionRoutes from './routes/collection.routes';
 import exportRoutes from './routes/export.routes';
 import taxLienRoutes from './routes/tax-lien.routes';
-// Uncomment geo data init since we've created the necessary files
 import initGeoData from './utils/initGeoData';
 import { mainRoutes } from './routes/main.routes';
 import { typesRoutes } from './routes/types.routes';
