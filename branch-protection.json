@@ -1,0 +1,52 @@
+{
+  "protection_rules": {
+    "main": {
+      "required_status_checks": true,
+      "enforce_admins": true,
+      "required_pull_request_reviews": {
+        "required_approving_review_count": 1,
+        "dismiss_stale_reviews": true,
+        "require_code_owner_reviews": true
+      },
+      "restrictions": null,
+      "allow_force_pushes": false,
+      "allow_deletions": false
+    },
+    "develop": {
+      "required_status_checks": true,
+      "required_pull_request_reviews": {
+        "required_approving_review_count": 1,
+        "dismiss_stale_reviews": true
+      },
+      "restrictions": null,
+      "allow_force_pushes": false,
+      "allow_deletions": false
+    }
+  },
+  "branch_naming_convention": {
+    "feature": "feature/*",
+    "bugfix": "bugfix/*",
+    "hotfix": "hotfix/*",
+    "release": "release/*"
+  },
+  "workflow_rules": {
+    "feature_branches": {
+      "branch_from": "develop",
+      "merge_to": "develop",
+      "require_review": true,
+      "delete_after_merge": true
+    },
+    "hotfix_branches": {
+      "branch_from": "main",
+      "merge_to": ["main", "develop"],
+      "require_review": true,
+      "delete_after_merge": true
+    },
+    "release_branches": {
+      "branch_from": "develop",
+      "merge_to": ["main", "develop"],
+      "require_review": true,
+      "delete_after_merge": true
+    }
+  }
+} 

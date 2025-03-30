@@ -1,0 +1,36 @@
+name: Development Deployment
+
+on:
+  push:
+    branches:
+      - develop
+      - 'feature/**'
+
+jobs:
+  deploy-development:
+    runs-on: ubuntu-latest
+    environment: development
+    
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+          
+      - name: Install Dependencies
+        run: |
+          npm install
+          cd client && npm install
+          cd ../server && npm install
+          
+      - name: Run Tests
+        run: |
+          cd client && npm test
+          cd ../server && npm test
+          
+      - name: Build
+        run: |
+          cd client && npm run build
+          cd ../server && npm run build 
