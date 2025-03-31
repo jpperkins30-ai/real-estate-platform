@@ -1,5 +1,11 @@
 # System Architecture
 
+> **Note**: This document is part of the Real Estate Platform's technical documentation suite. For related guides, see:
+> - [Security Guide](./SECURITY.md) - Security measures and best practices
+> - [Development Guide](./development-guide.md) - Development environment setup and workflows
+> - [Authentication Setup](./authentication-setup.md) - Detailed authentication implementation
+> - [Component Testing Guide](./component-test-guide.md) - Testing procedures and guidelines
+
 ## Overview
 
 The Real Estate Platform follows a modular monolithic architecture with the following key components:
@@ -576,4 +582,114 @@ The application is containerized using Docker and can be deployed in various con
     "lastUpdated": "2023-10-01"
   }
 }
+```
+
+## Collector Framework Architecture
+
+### Collector Component Structure
+```mermaid
+graph TB
+    CF[Collector Framework]
+    Config[Configuration Module]
+    Runner[Runner Module]
+    Monitor[Monitor Module]
+    Storage[Storage Module]
+    
+    CF --> Config
+    CF --> Runner
+    CF --> Monitor
+    CF --> Storage
+    
+    Config --> Validation[Config Validation]
+    Config --> Schema[Schema Definition]
+    
+    Runner --> Queue[Collection Queue]
+    Runner --> Workers[Worker Pool]
+    Runner --> Rate[Rate Limiting]
+    
+    Monitor --> Progress[Progress Tracking]
+    Monitor --> Status[Status Updates]
+    Monitor --> Metrics[Performance Metrics]
+    
+    Storage --> Cache[Result Cache]
+    Storage --> DB[(MongoDB)]
+```
+
+### Collection Flow
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant API as API Module
+    participant CF as Collector Framework
+    participant DB as MongoDB
+    participant Map as Map Component
+    
+    C->>API: Configure Collection
+    API->>CF: Initialize Collection
+    CF->>CF: Validate Config
+    CF->>DB: Create Collection Job
+    CF-->>API: Return Job ID
+    API-->>C: Return Status
+    
+    loop Collection Process
+        CF->>CF: Execute Collection
+        CF->>DB: Store Results
+        CF->>Map: Update Visualization
+        CF-->>C: Progress Update
+    end
+```
+
+### Integration Points
+
+The Collector Framework integrates with other system components:
+
+1. **Inventory Module**
+   - Provides data structure for collected properties
+   - Manages property relationships and hierarchy
+   - Handles property deduplication
+
+2. **Map Component**
+   - Real-time visualization of collection progress
+   - Geographic filtering of collection targets
+   - Status indicators for collected areas
+
+3. **Export Module**
+   - Formats collected data for export
+   - Provides collection-specific export templates
+   - Handles batch export of collection results
+
+## Consolidated Branch Architecture
+
+The platform uses a consolidated branch structure to manage features:
+
+```mermaid
+graph TB
+    Main[main branch]
+    Dev[develop branch]
+    Inv[feature/inventory-consolidated]
+    Exp[feature/export-consolidated]
+    Map[feature/map-consolidated]
+    
+    Main --> Dev
+    Dev --> Inv
+    Dev --> Exp
+    Dev --> Map
+    
+    subgraph Inventory
+        Inv --> Collector[Collector Framework]
+        Inv --> DataModel[Data Models]
+        Inv --> API[REST API]
+    end
+    
+    subgraph Export
+        Exp --> Templates[Export Templates]
+        Exp --> Formats[Format Handlers]
+        Exp --> Queue[Export Queue]
+    end
+    
+    subgraph Map
+        Map --> Visualization[Map Component]
+        Map --> GeoData[GeoJSON Handler]
+        Map --> Updates[Real-time Updates]
+    end
 ``` 

@@ -11,6 +11,9 @@ A comprehensive real estate investment platform with property listing, user mana
 - Admin panel for platform management
 - Comprehensive logging and analytics system
 - RESTful API for third-party integration
+- Data Collection Framework with configurable collectors
+- Interactive US Map visualization
+- Export functionality for property data
 
 ## Architecture
 
@@ -21,6 +24,28 @@ The platform consists of several key components:
 - **Admin Dashboard**: React-based administration interface
 - **Database**: MongoDB with Mongoose ODM
 - **Logging System**: Winston-based structured logging with analytics
+- **Collection Framework**: Modular data collection system
+- **GitHub Workflows**: Automated CI/CD pipelines
+
+## Branch Structure
+
+The repository follows a structured branching strategy:
+
+- `main` - Production-ready code
+- `develop` - Integration branch for feature development
+- Feature branches:
+  - `feature/inventory-consolidated` - Inventory management with collector framework
+  - `feature/export-consolidated` - Data export functionality
+  - `feature/map-consolidated` - Interactive map visualization
+
+### Branch Protection Rules
+
+The repository implements branch protection rules to maintain code quality:
+
+- Protected branches: `main`, `develop`
+- Required reviews before merging
+- Status checks must pass before merging
+- Up-to-date branch required before merge
 
 ## Getting Started
 
@@ -162,12 +187,23 @@ The platform includes comprehensive documentation:
 │   │   ├── middleware/      # Express middleware
 │   │   ├── models/          # Mongoose models
 │   │   ├── routes/          # Express routes
+│   │   ├── collectors/      # Data collection modules
 │   │   ├── scripts/         # CLI utilities
 │   │   ├── utils/           # Utility functions
 │   │   └── index.ts         # Entry point
 │   └── tsconfig.json        # TypeScript configuration
 ├── admin-dashboard/         # Admin interface
 ├── client/                  # User-facing frontend
+│   ├── src/
+│   │   ├── components/      # React components
+│   │   │   ├── common/      # Shared components
+│   │   │   ├── inventory/   # Inventory management
+│   │   │   └── map/         # Map visualization
+│   │   ├── hooks/           # Custom React hooks
+│   │   └── App.tsx          # Main application
+│   └── tsconfig.json        # TypeScript configuration
+├── .github/                # GitHub configuration
+│   └── workflows/          # CI/CD workflows
 ├── docs/                    # Documentation
 └── package.json             # Project dependencies
 ```

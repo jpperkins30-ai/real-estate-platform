@@ -1,5 +1,10 @@
 # Interactive Map Component Documentation
 
+> **Note**: This document is part of the Real Estate Platform's technical documentation suite. For related guides, see:
+> - [Architecture Guide](../../../docs/architecture.md) - Learn how the Map Component fits into the overall system architecture
+> - [Development Guide](../../../docs/development-guide.md) - Setup instructions and development workflows
+> - [Component Testing Guide](../../../docs/component-test-guide.md) - Testing procedures for components
+
 ## Overview
 The enhanced MapComponent transforms geographical data visualization into a dynamic command center for the Real Estate Investment Platform. It provides a rich, interactive experience for exploring state, county, and property data with meaningful visual cues and real-time interaction.
 
@@ -237,4 +242,60 @@ The map component implementation is backed up in the following locations:
 
 - Uses Leaflet under BSD-2-Clause license
 - Map tiles from Carto under CC-BY license
-- Icons from Bootstrap Icons under MIT license 
+- Icons from Bootstrap Icons under MIT license
+
+## Collector Framework Integration
+
+The MapComponent integrates with the collector framework to display real-time updates from various data sources:
+
+### Automatic Updates
+- New properties from collectors appear with pulsing orange markers
+- Status updates trigger visual transitions
+- Collection progress is reflected in the stats panel
+
+### Collection Filtering
+```jsx
+<MapComponent 
+  type="county"
+  data={{
+    geometry: countyGeojson,
+    properties: propertyArray
+  }}
+  collectionFilters={{
+    sourceId: 'tax-sale-collector',
+    timeRange: '7d',
+    status: ['new', 'verified']
+  }}
+  onSelect={handlePropertySelect}
+/>
+```
+
+### Collection Events
+The component listens for collection events to update its display:
+- `onCollectionStart`: Displays collection area highlight
+- `onCollectionProgress`: Updates progress indicators
+- `onCollectionComplete`: Refreshes data and updates stats
+
+### Performance Considerations
+- Implements lazy loading for large collection results
+- Uses WebSocket updates for real-time collection progress
+- Caches collection results for improved performance 
+
+## Security Considerations
+
+> **Note**: For a complete overview of security measures and best practices, see the [main security guide](../../../../docs/SECURITY.md).
+
+### Data Security
+- All sensitive property data is encrypted in transit
+- User permissions are validated before displaying restricted information
+- Property details are filtered based on user role
+
+### API Security
+- All API requests use secure HTTPS connections
+- Authentication tokens are required for protected endpoints
+- Rate limiting is applied to prevent abuse
+
+### User Input
+- All user inputs are sanitized before processing
+- Map bounds are validated to prevent invalid requests
+- File uploads are restricted to allowed types and sizes 
