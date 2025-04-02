@@ -1,0 +1,147 @@
+.enhanced-panel-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+  border-radius: 6px;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  min-width: 100px;
+  min-height: 100px;
+  width: 100%;
+  height: 100%;
+}
+
+.enhanced-panel-container.dragging {
+  opacity: 0.8;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  transition: none;
+  cursor: grabbing;
+}
+
+.enhanced-panel-container.resizing {
+  transition: none;
+  z-index: 1000;
+}
+
+.enhanced-panel-container.maximized {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 1500;
+  border-radius: 0;
+  transform: none !important;
+}
+
+.enhanced-panel-container .panel-content {
+  flex: 1;
+  overflow: auto;
+  padding: 10px;
+  position: relative;
+}
+
+.enhanced-panel-container .no-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #888;
+  font-style: italic;
+}
+
+/* Resize handles */
+.enhanced-panel-container .resize-handle {
+  position: absolute;
+  background-color: transparent;
+}
+
+.enhanced-panel-container .resize-right {
+  top: 0;
+  right: 0;
+  width: 8px;
+  height: 100%;
+  cursor: ew-resize;
+}
+
+.enhanced-panel-container .resize-bottom {
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 8px;
+  cursor: ns-resize;
+}
+
+.enhanced-panel-container .resize-corner {
+  bottom: 0;
+  right: 0;
+  width: 20px;
+  height: 20px;
+  cursor: nwse-resize;
+  background-image: linear-gradient(
+    135deg,
+    transparent 0%,
+    transparent 50%,
+    rgba(0, 0, 0, 0.1) 50%,
+    rgba(0, 0, 0, 0.1) 100%
+  );
+  border-radius: 0 0 4px 0;
+}
+
+/* Hover effects for resize handles */
+.resize-handle:hover {
+  background-color: var(--resize-handle-hover-color, rgba(0, 0, 0, 0.1));
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .enhanced-panel-container {
+    position: relative;
+    width: 100% !important;
+    height: auto !important;
+    transform: none !important;
+  }
+
+  .resize-handle {
+    display: none;
+  }
+}
+
+/* Animation for maximize/restore */
+@keyframes maximize {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.enhanced-panel-container.maximized {
+  animation: maximize 0.2s ease-in-out;
+}
+
+/* Custom scrollbar styles */
+.panel-content::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.panel-content::-webkit-scrollbar-track {
+  background: var(--scrollbar-track-color, #f1f1f1);
+  border-radius: 4px;
+}
+
+.panel-content::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb-color, #888);
+  border-radius: 4px;
+}
+
+.panel-content::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover-color, #555);
+} 

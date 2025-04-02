@@ -1,0 +1,231 @@
+.county-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--panel-background-color, #ffffff);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* Header styles */
+.county-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  background-color: var(--header-background-color, #f8f9fa);
+  border-bottom: 1px solid var(--header-border-color, #e9ecef);
+}
+
+.state-name {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--header-text-color, #202124);
+}
+
+/* Counties list styles */
+.counties-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.county-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  background-color: var(--item-background-color, #ffffff);
+  border: 1px solid var(--item-border-color, #e9ecef);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.county-item:hover {
+  background-color: var(--item-hover-background-color, #f8f9fa);
+  border-color: var(--item-hover-border-color, #dadce0);
+}
+
+.county-item.selected {
+  background-color: var(--item-selected-background-color, #e8f0fe);
+  border-color: var(--item-selected-border-color, #1a73e8);
+}
+
+.county-info {
+  flex: 1;
+}
+
+.county-info h4 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--item-text-color, #202124);
+}
+
+.county-stats {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--item-secondary-text-color, #5f6368);
+}
+
+/* County details styles */
+.county-details {
+  padding: 1rem;
+  background-color: var(--details-background-color, #f8f9fa);
+  border-top: 1px solid var(--details-border-color, #e9ecef);
+}
+
+.county-details h4 {
+  margin: 0 0 1rem;
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: var(--details-text-color, #202124);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem;
+  background-color: var(--stat-background-color, #ffffff);
+  border: 1px solid var(--stat-border-color, #e9ecef);
+  border-radius: 4px;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: var(--stat-label-color, #5f6368);
+  margin-bottom: 0.25rem;
+}
+
+.stat-value {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: var(--stat-value-color, #202124);
+}
+
+/* Loading state */
+.county-panel.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--loading-text-color, #5f6368);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 1rem;
+  border: 3px solid var(--loading-spinner-color, #e9ecef);
+  border-top-color: var(--loading-spinner-active-color, #1a73e8);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Error state */
+.county-panel.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--error-text-color, #d93025);
+}
+
+.error-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 1rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23d93025'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+/* Empty state */
+.county-panel.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--empty-text-color, #5f6368);
+}
+
+.empty-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 1rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%235f6368'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+/* Animations */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive styles */
+@media (max-width: 600px) {
+  .county-panel-header {
+    padding: 0.75rem;
+  }
+
+  .state-name {
+    font-size: 1.125rem;
+  }
+
+  .counties-list {
+    padding: 0.75rem;
+  }
+
+  .county-item {
+    padding: 0.5rem;
+  }
+
+  .county-info h4 {
+    font-size: 0.875rem;
+  }
+
+  .county-stats {
+    font-size: 0.75rem;
+  }
+
+  .county-details {
+    padding: 0.75rem;
+  }
+
+  .county-details h4 {
+    font-size: 1rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-item {
+    padding: 0.5rem;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+  }
+
+  .stat-value {
+    font-size: 1rem;
+  }
+} 
