@@ -576,4 +576,92 @@ The application is containerized using Docker and can be deployed in various con
     "lastUpdated": "2023-10-01"
   }
 }
-``` 
+```
+
+# Real Estate Platform Architecture - Chunk 5
+
+## Overview
+Chunk 5 implements an enhanced panel system with controller integration, providing a flexible and interactive user interface for managing real estate data and operations.
+
+## Core Components
+
+### Enhanced Panel System
+- **EnhancedPanelContainer**
+  - Core container component managing panel layouts and interactions
+  - Supports dragging, resizing, and maximizing panels
+  - Integrates with layout context for state management
+
+### Panel Components
+- **PanelHeader**
+  - Customizable header with title and controls
+  - Supports maximize, refresh, export, and close actions
+  - Implements drag handle functionality
+
+- **DraggablePanel**
+  - Implements panel dragging behavior
+  - Manages panel position state
+  - Integrates with localStorage for persistence
+
+### Controller Integration
+- **ControllerWizardLauncher**
+  - Entry point for controller configuration
+  - Manages controller status and operations
+  - Provides real-time status updates
+
+## Custom Hooks
+
+### Panel Management
+- **useDraggable**
+  - Manages drag operations
+  - Handles mouse events and position calculations
+  - Supports custom drag handles
+
+- **useResizable**
+  - Implements panel resizing functionality
+  - Manages size constraints
+  - Handles corner and edge resizing
+
+### Controller Integration
+- **useController**
+  - Manages controller state and operations
+  - Handles API communication
+  - Provides status updates and error handling
+
+## Services
+
+### Controller Service
+- Handles API communication for controller operations
+- Manages controller status and history
+- Implements error handling and retry logic
+
+## State Management
+- Uses React Context for layout management
+- Implements local storage persistence
+- Manages panel state synchronization
+
+## Testing Infrastructure
+- Comprehensive test suite using Vitest
+- Component and hook testing utilities
+- Mock service implementations
+
+## Cross-References
+- [Panel System Documentation](./panels.md)
+- [Controller Documentation](./controllers.md)
+- [Testing Guide](./testing.md)
+- [Previous Chunks Documentation](./previous-chunks.md)
+
+## Technical Decisions
+1. **React Hooks for State Management**
+   - Provides modular and reusable state logic
+   - Simplifies component testing
+   - Enables custom behavior composition
+
+2. **Controller Service Architecture**
+   - Centralizes API communication
+   - Implements consistent error handling
+   - Supports future extensibility
+
+3. **Testing Strategy**
+   - Component-level unit tests
+   - Integration tests for controller operations
+   - Mock implementations for external dependencies 

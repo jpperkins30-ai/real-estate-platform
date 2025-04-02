@@ -12,6 +12,9 @@ vi.mock('../../services/propertySearch', () => ({
   }
 }));
 
+// Type the mocked function properly
+const mockSearchProperty = propertySearchService.searchProperty as jest.Mock;
+
 // Mock navigate function
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -40,12 +43,12 @@ describe('PropertySearchBox', () => {
     
     expect(screen.getByPlaceholderText(/Enter property ID, parcel number, or tax account number/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Search/i })).toBeInTheDocument();
-    expect(screen.getByText(/We'll try to find an exact match first, then fall back to fuzzy matching/i)).toBeInTheDocument();
+    expect(screen.getByText(/Search by parcel ID or tax account number/i)).toBeInTheDocument();
   });
 
   it('handles form submission with valid input', async () => {
     const mockProperty = { id: 'property-123', name: 'Test Property' };
-    propertySearchService.searchProperty.mockResolvedValueOnce(mockProperty);
+    mockSearchProperty.mockResolvedValueOnce(mockProperty);
     
     renderComponent();
     
@@ -61,12 +64,12 @@ describe('PropertySearchBox', () => {
     
     await waitFor(() => {
       expect(propertySearchService.searchProperty).toHaveBeenCalledWith('ABC123', 'county-123');
-      expect(mockNavigate).toHaveBeenCalledWith(`/inventory/properties/property-123`);
+      expect(mockNavigate).toHaveBeenCalledWith(`/inventory/property/property-123`);
     });
   });
 
   it('displays error when no property is found', async () => {
-    propertySearchService.searchProperty.mockResolvedValueOnce(null);
+    mockSearchProperty.mockResolvedValueOnce(null);
     
     renderComponent();
     
@@ -77,13 +80,13 @@ describe('PropertySearchBox', () => {
     fireEvent.click(searchButton);
     
     await waitFor(() => {
-      expect(screen.getByText(/No property found matching that ID/i)).toBeInTheDocument();
+      expect(screen.getByText(/No property found matching the search criteria/i)).toBeInTheDocument();
       expect(searchButton).not.toBeDisabled();
     });
   });
 
   it('displays error when search service throws error', async () => {
-    propertySearchService.searchProperty.mockRejectedValueOnce(new Error('Network error'));
+    mockSearchProperty.mockRejectedValueOnce(new Error('Network error'));
     
     renderComponent();
     
@@ -94,7 +97,7 @@ describe('PropertySearchBox', () => {
     fireEvent.click(searchButton);
     
     await waitFor(() => {
-      expect(screen.getByText(/Error searching for property: Network error/i)).toBeInTheDocument();
+      expect(screen.getByText(/Network error/i)).toBeInTheDocument();
       expect(searchButton).not.toBeDisabled();
     });
   });

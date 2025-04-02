@@ -77,3 +77,74 @@ This will create an optimized production build in the `build` folder.
 - Proxy configuration is set up in package.json to forward API requests to the backend server
 - React Router is used for client-side routing
 - React Icons are used for visual elements in the interface
+
+## Testing
+
+### Recent Test Fixes
+
+We've made several improvements to the test suite:
+
+1. Fixed duplicate `useResizable` function export in `hooks/useResizable.ts`
+2. Added null check in `useDraggable` hook to properly handle parent elements that might be null
+3. Updated React Router mocking in controller tests to use Vitest syntax instead of Jest
+4. Fixed `CountyPanel` test with proper `entityId` property in `useEntityData` mock
+5. Removed empty `PanelResizer.test.tsx` file that was causing test failures
+6. Updated EnhancedPanelContainer test with improved mock setup
+7. Fixed `useDraggable` tests by properly mocking DOM events and event listeners
+
+### Known Test Issues
+
+There are still some test issues to resolve:
+
+1. `useDraggable` test failing on drag position updates and callback tests ✅ FIXED
+   - Likely due to event handling in JSDOM environment
+   - May need to update test to use more specific event mocking
+
+2. `PropertySearchBox` test failures
+   - Error messages need to be checked and updated
+
+3. `PanelHeader` style expectations
+   - Style tests may need to be updated to match the current component implementation
+
+### Test Debugging Tips for Fixing Remaining Issues
+
+#### For PropertySearchBox Tests:
+- Check error message expectations in the test
+- Make sure the mock data structure matches what the component expects
+- Verify that error handlers are properly implemented
+
+#### For PanelHeader Style Tests:
+- Update style expectations to match current implementation
+- Use more flexible matchers for style tests (e.g., `expect.objectContaining()`)
+- Consider updating tests to focus on functionality rather than exact style values
+
+### Running Tests
+
+Run all tests:
+```
+npm test
+```
+
+Run specific tests:
+```
+npm test -- [test file pattern]
+```
+
+Example:
+```
+npm test -- useResizable
+```
+
+### Test Debugging Tips
+
+1. When tests fail with "Cannot find module" errors:
+   - Check that mock setup is correct and imported modules exist
+   - Make sure the module paths are correct
+
+2. For component render issues:
+   - Check that required providers (Router, Context, etc.) are included
+   - Use test-utils for consistent test setup
+
+3. For hook tests:
+   - Mock browser APIs that hooks depend on
+   - Use `act()` for all state updates
