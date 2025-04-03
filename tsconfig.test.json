@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "allowImportingTsExtensions": false,
+    "types": ["vitest/globals", "@testing-library/jest-dom"],
+    "jsx": "react-jsx",
+    "esModuleInterop": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.test.ts", "src/**/*.test.tsx"],
+  "exclude": ["node_modules"]
+} * [32mdevelop[m
+  feature/advanced-integration[m
+  feature/export-consolidated[m
+  feature/filter-system[m
+  feature/inventory-consolidated[m
+  feature/map-consolidated[m
+  feature/multi-frame-core-layout[m
+  feature/panel-communication[m
+  main[m

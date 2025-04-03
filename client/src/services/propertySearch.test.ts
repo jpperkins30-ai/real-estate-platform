@@ -1,8 +1,37 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import propertySearchService from './propertySearch';
+import { Property } from '../types/inventory';
 
-// Mock the fetch function
-global.fetch = vi.fn();
+// Mock the fetch function with proper typing
+const mockedFetch = global.fetch as jest.Mock;
+
+// Use a simplified Property that meets the type requirements
+const createMockProperty = (id: string): Property => ({
+  id,
+  parcelId: 'ABC123',
+  taxAccountNumber: 'TAX123',
+  type: 'property',
+  parentId: 'county-123',
+  countyId: 'county-123',
+  stateId: 'CA',
+  ownerName: 'Test Owner',
+  propertyAddress: '123 Main St',
+  city: 'Test City',
+  zipCode: '12345',
+  address: {
+    street: '123 Main St',
+    city: 'Test City',
+    state: 'CA',
+    zip: '12345'
+  },
+  metadata: {
+    propertyType: 'Residential',
+    taxStatus: 'Paid',
+    lastUpdated: '2023-01-01'
+  },
+  createdAt: '2023-01-01',
+  updatedAt: '2023-01-01'
+});
 
 describe('Property Search Service', () => {
   beforeEach(() => {
@@ -25,16 +54,10 @@ describe('Property Search Service', () => {
         }
       };
 
-      const mockProperty = {
-        id: 'property-123',
-        name: 'Test Property',
-        location: {
-          parcelId: 'ABC123'
-        }
-      };
+      const mockProperty = createMockProperty('property-123');
 
       // Mock fetch for county
-      global.fetch.mockImplementationOnce(() => 
+      mockedFetch.mockImplementationOnce(() => 
         Promise.resolve({
           ok: true,
           json: () => Promise.resolve(mockCounty)
@@ -42,7 +65,7 @@ describe('Property Search Service', () => {
       );
 
       // Mock fetch for property search
-      global.fetch.mockImplementationOnce(() => 
+      mockedFetch.mockImplementationOnce(() => 
         Promise.resolve({
           ok: true,
           json: () => Promise.resolve({ properties: [mockProperty] })
@@ -52,9 +75,9 @@ describe('Property Search Service', () => {
       const result = await propertySearchService.searchPropertyById('ABC123', 'county-123');
       
       expect(result).toEqual(mockProperty);
-      expect(global.fetch).toHaveBeenCalledTimes(2);
-      expect(global.fetch).toHaveBeenCalledWith('/api/counties/county-123');
-      expect(global.fetch).toHaveBeenCalledWith('/api/properties/search?countyId=county-123&parcelId=ABC123');
+      expect(mockedFetch).toHaveBeenCalledTimes(2);
+      expect(mockedFetch).toHaveBeenCalledWith('/api/counties/county-123');
+      expect(mockedFetch).toHaveBeenCalledWith('/api/properties/search?countyId=county-123&parcelId=ABC123');
     });
 
     it('should return null when no exact match is found', async () => {
@@ -69,7 +92,7 @@ describe('Property Search Service', () => {
       };
 
       // Mock fetch for county
-      global.fetch.mockImplementationOnce(() => 
+      mockedFetch.mockImplementationOnce(() => 
         Promise.resolve({
           ok: true,
           json: () => Promise.resolve(mockCounty)
@@ -77,7 +100,7 @@ describe('Property Search Service', () => {
       );
 
       // Mock fetch for property search with no results
-      global.fetch.mockImplementationOnce(() => 
+      mockedFetch.mockImplementationOnce(() => 
         Promise.resolve({
           ok: true,
           json: () => Promise.resolve({ properties: [] })
@@ -87,7 +110,7 @@ describe('Property Search Service', () => {
       const result = await propertySearchService.searchPropertyById('ABC123', 'county-123');
       
       expect(result).toBeNull();
-      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect(mockedFetch).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -103,16 +126,10 @@ describe('Property Search Service', () => {
         }
       };
 
-      const mockProperty = {
-        id: 'property-123',
-        name: 'Test Property',
-        location: {
-          parcelId: 'ABC123'
-        }
-      };
+      const mockProperty = createMockProperty('property-123');
 
       // Mock fetch for county
-      global.fetch.mockImplementationOnce(() => 
+      mockedFetch.mockImplementationOnce(() => 
         Promise.resolve({
           ok: true,
           json: () => Promise.resolve(mockCounty)
@@ -120,7 +137,7 @@ describe('Property Search Service', () => {
       );
 
       // Mock fetch for fuzzy search
-      global.fetch.mockImplementationOnce(() => 
+      mockedFetch.mockImplementationOnce(() => 
         Promise.resolve({
           ok: true,
           json: () => Promise.resolve({ 
@@ -132,9 +149,20 @@ describe('Property Search Service', () => {
       const result = await propertySearchService.fuzzySearchProperty('ABC-123', 'county-123');
       
       expect(result).toEqual(mockProperty);
-      expect(global.fetch).toHaveBeenCalledTimes(2);
-      expect(global.fetch).toHaveBeenCalledWith('/api/counties/county-123');
-      expect(global.fetch).toHaveBeenCalledWith('/api/properties/fuzzy-search');
+      expect(mockedFetch).toHaveBeenCalledTimes(2);
+      expect(mockedFetch).toHaveBeenCalledWith('/api/counties/county-123');
+      expect(mockedFetch).toHaveBeenCalledWith('/api/properties/fuzzy-search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          query: 'ABC-123',
+          countyId: 'county-123',
+          lookupMethod: 'parcel_id',
+          threshold: 0.8
+        })
+      });
     });
 
     it('should return null when no fuzzy match is found', async () => {
@@ -149,7 +177,7 @@ describe('Property Search Service', () => {
       };
 
       // Mock fetch for county
-      global.fetch.mockImplementationOnce(() => 
+      mockedFetch.mockImplementationOnce(() => 
         Promise.resolve({
           ok: true,
           json: () => Promise.resolve(mockCounty)
@@ -157,7 +185,7 @@ describe('Property Search Service', () => {
       );
 
       // Mock fetch for fuzzy search with no results
-      global.fetch.mockImplementationOnce(() => 
+      mockedFetch.mockImplementationOnce(() => 
         Promise.resolve({
           ok: true,
           json: () => Promise.resolve({ matches: [] })
@@ -167,13 +195,13 @@ describe('Property Search Service', () => {
       const result = await propertySearchService.fuzzySearchProperty('XYZ999', 'county-123');
       
       expect(result).toBeNull();
-      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect(mockedFetch).toHaveBeenCalledTimes(2);
     });
   });
 
   describe('searchProperty', () => {
     it('should use exact match if available', async () => {
-      const mockProperty = { id: 'property-123', name: 'Test Property' };
+      const mockProperty = createMockProperty('property-123');
       
       // Mock successful direct search
       vi.spyOn(propertySearchService, 'searchPropertyById').mockResolvedValueOnce(mockProperty);
@@ -187,7 +215,7 @@ describe('Property Search Service', () => {
     });
 
     it('should fall back to fuzzy search if no exact match', async () => {
-      const mockProperty = { id: 'property-123', name: 'Test Property' };
+      const mockProperty = createMockProperty('property-123');
       
       // Mock direct search with no results
       vi.spyOn(propertySearchService, 'searchPropertyById').mockResolvedValueOnce(null);
