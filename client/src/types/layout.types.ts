@@ -1,39 +1,44 @@
-export type LayoutType = 'single' | 'dual' | 'tri' | 'quad';
+export type LayoutType = 'single' | 'dual' | 'tri' | 'quad' | 'advanced';
 
-export type PanelContentType = 
-  | 'map'
-  | 'state'
-  | 'county'
-  | 'property'
-  | 'filter'
-  | 'stats';
+export type PanelContentType = 'map' | 'state' | 'county' | 'property' | 'filter' | 'stats' | 'chart';
 
 export interface PanelPosition {
   row: number;
   col: number;
 }
 
+export interface AdvancedPanelPosition {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface PanelSize {
-  width: number; // Percentage of container width
-  height: number; // Percentage of container height
+  width: number;
+  height: number;
 }
 
-export interface PanelConfig {
+export interface PanelConfigBase {
   id: string;
+  contentType: PanelContentType;
   title: string;
-  contentType: string;
+  state?: any;
+  visible?: boolean;
+  closable?: boolean;
+  maximizable?: boolean;
+}
+
+export interface StandardPanelConfig extends PanelConfigBase {
   position?: PanelPosition;
-  initialState?: Record<string, any>;
+  size?: PanelSize;
 }
 
-export interface PanelContentConfig {
-  type: string;
-  title: string;
+export interface AdvancedPanelConfig extends PanelConfigBase {
+  position: AdvancedPanelPosition;
 }
 
-export interface DefaultPanelContent {
-  [key: string]: string | PanelContentConfig;
-}
+export type PanelConfig = StandardPanelConfig | AdvancedPanelConfig;
 
 export interface MultiFrameContainerProps {
   initialLayout: LayoutType;
@@ -51,4 +56,19 @@ export interface LayoutConfig {
   isPublic?: boolean;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export function isAdvancedPanelConfig(config: PanelConfig): config is AdvancedPanelConfig {
+  return 'position' in config && 
+         'x' in (config.position as AdvancedPanelPosition) && 
+         'y' in (config.position as AdvancedPanelPosition);
+}
+
+export interface PanelContentConfig {
+  type: string;
+  title: string;
+}
+
+export interface DefaultPanelContent {
+  [key: string]: string | PanelContentConfig;
 } 

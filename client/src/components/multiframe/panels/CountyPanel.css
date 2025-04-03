@@ -1,0 +1,31 @@
+.county-panel {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.county-placeholder {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+  background-color: #f9f5ff;
+  border-radius: 8px;
+  border: 2px dashed #dacdf7;
+}
+
+.county-placeholder h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #6633cc;
+}
+
+.county-placeholder p {
+  margin: 0;
+  color: #666;
+  font-style: italic;
+} 

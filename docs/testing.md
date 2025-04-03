@@ -336,4 +336,107 @@ jobs:
       
       - name: Upload coverage
         uses: codecov/codecov-action@v2
+```
+
+## Component Testing
+
+### Overview
+
+Component testing verifies that UI components render correctly and behave as expected. We use React Testing Library along with Vitest for component testing.
+
+### Basic Component Test
+
+```typescript
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import Button from '../components/Button';
+
+describe('Button Component', () => {
+  it('renders with correct text', () => {
+    render(<Button>Click Me</Button>);
+    expect(screen.getByText('Click Me')).toBeInTheDocument();
+  });
+
+  it('triggers onClick when clicked', () => {
+    const handleClick = vi.fn();
+    render(<Button onClick={handleClick}>Click Me</Button>);
+    screen.getByText('Click Me').click();
+    expect(handleClick).toHaveBeenCalledTimes(1);
+  });
+});
+```
+
+### Multiframe Component Testing
+
+The application includes a system of multiframe components that require special testing approaches. These components (like `MultiFrameContainer`, `LayoutSelector`, and various layouts) have complex interactions that need careful testing.
+
+#### Special Considerations
+
+1. **Mock Child Components**: Multiframe components should be tested with mock implementations of their children to isolate behavior
+2. **Prevent Infinite Renders**: Some components may trigger infinite re-render loops in tests; use the `_isTestingMode` flag for `MultiFrameContainer`
+3. **Test Layout Transitions**: Verify that layout changes work correctly
+4. **Test Panel Configurations**: Ensure panels receive and display the correct content
+
+#### Testing MultiFrameContainer
+
+```typescript
+import { render, screen } from '@testing-library/react';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { MultiFrameContainer } from '../components/multiframe/MultiFrameContainer';
+
+// Mock child components
+vi.mock('../components/multiframe/controls/LayoutSelector', () => ({
+  LayoutSelector: ({ currentLayout }) => (
+    <div data-testid="mock-layout-selector">Layout: {currentLayout}</div>
+  )
+}));
+
+vi.mock('../components/multiframe/layouts/SinglePanelLayout', () => ({
+  SinglePanelLayout: () => <div data-testid="mock-single-panel-layout">Single Panel Layout</div>
+}));
+
+describe('MultiFrameContainer', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('renders with default layout', () => {
+    render(
+      <MultiFrameContainer 
+        initialLayout="single" 
+        _isTestingMode={true} // Important to prevent infinite re-renders
+      />
+    );
+    
+    expect(screen.getByTestId('mock-layout-selector')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-single-panel-layout')).toBeInTheDocument();
+  });
+});
+```
+
+### Detailed Guides
+
+For more detailed information on testing specific components, please refer to:
+
+- [Multiframe Testing Guide](../src/__tests__/components/multiframe/README.md)
+- [Component Architecture Documentation](./architecture/components.md)
+
+### Testing Stateful Components
+
+```typescript
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import Counter from '../components/Counter';
+
+describe('Counter Component', () => {
+  it('increments count when button is clicked', () => {
+    render(<Counter initialCount={0} />);
+    
+    expect(screen.getByText('Count: 0')).toBeInTheDocument();
+    
+    fireEvent.click(screen.getByText('Increment'));
+    
+    expect(screen.getByText('Count: 1')).toBeInTheDocument();
+  });
+});
 ``` 

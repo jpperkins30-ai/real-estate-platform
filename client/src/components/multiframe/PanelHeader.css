@@ -1,0 +1,84 @@
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #e0e0e0;
+  user-select: none;
+}
+
+.panel-header.draggable {
+  cursor: move;
+}
+
+.panel-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.panel-actions {
+  display: flex;
+  align-items: center;
+}
+
+.action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 4px;
+  padding: 0;
+  color: #666;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.action-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #333;
+}
+
+.action-button.active {
+  color: #1976d2;
+}
+
+/* Icons for buttons */
+.refresh-icon, .export-icon, .maximize-icon, .restore-icon, .close-icon {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+.refresh-icon::before {
+  content: "↻";
+}
+
+.export-icon::before {
+  content: "↓";
+}
+
+.maximize-icon::before {
+  content: "□";
+}
+
+.restore-icon::before {
+  content: "⊟";
+}
+
+.close-icon::before {
+  content: "✕";
+} 

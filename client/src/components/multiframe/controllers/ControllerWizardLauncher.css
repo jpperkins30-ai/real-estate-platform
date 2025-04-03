@@ -1,0 +1,61 @@
+.controller-launcher {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+}
+
+.controller-status {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-active {
+  background-color: #e6f7e6;
+  color: #2e7d32;
+}
+
+.status-paused {
+  background-color: #fff8e1;
+  color: #f57f17;
+}
+
+.status-error {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.status-none {
+  background-color: #f5f5f5;
+  color: #757575;
+}
+
+.launcher-button {
+  padding: 8px 16px;
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.launcher-button:hover {
+  background-color: #1976d2;
+}
+
+.launcher-button:disabled {
+  background-color: #bbdefb;
+  cursor: not-allowed;
+} 

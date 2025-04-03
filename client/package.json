@@ -7,7 +7,13 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:report": "powershell -File ./test-report.ps1",
+    "test:coverage:check": "powershell -File ./test-coverage.ps1",
+    "test:working": "powershell -File ./run-working-tests.ps1"
   },
   "dependencies": {
     "@emotion/react": "^11.11.3",
@@ -36,12 +42,16 @@
     "@types/leaflet": "^1.9.8",
     "@types/react": "^18.2.57",
     "@types/react-dom": "^18.2.19",
+    "@vitest/coverage-v8": "^1.3.0",
     "@vitejs/plugin-react": "^4.2.1",
+    "@vitejs/plugin-react-swc": "^3.8.1",
     "eslint": "^8.56.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
     "typescript": "~5.3.3",
-    "vite": "^5.1.4"
+    "vite": "^5.1.4",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^1.3.0"
   },
   "eslintConfig": {
     "extends": [
