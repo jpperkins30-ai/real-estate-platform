@@ -1,17 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { PanelHeader } from './PanelHeader';
+import { getPanelContent } from '../../services/panelContentRegistry';
 import { PanelContentType } from '../../types/layout.types';
 import './PanelContainer.css';
 
-interface PanelContainerProps {
+export interface PanelContainerProps {
   id: string;
   title: string;
   contentType: PanelContentType;
-  initialState?: Record<string, any>;
+  initialState?: any;
+  onStateChange?: (newState: any) => void;
+  onAction?: (action: any) => void;
   className?: string;
   maximizable?: boolean;
   closable?: boolean;
-  onStateChange?: (newState: any) => void;
-  onAction?: (action: any) => void;
 }
 
 export const PanelContainer: React.FC<PanelContainerProps> = ({
@@ -19,63 +21,64 @@ export const PanelContainer: React.FC<PanelContainerProps> = ({
   title,
   contentType,
   initialState = {},
+  onStateChange,
+  onAction,
   className = '',
   maximizable = true,
   closable = false,
-  onStateChange,
-  onAction
 }) => {
-  const [isMaximized, setIsMaximized] = React.useState(false);
-
-  const handleMaximize = () => {
-    if (maximizable) {
-      setIsMaximized(!isMaximized);
-      onAction?.({ type: 'maximize', payload: !isMaximized });
+  // State
+  const [isMaximized, setIsMaximized] = useState<boolean>(false);
+  
+  // Handle panel actions
+  const handleAction = (action: { type: string, payload?: any }) => {
+    // Handle basic actions internally
+    if (action.type === 'maximize' && maximizable) {
+      setIsMaximized(prev => !prev);
+    }
+    
+    // Pass action to parent if callback provided
+    if (onAction) {
+      onAction(action);
     }
   };
-
-  const handleClose = () => {
-    if (closable) {
-      onAction?.({ type: 'close' });
-    }
-  };
-
+  
+  // Get the appropriate content component for this panel
+  const PanelContent = getPanelContent(contentType);
+  
+  // Class names based on state
+  const containerClassNames = [
+    'panel-container',
+    isMaximized ? 'maximized' : '',
+    className
+  ].filter(Boolean).join(' ');
+  
   return (
     <div 
-      className={`panel-container ${isMaximized ? 'maximized' : ''} ${className}`}
+      className={containerClassNames} 
+      data-panel-id={id}
       data-testid={`panel-${id}`}
-      data-content-type={contentType}
     >
-      <div className="panel-header">
-        <h3 className="panel-title">{title}</h3>
-        <div className="panel-controls">
-          {maximizable && (
-            <button
-              className="panel-button maximize"
-              onClick={handleMaximize}
-              title={isMaximized ? 'Restore' : 'Maximize'}
-              data-testid={`panel-maximize-${id}`}
-            >
-              {isMaximized ? '⤓' : '⤢'}
-            </button>
-          )}
-          {closable && (
-            <button
-              className="panel-button close"
-              onClick={handleClose}
-              title="Close"
-              data-testid={`panel-close-${id}`}
-            >
-              ×
-            </button>
-          )}
-        </div>
-      </div>
-      <div className="panel-content" data-testid={`panel-content-${id}`}>
-        {/* Panel content will be rendered here based on contentType */}
-        <div className="panel-content-placeholder">
-          Content type: {contentType}
-        </div>
+      <PanelHeader 
+        title={title} 
+        isMaximized={isMaximized}
+        onAction={handleAction}
+        showMaximizeButton={maximizable}
+        showCloseButton={closable}
+      />
+      <div className="panel-content">
+        {PanelContent ? (
+          <PanelContent
+            panelId={id}
+            initialState={initialState}
+            onStateChange={onStateChange}
+            onAction={handleAction}
+          />
+        ) : (
+          <div className="no-content" data-testid="no-content">
+            No content available for type: {contentType}
+          </div>
+        )}
       </div>
     </div>
   );

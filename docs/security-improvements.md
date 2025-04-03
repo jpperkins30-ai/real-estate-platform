@@ -1,5 +1,7 @@
 # Security Improvements
 
+> **Note**: This document is part of the Real Estate Platform's security documentation. For a complete overview of security measures and best practices, see the [main security guide](./SECURITY.md).
+
 This document outlines the security improvements implemented in the Real Estate Platform according to the audit recommendations.
 
 ## Authentication Enhancements

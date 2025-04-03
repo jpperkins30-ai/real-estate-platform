@@ -2,6 +2,16 @@
 
 Since automated scripts are encountering issues, follow these manual steps to start and test the application.
 
+## Branch Structure
+
+The repository uses the following branches:
+- `main` - Production code
+- `develop` - Integration branch
+- Feature branches:
+  - `feature/inventory-consolidated` - Inventory and collector framework
+  - `feature/export-consolidated` - Export functionality
+  - `feature/map-consolidated` - Map visualization
+
 ## Starting the Application
 
 ### Step 1: Start the Server
@@ -51,6 +61,17 @@ Since automated scripts are encountering issues, follow these manual steps to st
 1. Open a web browser
 2. Navigate to: http://localhost:3000/inventory
 3. Follow the testing steps in TESTING-GUIDE.md for Inventory Module
+
+### Collection Management
+
+1. Open a web browser
+2. Navigate to: http://localhost:3000/collection
+3. Test the following features:
+   - View collection history
+   - Configure new collectors
+   - Monitor collection progress
+   - Review collected data
+4. Follow the detailed steps in TESTING-GUIDE.md
 
 ### US Map Component
 

@@ -1,4 +1,6 @@
-# Authentication Setup Guide
+# Authentication Setup
+
+> **Note**: This document is part of the Real Estate Platform's security documentation. For a complete overview of security measures and best practices, see the [main security guide](./SECURITY.md).
 
 ## Required Packages
 

@@ -78,37 +78,90 @@ This guide provides instructions for manually testing the key components of the 
    - Use any available filters (property type, tax status)
    - Verify map updates to reflect filtered data
 
-## 3. Collector Wizard Testing
+## 3. Collection Management Testing
 
-### Access the Collector Wizard
+### Access the Collection Interface
 
-1. Navigate to: `http://localhost:3000/wizard`
-2. Verify that the wizard interface loads successfully
+1. Navigate to: `http://localhost:3000/collection`
+2. Verify that the collection history page loads successfully
 
 ### Visual Elements to Check
 
-- [ ] Wizard header with title and progress indicator
-- [ ] Step navigation sidebar/breadcrumbs
-- [ ] Current step form with appropriate inputs
-- [ ] Next/Previous navigation buttons
-- [ ] Summary panel (if applicable)
+- [ ] Collection history table with past runs
+- [ ] Configure New Collector button
+- [ ] Status indicators for collection runs
+- [ ] Progress bars for active collections
+- [ ] Filter and sort options for history
+- [ ] Detailed view for each collection run
 
-### Functional Tests
+### Collection Configuration
 
-1. **Step Navigation**:
-   - Proceed through each step
-   - Verify form validation works correctly
-   - Test Previous button returns to prior step with data preserved
+1. **New Collector Setup**:
+   - Click "Configure New Collector"
+   - Verify configuration form loads
+   - Check all input fields are present:
+     - Source selection
+     - Data format options
+     - Collection frequency
+     - Geographic filters
+     - Property type filters
 
-2. **Data Collection**:
-   - Fill out forms at each step with test data
-   - Verify data is preserved between steps
+2. **Validation Testing**:
+   - Try submitting without required fields
+   - Test invalid input formats
+   - Verify error messages are clear
+   - Check that valid configurations save correctly
 
-3. **Completion**:
-   - Complete all steps
-   - Verify summary screen shows all collected data
-   - Submit the form
-   - Verify success confirmation appears
+3. **Collection History**:
+   - Review history entries
+   - Check filtering by:
+     - Date range
+     - Status
+     - Source type
+   - Verify sorting options work
+   - Test detailed view for each entry
+
+### Integration Testing
+
+1. **Data Flow Testing**:
+   - Start a new collection
+   - Monitor progress updates
+   - Verify data appears in:
+     - Inventory dashboard
+     - Map visualization
+     - Export functionality
+
+2. **Error Handling**:
+   - Test network timeouts
+   - Check invalid data handling
+   - Verify retry mechanisms
+   - Test manual intervention options
+
+3. **Performance Testing**:
+   - Monitor server load during collection
+   - Check memory usage
+   - Test concurrent collections
+   - Verify rate limiting
+
+### Cross-Component Integration
+
+1. **Inventory Integration**:
+   - Verify new properties appear in inventory
+   - Check property details are complete
+   - Test filtering new properties
+   - Verify count updates
+
+2. **Map Integration**:
+   - Check new properties on map
+   - Verify geographic clustering
+   - Test property markers
+   - Check info windows
+
+3. **Export Integration**:
+   - Export collected data
+   - Verify all fields are present
+   - Check data formatting
+   - Test different export formats
 
 ## Error Handling
 

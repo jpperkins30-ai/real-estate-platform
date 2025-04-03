@@ -1,299 +1,442 @@
 # Testing Guide
 
 ## Overview
-This guide covers the testing infrastructure and best practices for the real estate platform, with a focus on the enhanced panel system and controller integration.
 
-## Testing Stack
-- **Vitest**: Main testing framework
-- **@testing-library/react**: React component testing
-- **@testing-library/jest-dom**: DOM testing utilities
-- **@testing-library/user-event**: User interaction simulation
+This guide covers testing practices and procedures for the Real Estate Platform. We use Jest as our primary testing framework along with Supertest for API testing.
 
 ## Test Structure
 
-### Directory Organization
 ```
-src/
-├── __tests__/
-│   ├── components/
-│   │   ├── EnhancedPanelContainer.test.tsx
-│   │   └── controllers/
-│   │       └── ControllerWizardLauncher.test.tsx
-│   └── hooks/
-│       ├── useDraggable.test.tsx
-│       └── useResizable.test.tsx
-└── components/
-    └── multiframe/
-        └── __tests__/
-            ├── DraggablePanel.test.tsx
-            └── PanelHeader.test.tsx
+tests/
+├── unit/
+│   ├── models/
+│   ├── services/
+│   └── utils/
+├── integration/
+│   ├── auth/
+│   ├── properties/
+│   └── search/
+└── e2e/
+    └── api/
 ```
 
-### Test File Naming
-- Component tests: `ComponentName.test.tsx`
-- Hook tests: `hookName.test.tsx`
-- Service tests: `serviceName.test.ts`
+## Setting Up Tests
 
-## Running Tests
+### Installation
 
-### Commands
 ```bash
-# Run all tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run tests with UI
-npm run test:ui
-
-# Generate coverage report
-npm run test:coverage
-
-# Run specific test file
-npx vitest run src/path/to/test.tsx
+npm install --save-dev jest @types/jest ts-jest supertest @types/supertest
 ```
 
-### Test Configuration
-```typescript
-// vitest.config.ts
-export default defineConfig({
-  test: {
-    environment: 'jsdom',
-    setupFiles: ['./src/test/setup.ts'],
-    coverage: {
-      provider: 'c8',
-      reporter: ['text', 'json', 'html'],
-      exclude: ['node_modules/', 'src/test/']
-    },
-    globals: true
-  }
-});
-```
+### Jest Configuration
 
-## Writing Tests
-
-### Component Testing
-
-#### Basic Component Test
-```typescript
-import { render, screen } from '@testing-library/react';
-import { DraggablePanel } from '../components/multiframe';
-
-describe('DraggablePanel', () => {
-  it('renders with title', () => {
-    render(
-      <DraggablePanel
-        id="test-panel"
-        title="Test Panel"
-        initialPosition={{ x: 0, y: 0 }}
-      >
-        Content
-      </DraggablePanel>
-    );
-
-    expect(screen.getByText('Test Panel')).toBeInTheDocument();
-  });
-});
-```
-
-#### Testing User Interactions
-```typescript
-import userEvent from '@testing-library/user-event';
-
-describe('PanelHeader', () => {
-  it('handles close button click', async () => {
-    const onClose = vi.fn();
-    render(<PanelHeader title="Test" onClose={onClose} />);
-    
-    await userEvent.click(screen.getByRole('button', { name: /close/i }));
-    expect(onClose).toHaveBeenCalled();
-  });
-});
-```
-
-### Hook Testing
-
-#### Custom Hook Test
-```typescript
-import { renderHook, act } from '@testing-library/react';
-import { useResizable } from '../hooks/useResizable';
-
-describe('useResizable', () => {
-  it('updates size on resize', () => {
-    const { result } = renderHook(() => useResizable({
-      initialSize: { width: 100, height: 100 }
-    }));
-
-    act(() => {
-      result.current.onResize({ width: 200, height: 200 });
-    });
-
-    expect(result.current.size).toEqual({ width: 200, height: 200 });
-  });
-});
-```
-
-### Service Testing
-
-#### API Service Test
-```typescript
-import { ControllerService } from '../services/controllerService';
-
-describe('ControllerService', () => {
-  it('fetches controller status', async () => {
-    const service = new ControllerService();
-    const response = await service.fetchControllerStatus('property', '123');
-    
-    expect(response.data).toMatchObject({
-      hasController: true,
-      status: 'active'
-    });
-  });
-});
-```
-
-## Mocking
-
-### Function Mocks
-```typescript
-import { vi } from 'vitest';
-
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
-
-mockFetch.mockResolvedValueOnce({
-  ok: true,
-  json: async () => ({ data: 'test' })
-});
-```
-
-### Module Mocks
-```typescript
-vi.mock('../services/controllerService', () => ({
-  ControllerService: vi.fn().mockImplementation(() => ({
-    fetchControllerStatus: vi.fn().mockResolvedValue({
-      data: { status: 'active' }
-    })
-  }))
-}));
-```
-
-### Component Mocks
-```typescript
-vi.mock('../components/PanelHeader', () => ({
-  PanelHeader: ({ title }: { title: string }) => (
-    <div data-testid="mock-header">{title}</div>
-  )
-}));
-```
-
-## Test Utilities
-
-### Custom Render
-```typescript
-// test/utils.tsx
-import { render } from '@testing-library/react';
-import { LayoutProvider } from '../context/LayoutContext';
-
-export const renderWithProviders = (ui: React.ReactElement) => {
-  return render(
-    <LayoutProvider>
-      {ui}
-    </LayoutProvider>
-  );
+```javascript
+// jest.config.js
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  roots: ['<rootDir>/src'],
+  testMatch: ['**/*.test.ts'],
+  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
+  coverageDirectory: 'coverage',
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/**/*.d.ts'
+  ]
 };
 ```
 
-### Custom Matchers
-```typescript
-// test/setup.ts
-import * as matchers from '@testing-library/jest-dom/matchers';
-import { expect } from 'vitest';
+## Unit Testing
 
-expect.extend(matchers);
+### Models
+
+```typescript
+// User model test example
+describe('User Model', () => {
+  beforeEach(async () => {
+    await User.deleteMany({});
+  });
+
+  it('should hash password before saving', async () => {
+    const user = new User({
+      email: 'test@example.com',
+      password: 'password123'
+    });
+
+    await user.save();
+    expect(user.password).not.toBe('password123');
+    expect(user.password).toMatch(/^\$2[aby]\$\d{2}\$.{53}$/);
+  });
+
+  it('should validate email format', async () => {
+    const user = new User({
+      email: 'invalid-email',
+      password: 'password123'
+    });
+
+    await expect(user.save()).rejects.toThrow();
+  });
+});
+```
+
+### Services
+
+```typescript
+// Property service test example
+describe('PropertyService', () => {
+  const mockProperty = {
+    title: 'Test Property',
+    price: 250000
+  };
+
+  it('should create property', async () => {
+    const property = await PropertyService.create(mockProperty);
+    expect(property.title).toBe(mockProperty.title);
+    expect(property.price).toBe(mockProperty.price);
+  });
+
+  it('should validate property data', async () => {
+    const invalidProperty = { title: '' };
+    await expect(
+      PropertyService.create(invalidProperty)
+    ).rejects.toThrow('Validation error');
+  });
+});
+```
+
+## Integration Testing
+
+### API Endpoints
+
+```typescript
+// Property API test example
+describe('Property API', () => {
+  let token: string;
+
+  beforeAll(async () => {
+    // Login and get token
+    const response = await request(app)
+      .post('/api/auth/login')
+      .send({
+        email: 'test@example.com',
+        password: 'password123'
+      });
+    token = response.body.token;
+  });
+
+  it('should create property', async () => {
+    const response = await request(app)
+      .post('/api/properties')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        title: 'New Property',
+        price: 300000
+      });
+
+    expect(response.status).toBe(201);
+    expect(response.body.data).toHaveProperty('title', 'New Property');
+  });
+
+  it('should get property list', async () => {
+    const response = await request(app)
+      .get('/api/properties')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(Array.isArray(response.body.data)).toBe(true);
+  });
+});
+```
+
+### Database Integration
+
+```typescript
+// Database integration test example
+describe('Database Integration', () => {
+  beforeAll(async () => {
+    await mongoose.connect(process.env.MONGODB_TEST_URI!);
+  });
+
+  afterAll(async () => {
+    await mongoose.connection.close();
+  });
+
+  beforeEach(async () => {
+    await mongoose.connection.dropDatabase();
+  });
+
+  it('should perform atomic operations', async () => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      const property = await Property.create([{
+        title: 'Test Property',
+        price: 200000
+      }], { session });
+
+      await User.updateOne(
+        { _id: 'user_id' },
+        { $push: { properties: property[0]._id } },
+        { session }
+      );
+
+      await session.commitTransaction();
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  });
+});
+```
+
+## End-to-End Testing
+
+### Setup
+
+```typescript
+// e2e/setup.ts
+import { setup as setupDevServer } from './dev-server';
+
+export default async () => {
+  const server = await setupDevServer();
+  process.env.TEST_SERVER_URL = server.url;
+};
+```
+
+### API Flow Tests
+
+```typescript
+// e2e/api/property-flow.test.ts
+describe('Property Management Flow', () => {
+  it('should handle complete property lifecycle', async () => {
+    // 1. Login
+    const authResponse = await request(app)
+      .post('/api/auth/login')
+      .send(userCredentials);
+    
+    const token = authResponse.body.token;
+
+    // 2. Create Property
+    const createResponse = await request(app)
+      .post('/api/properties')
+      .set('Authorization', `Bearer ${token}`)
+      .send(propertyData);
+    
+    const propertyId = createResponse.body.data._id;
+
+    // 3. Update Property
+    await request(app)
+      .put(`/api/properties/${propertyId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send(updatedData);
+
+    // 4. Search Property
+    const searchResponse = await request(app)
+      .get('/api/search')
+      .query({ price_min: 200000 });
+
+    // 5. Delete Property
+    await request(app)
+      .delete(`/api/properties/${propertyId}`)
+      .set('Authorization', `Bearer ${token}`);
+  });
+});
+```
+
+## Test Coverage
+
+### Running Coverage Reports
+
+```bash
+npm run test:coverage
+```
+
+### Coverage Thresholds
+
+```javascript
+// jest.config.js
+module.exports = {
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80
+    }
+  }
+};
 ```
 
 ## Best Practices
 
-### Component Testing
-1. Test component rendering
-2. Test user interactions
-3. Test prop changes
-4. Test error states
-5. Test loading states
+1. **Test Organization**
+   - Group related tests
+   - Use descriptive test names
+   - Follow AAA pattern (Arrange, Act, Assert)
 
-### Hook Testing
-1. Test initial state
-2. Test state updates
-3. Test cleanup
-4. Test error handling
-5. Test side effects
+2. **Test Independence**
+   - Each test should be independent
+   - Clean up after tests
+   - Don't rely on test order
 
-### Service Testing
-1. Test API calls
-2. Test error handling
-3. Test response parsing
-4. Test retry logic
-5. Test caching
+3. **Mock External Services**
+   - Use Jest mock functions
+   - Create mock implementations
+   - Avoid external API calls
 
-## Common Patterns
+4. **Database Testing**
+   - Use separate test database
+   - Clean database between tests
+   - Use transactions when possible
 
-### Testing Async Operations
-```typescript
-it('loads data asynchronously', async () => {
-  render(<AsyncComponent />);
-  
-  expect(screen.getByText('Loading...')).toBeInTheDocument();
-  await screen.findByText('Data loaded');
-  expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
-});
-```
+5. **API Testing**
+   - Test both success and error cases
+   - Validate response formats
+   - Check status codes and headers
 
-### Testing Error Boundaries
-```typescript
-it('handles errors gracefully', () => {
-  const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
-  
-  render(
-    <ErrorBoundary>
-      <ComponentThatThrows />
-    </ErrorBoundary>
-  );
-  
-  expect(screen.getByText('Error: Something went wrong')).toBeInTheDocument();
-  spy.mockRestore();
-});
-```
-
-## Coverage Requirements
-- Statements: 80%
-- Branches: 75%
-- Functions: 80%
-- Lines: 80%
-
-## Debugging Tests
-
-### Debug Output
-```typescript
-screen.debug(); // Print current DOM
-console.log(prettyDOM(container)); // Print formatted DOM
-```
-
-### Test Environment
-```typescript
-// Enable debugging in test environment
-localStorage.debug = 'app:*';
-```
+6. **Security Testing**
+   - Test authentication
+   - Verify authorization
+   - Validate input sanitization
 
 ## Continuous Integration
-- Tests run on every pull request
-- Coverage reports generated
-- Test results published
-- Failed tests block merging
 
-## Resources
-- [Vitest Documentation](https://vitest.dev/)
-- [Testing Library Documentation](https://testing-library.com/)
-- [Jest DOM Documentation](https://github.com/testing-library/jest-dom)
-- [User Event Documentation](https://testing-library.com/docs/user-event/intro/) 
+### GitHub Actions Configuration
+
+```yaml
+# .github/workflows/test.yml
+name: Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:4.4
+        ports:
+          - 27017:27017
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run tests
+        run: npm test
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v2
+```
+
+## Component Testing
+
+### Overview
+
+Component testing verifies that UI components render correctly and behave as expected. We use React Testing Library along with Vitest for component testing.
+
+### Basic Component Test
+
+```typescript
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import Button from '../components/Button';
+
+describe('Button Component', () => {
+  it('renders with correct text', () => {
+    render(<Button>Click Me</Button>);
+    expect(screen.getByText('Click Me')).toBeInTheDocument();
+  });
+
+  it('triggers onClick when clicked', () => {
+    const handleClick = vi.fn();
+    render(<Button onClick={handleClick}>Click Me</Button>);
+    screen.getByText('Click Me').click();
+    expect(handleClick).toHaveBeenCalledTimes(1);
+  });
+});
+```
+
+### Multiframe Component Testing
+
+The application includes a system of multiframe components that require special testing approaches. These components (like `MultiFrameContainer`, `LayoutSelector`, and various layouts) have complex interactions that need careful testing.
+
+#### Special Considerations
+
+1. **Mock Child Components**: Multiframe components should be tested with mock implementations of their children to isolate behavior
+2. **Prevent Infinite Renders**: Some components may trigger infinite re-render loops in tests; use the `_isTestingMode` flag for `MultiFrameContainer`
+3. **Test Layout Transitions**: Verify that layout changes work correctly
+4. **Test Panel Configurations**: Ensure panels receive and display the correct content
+
+#### Testing MultiFrameContainer
+
+```typescript
+import { render, screen } from '@testing-library/react';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { MultiFrameContainer } from '../components/multiframe/MultiFrameContainer';
+
+// Mock child components
+vi.mock('../components/multiframe/controls/LayoutSelector', () => ({
+  LayoutSelector: ({ currentLayout }) => (
+    <div data-testid="mock-layout-selector">Layout: {currentLayout}</div>
+  )
+}));
+
+vi.mock('../components/multiframe/layouts/SinglePanelLayout', () => ({
+  SinglePanelLayout: () => <div data-testid="mock-single-panel-layout">Single Panel Layout</div>
+}));
+
+describe('MultiFrameContainer', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('renders with default layout', () => {
+    render(
+      <MultiFrameContainer 
+        initialLayout="single" 
+        _isTestingMode={true} // Important to prevent infinite re-renders
+      />
+    );
+    
+    expect(screen.getByTestId('mock-layout-selector')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-single-panel-layout')).toBeInTheDocument();
+  });
+});
+```
+
+### Detailed Guides
+
+For more detailed information on testing specific components, please refer to:
+
+- [Multiframe Testing Guide](../src/__tests__/components/multiframe/README.md)
+- [Component Architecture Documentation](./architecture/components.md)
+
+### Testing Stateful Components
+
+```typescript
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import Counter from '../components/Counter';
+
+describe('Counter Component', () => {
+  it('increments count when button is clicked', () => {
+    render(<Counter initialCount={0} />);
+    
+    expect(screen.getByText('Count: 0')).toBeInTheDocument();
+    
+    fireEvent.click(screen.getByText('Increment'));
+    
+    expect(screen.getByText('Count: 1')).toBeInTheDocument();
+  });
+});
+``` 

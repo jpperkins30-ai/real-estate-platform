@@ -1,5 +1,11 @@
 # Windows PowerShell Guide for Real Estate Platform
 
+> **Note**: This document is part of the Real Estate Platform's technical documentation suite. For related guides, see:
+> - [Development Guide](./docs/development-guide.md) - Development environment setup and workflows
+> - [Testing Guide](./TESTING-GUIDE.md) - Testing procedures and guidelines
+> - [Component Testing Guide](./docs/component-test-guide.md) - Detailed component testing procedures
+> - [Security Guide](./docs/SECURITY.md) - Security considerations and best practices
+
 This guide addresses common issues when running the Real Estate Platform application in Windows PowerShell.
 
 ## PowerShell Token Error Resolution

@@ -1,0 +1,28 @@
+{
+  "timestamp": "2025-04-02T19:09:03.603Z",
+  "automated": {
+    "total": 7,
+    "passed": [],
+    "failed": [
+      "PanelSyncContext",
+      "LayoutContext",
+      "PanelRegistry",
+      "useEntityData",
+      "PanelCommunication"
+    ],
+    "skipped": [
+      "usePanelSync",
+      "useLayoutContext"
+    ]
+  },
+  "manualChecks": [
+    "Panel synchronization works across components in real application",
+    "Entity data is correctly shared between panels",
+    "Panel registry correctly loads dynamic components",
+    "Layout persistence works correctly",
+    "Panel configuration is saved and loaded correctly",
+    "Performance is acceptable for event broadcasting",
+    "UI correctly reflects entity selections across panels",
+    "Error states are properly displayed"
+  ]
+}

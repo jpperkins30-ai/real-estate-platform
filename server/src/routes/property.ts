@@ -3,7 +3,7 @@ import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 import fs from 'fs';
-import Property from '../models/Property';
+import Property from '../models/property.model';
 import { authenticate } from '../middleware/auth';
 import { authorize } from '../middleware/roleAuth';
 import { PropertyFilters, PropertyStatus } from '../types/property';

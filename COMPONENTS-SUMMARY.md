@@ -1,5 +1,12 @@
 # Real Estate Platform Components Summary
 
+> **Note**: This document is part of the Real Estate Platform's technical documentation suite. For related guides, see:
+> - [Architecture Guide](./docs/architecture.md) - System architecture and component relationships
+> - [Development Guide](./docs/development-guide.md) - Development environment setup and workflows
+> - [Testing Guide](./TESTING-GUIDE.md) - Testing procedures and guidelines
+> - [Component Testing Guide](./docs/component-test-guide.md) - Detailed component testing procedures
+> - [Security Guide](./docs/SECURITY.md) - Security considerations and best practices
+
 This document provides a summary of the key components in the Real Estate Platform and our approach to testing them.
 
 ## Application Structure

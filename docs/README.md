@@ -1,6 +1,84 @@
 # Real Estate Platform Documentation
 
-Welcome to the Real Estate Platform documentation. This index will help you navigate the available documentation files.
+This directory contains the comprehensive documentation for the Real Estate Platform. Each document serves a specific purpose and is cross-referenced with related documentation.
+
+## Core Documentation
+
+### System and Development
+- [Architecture Guide](./architecture.md) - System architecture, component design, and data flows
+- [Development Guide](./development-guide.md) - Development environment setup and workflows
+- [Component Testing Guide](./component-test-guide.md) - Testing procedures and guidelines
+
+### Security and Authentication
+- [Security Guide](./SECURITY.md) - Central security documentation and best practices
+- [Security Improvements](./security-improvements.md) - Changelog of security enhancements
+- [Authentication Setup](./authentication-setup.md) - Authentication implementation details
+
+### Component Documentation
+- [Map Component](../client/src/components/maps/DOCUMENTATION.md) - Interactive map visualization
+- [Server Authentication](../server/README-AUTH.md) - Server-side authentication details
+
+## Documentation Organization
+
+### Main Guides
+Each main guide focuses on a specific aspect of the platform:
+- Architecture → System design and components
+- Development → Environment setup and workflows
+- Security → Security measures and practices
+- Testing → Testing procedures and guidelines
+
+### Cross-References
+All documentation is interconnected through cross-references:
+- Each document begins with links to related documentation
+- Specific sections reference relevant details in other documents
+- Implementation examples link to corresponding guides
+
+### Component-Specific Documentation
+Component documentation is located alongside the code:
+- Client components → `client/src/components/*/DOCUMENTATION.md`
+- Server modules → `server/*/README.md`
+- Each links back to relevant main guides
+
+## Contributing to Documentation
+
+1. **Adding New Documentation**
+   - Place in appropriate location (docs/ or component directory)
+   - Add cross-references to related documents
+   - Update this README if adding main documentation
+
+2. **Updating Existing Documentation**
+   - Maintain existing cross-references
+   - Add new cross-references as needed
+   - Keep format consistent with other documents
+
+3. **Documentation Standards**
+   - Use Markdown formatting
+   - Include code examples where relevant
+   - Maintain up-to-date cross-references
+   - Follow the established structure
+
+## Documentation Review Process
+
+1. **Pre-Commit Review**
+   - Verify all cross-references
+   - Check code examples
+   - Validate Markdown formatting
+   - Ensure consistency with other docs
+
+2. **Pull Request Requirements**
+   - Update related documentation
+   - Add new cross-references
+   - Include documentation changes in PR description
+
+## Getting Started
+
+New to the project? Start with these documents:
+1. [Development Guide](./development-guide.md) - Setup your environment
+2. [Architecture Guide](./architecture.md) - Understand the system
+3. [Security Guide](./SECURITY.md) - Learn security practices
+4. Component documentation relevant to your work
+
+## Welcome to the Real Estate Platform documentation. This index will help you navigate the available documentation files.
 
 ## Getting Started
 

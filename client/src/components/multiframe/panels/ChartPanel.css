@@ -1,0 +1,31 @@
+.chart-panel {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-placeholder {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+  background-color: #fffaf5;
+  border-radius: 8px;
+  border: 2px dashed #f7e5cd;
+}
+
+.chart-placeholder h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #cc9933;
+}
+
+.chart-placeholder p {
+  margin: 0;
+  color: #666;
+  font-style: italic;
+} 

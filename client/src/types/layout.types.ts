@@ -1,52 +1,74 @@
-/**
- * Types for the Multi-Frame Layout system
- */
+export type LayoutType = 'single' | 'dual' | 'tri' | 'quad' | 'advanced';
 
-/** Standard layout types for the Multi-Frame Container */
-export type LayoutType = 'single' | 'dual' | 'tri' | 'quad';
+export type PanelContentType = 'map' | 'state' | 'county' | 'property' | 'filter' | 'stats' | 'chart';
 
-/** Position information for a panel */
 export interface PanelPosition {
+  row: number;
+  col: number;
+}
+
+export interface AdvancedPanelPosition {
   x: number;
   y: number;
   width: number;
   height: number;
-  zIndex?: number;
 }
 
-/** Configuration for a panel in the advanced layout */
-export interface PanelConfig {
+export interface PanelSize {
+  width: number;
+  height: number;
+}
+
+export interface PanelConfigBase {
   id: string;
+  contentType: PanelContentType;
   title: string;
+  state?: any;
+  visible?: boolean;
+  closable?: boolean;
+  maximizable?: boolean;
+}
+
+export interface StandardPanelConfig extends PanelConfigBase {
+  position?: PanelPosition;
+  size?: PanelSize;
+}
+
+export interface AdvancedPanelConfig extends PanelConfigBase {
+  position: AdvancedPanelPosition;
+}
+
+export type PanelConfig = StandardPanelConfig | AdvancedPanelConfig;
+
+export interface MultiFrameContainerProps {
+  initialLayout: LayoutType;
+  defaultPanelContent: DefaultPanelContent;
+  onLayoutChange?: (layout: LayoutType) => void;
+}
+
+export interface LayoutConfig {
+  id?: string;
+  name: string;
+  description?: string;
+  type: LayoutType;
+  panels: PanelConfig[];
+  isDefault?: boolean;
+  isPublic?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export function isAdvancedPanelConfig(config: PanelConfig): config is AdvancedPanelConfig {
+  return 'position' in config && 
+         'x' in (config.position as AdvancedPanelPosition) && 
+         'y' in (config.position as AdvancedPanelPosition);
+}
+
+export interface PanelContentConfig {
   type: string;
-  position: PanelPosition;
-  isClosable?: boolean;
-  isMaximizable?: boolean;
-  isResizable?: boolean;
-  isDraggable?: boolean;
-  isVisible?: boolean;
-  minWidth?: number;
-  minHeight?: number;
-  maxWidth?: number;
-  maxHeight?: number;
+  title: string;
 }
 
-/** Panel state in the advanced layout */
-export interface PanelState extends PanelConfig {
-  isMaximized: boolean;
-}
-
-/** Action object for panel operations */
-export interface PanelAction {
-  type: 'maximize' | 'restore' | 'close' | 'move' | 'resize';
-  panelId: string;
-  payload?: Partial<PanelPosition>;
-}
-
-/** Options for the advanced layout hook */
-export interface AdvancedLayoutOptions {
-  initialPanels: PanelConfig[];
-  storageKey?: string;
-  shouldPersist?: boolean;
-}
-
+export interface DefaultPanelContent {
+  [key: string]: string | PanelContentConfig;
+} 

@@ -1,9 +1,11 @@
 /**
  * USMap model - represents the root geographic entity for the inventory system
+ * Consolidated from USMap.ts and usmap.model.ts
  */
 
 import mongoose, { Schema, Document } from 'mongoose';
 import { geometrySchema, statisticsSchema, baseMetadataSchema } from './geo-schemas';
+import { USMapDocument, ControllerReference, Statistics } from '../types/inventory';
 
 // Interface for USMap Document
 export interface IUSMap extends Document {
@@ -26,7 +28,14 @@ export interface IUSMap extends Document {
     updatedAt?: Date;
     lastModifiedBy?: string;
   };
-  controllers?: Array<any>;
+  controllers?: Array<{
+    controllerId: mongoose.Types.ObjectId;
+    controllerType: string;
+    enabled: boolean;
+    lastRun?: Date;
+    nextScheduledRun?: Date;
+    configuration?: any;
+  }>;
   states?: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
@@ -34,12 +43,36 @@ export interface IUSMap extends Document {
 
 // Controller reference schema
 const ControllerReferenceSchema = new Schema({
-  controllerId: { type: String, required: true },
-  controllerType: { type: String, required: true },
+  controllerId: { 
+    type: Schema.Types.ObjectId,
+    ref: 'Controller',
+    required: true 
+  },
+  controllerType: { 
+    type: String, 
+    enum: ['Tax Sale', 'Map', 'Property', 'Demographics'],
+    required: true 
+  },
   enabled: { type: Boolean, required: true, default: true },
   lastRun: { type: Date },
   nextScheduledRun: { type: Date },
   configuration: { type: Schema.Types.Mixed }
+}, { _id: false });
+
+// Statistics Schema
+const StatisticsSchema = new Schema({
+  totalTaxLiens: {
+    type: Number,
+    default: 0
+  },
+  totalValue: {
+    type: Number,
+    default: 0
+  },
+  lastUpdated: {
+    type: Date,
+    default: Date.now
+  }
 }, { _id: false });
 
 // Combined metadata schema for USMap
@@ -47,7 +80,10 @@ const usMapMetadataSchema = new Schema({
   totalStates: { type: Number, default: 0 },
   totalCounties: { type: Number, default: 0 },
   totalProperties: { type: Number, default: 0 },
-  statistics: statisticsSchema
+  statistics: { 
+    type: StatisticsSchema,
+    default: () => ({})
+  }
 }, { _id: false }).add(baseMetadataSchema);
 
 // USMap Schema
@@ -65,6 +101,10 @@ const USMapSchema = new Schema<IUSMap>({
   timestamps: true,
   collection: 'usmap' // Use the specified collection name
 });
+
+// Create indexes for common search fields
+USMapSchema.index({ name: 1 });
+USMapSchema.index({ 'metadata.totalProperties': 1 });
 
 // Add a virtual for 'id' to maintain consistent API
 USMapSchema.virtual('id').get(function() {

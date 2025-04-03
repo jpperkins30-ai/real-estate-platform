@@ -1,5 +1,6 @@
 /**
  * County model - represents a US county within a state
+ * Consolidated from County.ts and county.model.ts
  */
 
 import mongoose, { Schema, Document } from 'mongoose';
@@ -28,6 +29,15 @@ export interface ICounty extends Document {
     };
     searchConfig?: {
       enabled: boolean;
+      searchUrl?: string;
+      lookupMethod?: string;
+      selectors?: {
+        ownerName?: string;
+        propertyAddress?: string;
+        marketValue?: string;
+        taxStatus?: string;
+      };
+      lienUrl?: string;
       lastRun?: Date;
       nextScheduledRun?: Date;
       searchCriteria?: any;
@@ -37,7 +47,14 @@ export interface ICounty extends Document {
     updatedAt?: Date;
     lastModifiedBy?: string;
   };
-  controllers?: Array<any>;
+  controllers?: Array<{
+    controllerId: mongoose.Types.ObjectId;
+    controllerType: string;
+    enabled: boolean;
+    lastRun?: Date;
+    nextScheduledRun?: Date;
+    configuration?: any;
+  }>;
   properties?: mongoose.Types.ObjectId[];
   // Add standard Mongoose document fields
   createdAt: Date;
@@ -95,7 +112,16 @@ const CountySchema = new Schema<ICounty>({
   },
   metadata: { 
     type: countyMetadataSchema,
-    default: () => ({})
+    default: () => ({
+      totalProperties: 0,
+      statistics: {
+        totalTaxLiens: 0,
+        totalValue: 0
+      },
+      searchConfig: {
+        enabled: false
+      }
+    })
   },
   controllers: [controllerSchema],
   properties: [{ type: Schema.Types.ObjectId, ref: 'Property' }]
@@ -103,8 +129,16 @@ const CountySchema = new Schema<ICounty>({
   timestamps: true
 });
 
+// Create indexes for common search fields
+CountySchema.index({ name: 1 });
+CountySchema.index({ stateId: 1 });
+CountySchema.index({ 'metadata.totalProperties': 1 });
+
 // Create a compound index for efficient lookups and to prevent duplicates
 CountySchema.index({ stateId: 1, name: 1 }, { unique: true });
+
+// Create a 2dsphere index for geospatial queries
+CountySchema.index({ "geometry": "2dsphere" });
 
 // Add a virtual for 'id' that returns customId for API compatibility
 CountySchema.virtual('id').get(function() {
