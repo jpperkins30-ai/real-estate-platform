@@ -14,9 +14,9 @@ if (-not $currentDir.Path.EndsWith("client")) {
 
 # Array of working test files
 $workingTests = @(
-    "src/components/multiframe/__tests__/PanelHeader.test.tsx",
-    "src/components/multiframe/__tests__/controllers/ControllerWizardLauncher.test.tsx",
-    "src/components/multiframe/__tests__/DraggablePanel.test.tsx"
+    "src/__tests__/components/PanelHeader.test.tsx",
+    "src/__tests__/integration/ControllerWizardLauncher.test.tsx",
+    "src/__tests__/components/DraggablePanel.test.tsx"
 )
 
 # Results tracking
