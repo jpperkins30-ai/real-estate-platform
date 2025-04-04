@@ -60,7 +60,7 @@ export function initializeContentRegistry(): void {
   });
   
   // New panel types
-  import('../components/multiframe/panels/FilterPanel').then(module => {
+  import('../components/multiframe/filters/FilterPanel').then(module => {
     registerPanelContent('filter', module.FilterPanel);
   });
   

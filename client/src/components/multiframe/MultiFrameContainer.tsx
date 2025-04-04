@@ -13,6 +13,8 @@ import {
   AdvancedPanelConfig,
   PanelContentType 
 } from '../../types/layout.types';
+import { FilterContextProvider } from '../../context/FilterContext';
+import { PanelSyncProvider } from '../../context/PanelSyncContext';
 import './MultiFrameContainer.css';
 
 /**
@@ -238,17 +240,21 @@ export const MultiFrameContainer: React.FC<MultiFrameContainerProps> = ({
   }, [layoutType, panelConfigs]);
   
   return (
-    <div className={`multi-frame-container ${className}`} data-testid="multi-frame-container">
-      <div className="layout-controls">
-        <LayoutSelector
-          currentLayout={layoutType}
-          onLayoutChange={handleLayoutChange}
-          enableAdvancedLayout={enableAdvancedLayout}
-        />
-      </div>
-      <div className="layout-container" data-testid={`${layoutType}-layout-container`}>
-        {renderLayout()}
-      </div>
-    </div>
+    <FilterContextProvider>
+      <PanelSyncProvider>
+        <div className={`multi-frame-container ${className}`} data-testid="multi-frame-container">
+          <div className="layout-controls">
+            <LayoutSelector
+              currentLayout={layoutType}
+              onLayoutChange={handleLayoutChange}
+              enableAdvancedLayout={enableAdvancedLayout}
+            />
+          </div>
+          <div className="layout-container" data-testid={`${layoutType}-layout-container`}>
+            {renderLayout()}
+          </div>
+        </div>
+      </PanelSyncProvider>
+    </FilterContextProvider>
   );
 }; 
