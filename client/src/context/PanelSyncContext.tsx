@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useCallback, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useRef } from 'react';
 
 export interface PanelSyncEvent {
   type: string;
@@ -9,109 +9,83 @@ export interface PanelSyncEvent {
 
 export type PanelSyncCallback = (event: PanelSyncEvent) => void;
 
-interface Subscription {
-  id: string;
-  callback: PanelSyncCallback;
-  active: boolean;
-}
-
 interface PanelSyncContextType {
-  broadcast: (event: Omit<PanelSyncEvent, 'timestamp'>) => void;
+  broadcast: (type: string, payload: any, source: string) => void;
   subscribe: (callback: PanelSyncCallback) => () => void;
+  isSubscribed?: (callback: PanelSyncCallback) => boolean;
   getEventHistory: () => PanelSyncEvent[];
-  clearEventHistory: () => void;
 }
 
-const PanelSyncContext = createContext<PanelSyncContextType | null>(null);
+export const PanelSyncContext = createContext<PanelSyncContextType | null>(null);
 
-export const usePanelSync = () => {
+export function usePanelSync() {
   const context = useContext(PanelSyncContext);
+  
   if (!context) {
     throw new Error('usePanelSync must be used within a PanelSyncProvider');
   }
+  
   return context;
-};
+}
 
-export const PanelSyncProvider: React.FC<{ 
-  children: React.ReactNode,
-  historyLimit?: number
-}> = ({ 
-  children,
-  historyLimit = 100
-}) => {
+export const PanelSyncProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Use ref for listeners to avoid re-renders
-  const subscriptionsRef = useRef<Subscription[]>([]);
-  const subscriptionIdCounter = useRef<number>(0);
-  const [eventHistory, setEventHistory] = useState<PanelSyncEvent[]>([]);
+  const listenersRef = useRef<PanelSyncCallback[]>([]);
+  // Event history
+  const eventHistoryRef = useRef<PanelSyncEvent[]>([]);
   
   // Broadcast events to all subscribers
-  const broadcast = useCallback((event: Omit<PanelSyncEvent, 'timestamp'>) => {
-    // Add timestamp to event
-    const fullEvent: PanelSyncEvent = {
-      ...event,
+  const broadcast = useCallback((type: string, payload: any, source: string) => {
+    const event: PanelSyncEvent = {
+      type,
+      payload,
+      source,
       timestamp: Date.now()
     };
     
-    // Update event history
-    setEventHistory(prev => {
-      const updated = [fullEvent, ...prev];
-      return updated.slice(0, historyLimit);
-    });
+    // Add to history
+    eventHistoryRef.current = [event, ...eventHistoryRef.current.slice(0, 9)]; // Keep last 10 events
     
-    // Notify all active listeners
-    subscriptionsRef.current
-      .filter(sub => sub.active)
-      .forEach(subscription => {
-        try {
-          subscription.callback(fullEvent);
-        } catch (error) {
-          console.error('Error in panel sync listener:', error);
-        }
-      });
-  }, [historyLimit]);
+    // Notify all listeners
+    listenersRef.current.forEach(listener => {
+      try {
+        listener(event);
+      } catch (error) {
+        console.error('Error in panel sync listener:', error);
+      }
+    });
+  }, []);
   
   // Subscribe to events
   const subscribe = useCallback((callback: PanelSyncCallback) => {
-    const id = `sub_${subscriptionIdCounter.current++}`;
-    
-    const subscription: Subscription = {
-      id,
-      callback,
-      active: true
-    };
-    
-    subscriptionsRef.current.push(subscription);
+    listenersRef.current.push(callback);
     
     // Return unsubscribe function
     return () => {
-      const index = subscriptionsRef.current.findIndex(sub => sub.id === id);
-      if (index !== -1) {
-        // Mark as inactive instead of removing to avoid array modification during iteration
-        subscriptionsRef.current[index].active = false;
-      }
+      listenersRef.current = listenersRef.current.filter(cb => cb !== callback);
     };
+  }, []);
+  
+  // Check if callback is subscribed
+  const isSubscribed = useCallback((callback: PanelSyncCallback) => {
+    return listenersRef.current.includes(callback);
   }, []);
   
   // Get event history
   const getEventHistory = useCallback(() => {
-    return [...eventHistory];
-  }, [eventHistory]);
-  
-  // Clear event history
-  const clearEventHistory = useCallback(() => {
-    setEventHistory([]);
+    return [...eventHistoryRef.current];
   }, []);
   
-  // Provide context value
-  const value = {
+  // Context value
+  const contextValue = {
     broadcast,
     subscribe,
-    getEventHistory,
-    clearEventHistory
+    isSubscribed,
+    getEventHistory
   };
-
+  
   return (
-    <PanelSyncContext.Provider value={value}>
+    <PanelSyncContext.Provider value={contextValue}>
       {children}
     </PanelSyncContext.Provider>
   );

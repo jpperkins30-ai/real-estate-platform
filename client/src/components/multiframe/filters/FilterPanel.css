@@ -1,0 +1,189 @@
+.filter-panel {
+  padding: 15px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.filter-panel h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 16px;
+  color: #333;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+}
+
+.filter-section {
+  margin-bottom: 20px;
+}
+
+.filter-row {
+  margin-bottom: 12px;
+}
+
+.filter-row label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 14px;
+  color: #666;
+}
+
+.filter-row input, 
+.filter-row select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.filter-row textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  min-height: 60px;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.filter-actions button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.apply-button {
+  background-color: #4caf50;
+  color: white;
+}
+
+.apply-button:hover {
+  background-color: #45a049;
+}
+
+.clear-button {
+  background-color: #f44336;
+  color: white;
+}
+
+.clear-button:hover {
+  background-color: #d32f2f;
+}
+
+.save-button {
+  background-color: #2196f3;
+  color: white;
+}
+
+.save-button:hover {
+  background-color: #0b7dda;
+}
+
+.save-filter-form {
+  margin-top: 20px;
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+}
+
+.save-filter-form h4 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 16px;
+}
+
+.saved-filters {
+  margin-top: 20px;
+}
+
+.saved-filters h4 {
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+.saved-filters ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.saved-filter-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  background-color: #fff;
+}
+
+.saved-filter-info {
+  flex: 1;
+}
+
+.saved-filter-info p {
+  margin: 5px 0 0;
+  font-size: 12px;
+  color: #777;
+}
+
+.saved-filter-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.load-button {
+  background-color: #ff9800;
+  color: white;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.load-button:hover {
+  background-color: #e68a00;
+}
+
+.delete-button {
+  background-color: #f44336;
+  color: white;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.delete-button:hover {
+  background-color: #d32f2f;
+}
+
+.save-confirm-button {
+  background-color: #4caf50;
+  color: white;
+}
+
+.save-confirm-button:hover {
+  background-color: #45a049;
+}
+
+.cancel-button {
+  background-color: #9e9e9e;
+  color: white;
+}
+
+.cancel-button:hover {
+  background-color: #757575;
+} 

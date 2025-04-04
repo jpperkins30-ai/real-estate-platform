@@ -6,7 +6,7 @@ import { usePanelSync } from '../../hooks/usePanelSync';
 import { usePanelState } from '../../hooks/usePanelState';
 import { useLayoutContext } from '../../hooks/useLayoutContext';
 import { getPanelContent } from '../../services/panelContentRegistry';
-import { PanelConfig, PanelPosition } from '../../types/layout.types';
+import { PanelContentType, StandardPanelConfig } from '../../types/layout.types';
 import './EnhancedPanelContainer.css';
 
 // Define types for panel events
@@ -19,7 +19,7 @@ interface PanelEvent {
 interface EnhancedPanelContainerProps {
   id: string;
   title: string;
-  contentType: string;
+  contentType: PanelContentType;
   initialState?: Record<string, any>;
   initialPosition?: { x: number; y: number };
   initialSize?: { width: number; height: number };
@@ -127,22 +127,14 @@ export function EnhancedPanelContainer({
   
   // Register panel with layout context on mount
   useEffect(() => {
-    const panelPosition: PanelPosition = {
-      ...(panelState.position || initialPosition),
-      width: (panelState.size || initialSize).width,
-      height: (panelState.size || initialSize).height
-    };
-    
-    const config: PanelConfig = {
+    const config: StandardPanelConfig = {
       id,
       title,
-      type: contentType,
-      position: panelPosition,
-      isClosable: closable,
-      isMaximizable: maximizable,
-      isResizable: resizable,
-      isDraggable: draggable,
-      isVisible: true
+      contentType,
+      visible: true,
+      closable,
+      maximizable,
+      state: panelState
     };
     
     registerPanel(id, config);
@@ -150,11 +142,11 @@ export function EnhancedPanelContainer({
     return () => {
       unregisterPanel(id);
     };
-  }, [id, contentType, title, registerPanel, unregisterPanel, panelState, initialPosition, initialSize, closable, maximizable, resizable, draggable]);
+  }, [id, contentType, title, registerPanel, unregisterPanel, panelState, closable, maximizable]);
   
   // Subscribe to events from other panels
   useEffect(() => {
-    const unsubscribe = subscribe((event: PanelEvent) => {
+    const unsubscribe = subscribe((event) => {
       if (event.source !== id) {
         // Process events and update state accordingly
         if (event.type === 'select' || event.type === 'filter') {
@@ -166,21 +158,27 @@ export function EnhancedPanelContainer({
     return unsubscribe;
   }, [id, subscribe, updateState]);
   
-  // Toggle maximize state
-  const handleToggleMaximize = useCallback(() => {
-    toggleMaximized();
-  }, [toggleMaximized]);
-  
   // Handle panel actions
-  const handleAction = useCallback((action: { type: string, payload?: any }) => {
-    if (['select', 'filter', 'highlight'].includes(action.type)) {
-      broadcast({
-        type: action.type,
-        payload: action.payload,
-        source: id
-      } as PanelEvent);
+  const handlePanelAction = useCallback((action: { type: string, payload?: any }) => {
+    switch (action.type) {
+      case 'maximize':
+        toggleMaximized();
+        break;
+      case 'close':
+        if (onClose) onClose();
+        break;
+      case 'refresh':
+        console.log(`Refreshing panel ${id}`);
+        break;
+      case 'export':
+        console.log(`Exporting panel ${id}`);
+        break;
+      default:
+        if (['select', 'filter', 'highlight'].includes(action.type)) {
+          broadcast(action.type, action.payload, id);
+        }
     }
-  }, [id, broadcast]);
+  }, [id, broadcast, toggleMaximized, onClose]);
   
   // Get panel content component
   const PanelContent = getPanelContent(contentType);
@@ -228,10 +226,9 @@ export function EnhancedPanelContainer({
         title={title}
         draggable={draggable}
         isMaximized={isMaximized}
-        onToggleMaximize={maximizable ? handleToggleMaximize : undefined}
-        onRefresh={() => console.log(`Refreshing panel ${id}`)}
-        onExport={() => console.log(`Exporting panel ${id}`)}
-        onClose={closable ? onClose : undefined}
+        onAction={handlePanelAction}
+        showMaximizeButton={maximizable}
+        showCloseButton={closable}
         showControls={showControls}
         customControls={customControls}
       />
@@ -242,7 +239,7 @@ export function EnhancedPanelContainer({
             panelId={id}
             initialState={panelState}
             onStateChange={updateState}
-            onAction={handleAction}
+            onAction={handlePanelAction}
           />
         ) : (
           <div className="no-content">

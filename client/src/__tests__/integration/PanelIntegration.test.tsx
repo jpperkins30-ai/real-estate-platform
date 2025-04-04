@@ -105,7 +105,7 @@ describe('Panel Integration Tests', () => {
       <EnhancedPanelContainer 
         id="test-panel"
         title="Test Panel"
-        contentType="test"
+        contentType="filter"
       />
     );
     
@@ -118,18 +118,18 @@ describe('Panel Integration Tests', () => {
       <EnhancedPanelContainer 
         id="test-panel"
         title="Test Panel"
-        contentType="test"
+        contentType="filter"
       />
     );
     
     const actionButton = screen.getByTestId('select-action-button');
     fireEvent.click(actionButton);
     
-    expect(mockBroadcast).toHaveBeenCalledWith({
-      type: 'select',
-      payload: { id: 'test-item' },
-      source: 'test-panel'
-    });
+    expect(mockBroadcast).toHaveBeenCalledWith(
+      'select',
+      { id: 'test-item' },
+      'test-panel'
+    );
   });
   
   it('handles state updates from panel content', async () => {
@@ -139,7 +139,7 @@ describe('Panel Integration Tests', () => {
       <EnhancedPanelContainer 
         id="test-panel"
         title="Test Panel"
-        contentType="test"
+        contentType="filter"
         onStateChange={onStateChangeMock}
       />
     );
@@ -159,7 +159,7 @@ describe('Panel Integration Tests', () => {
       <EnhancedPanelContainer 
         id="test-panel"
         title="Test Panel"
-        contentType="test"
+        contentType="filter"
         maximizable={true}
       />
     );

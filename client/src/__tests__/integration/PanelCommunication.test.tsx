@@ -23,11 +23,11 @@ const MockCountyPanel = ({
       state: 'Sample State'
     };
     
-    broadcast({
-      type: 'filter',
-      payload: filterData,
-      source: panelId
-    });
+    broadcast(
+      'filter',
+      filterData,
+      panelId
+    );
     
     if (onAction) {
       onAction(filterData);
