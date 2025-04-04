@@ -2,19 +2,20 @@ import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { FilterContext, FilterContextProvider } from '../../context/FilterContext';
 import { FilterSet } from '../../types/filter.types';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // Mock localStorage
 const mockLocalStorage = (() => {
   let store: Record<string, string> = {};
   return {
-    getItem: jest.fn((key: string) => store[key] || null),
-    setItem: jest.fn((key: string, value: string) => {
+    getItem: vi.fn((key: string) => store[key] || null),
+    setItem: vi.fn((key: string, value: string) => {
       store[key] = value.toString();
     }),
-    clear: jest.fn(() => {
+    clear: vi.fn(() => {
       store = {};
     }),
-    removeItem: jest.fn((key: string) => {
+    removeItem: vi.fn((key: string) => {
       delete store[key];
     }),
   };
@@ -57,7 +58,7 @@ const TestComponent: React.FC = () => {
 
 describe('FilterContext', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockLocalStorage.clear();
   });
 

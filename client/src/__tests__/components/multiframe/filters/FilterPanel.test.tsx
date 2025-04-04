@@ -3,19 +3,20 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { FilterPanel } from '../../../../components/multiframe/filters/FilterPanel';
 import { FilterContextProvider } from '../../../../context/FilterContext';
 import { PanelSyncProvider } from '../../../../context/PanelSyncContext';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // Mock local storage
 const mockLocalStorage = (() => {
   let store: Record<string, string> = {};
   return {
-    getItem: jest.fn((key: string) => store[key] || null),
-    setItem: jest.fn((key: string, value: string) => {
+    getItem: vi.fn((key: string) => store[key] || null),
+    setItem: vi.fn((key: string, value: string) => {
       store[key] = value.toString();
     }),
-    clear: jest.fn(() => {
+    clear: vi.fn(() => {
       store = {};
     }),
-    removeItem: jest.fn((key: string) => {
+    removeItem: vi.fn((key: string) => {
       delete store[key];
     }),
   };
@@ -36,7 +37,7 @@ const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 
 describe('FilterPanel', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockLocalStorage.clear();
   });
 
