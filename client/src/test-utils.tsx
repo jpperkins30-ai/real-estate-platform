@@ -2,7 +2,9 @@ import React, { ReactElement } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { vi } from 'vitest';
-import { PanelContentType, AdvancedPanelPosition } from './types/layout.types';
+import { PanelContentType, AdvancedPanelPosition, StandardPanelConfig } from './types/layout.types';
+
+/** Router testing utilities */
 
 // Define router options type
 interface RouterOptions extends RenderOptions {
@@ -10,7 +12,9 @@ interface RouterOptions extends RenderOptions {
   routes?: Array<{path: string, element: ReactElement}>;
 }
 
-// Create renderWithRouter utility
+/**
+ * Render a component with router context
+ */
 export function renderWithRouter(
   ui: ReactElement,
   { route = '/', routes = [], ...renderOptions }: RouterOptions = {}
@@ -30,13 +34,17 @@ export function renderWithRouter(
   };
 }
 
-// Create test data generators
+/**
+ * Create mock panel props for testing
+ */
 export const createPanelHeaderProps = (overrides = {}) => ({
   title: 'Test Panel',
   isMaximized: false,
   onAction: vi.fn(),
   showMaximizeButton: true,
   showCloseButton: true,
+  className: '',
+  draggable: false,
   ...overrides
 });
 
@@ -56,32 +64,26 @@ export const createDraggablePanelProps = (overrides = {}) => ({
 export const createControllerWizardProps = (overrides = {}) => ({
   entityType: 'state' as const,
   entityId: 'CA',
+  buttonLabel: 'Launch Wizard',
+  showStatus: true,
+  className: '',
   timeout: 5000,
   ...overrides
 });
 
-// Mock generator utilities
-export function createMockPanelProps(overrides = {}) {
+/**
+ * Create mock panel config for testing
+ */
+export function createMockPanelConfig(overrides: Partial<StandardPanelConfig> = {}): StandardPanelConfig {
   return {
     id: 'test-panel',
+    contentType: 'map',
     title: 'Test Panel',
-    contentType: 'map' as PanelContentType,
-    maximizable: true,
+    visible: true,
     closable: true,
-    onAction: vi.fn(),
-    ...overrides
-  };
-}
-
-// Create panel configuration mock
-export function createMockPanelConfig(overrides = {}) {
-  return {
-    id: 'panel-1',
-    contentType: 'map' as PanelContentType,
-    title: 'Map Panel',
-    position: { x: 0, y: 0, width: 70, height: 70 } as AdvancedPanelPosition,
     maximizable: true,
-    closable: true,
+    position: { row: 0, col: 0 },
+    size: { width: 100, height: 100 },
     ...overrides
   };
 }
@@ -92,10 +94,29 @@ export function createMockPanels() {
     createMockPanelConfig({ id: 'panel-1' }),
     createMockPanelConfig({ 
       id: 'panel-2', 
-      contentType: 'property' as PanelContentType,
-      position: { x: 70, y: 0, width: 30, height: 70 } as AdvancedPanelPosition 
+      contentType: 'property',
+      position: { row: 1, col: 0 }
     })
   ];
+}
+
+/**
+ * Create mock localStorage for testing
+ */
+export function createMockLocalStorage() {
+  const store: Record<string, string> = {};
+  return {
+    getItem: vi.fn((key: string) => store[key] || null),
+    setItem: vi.fn((key: string, value: string) => {
+      store[key] = value;
+    }),
+    removeItem: vi.fn((key: string) => {
+      delete store[key];
+    }),
+    clear: vi.fn(() => {
+      Object.keys(store).forEach(key => delete store[key]);
+    })
+  };
 }
 
 // Helper to create a text matcher that's flexible
