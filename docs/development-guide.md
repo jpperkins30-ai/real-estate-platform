@@ -771,4 +771,42 @@ export const createCounty = async (req: Request, res: Response) => {
 - [React Bootstrap Documentation](https://react-bootstrap.github.io/)
 - [GeoJSON Specification](https://geojson.org/)
 - [Turf.js for Geospatial Analysis](https://turfjs.org/)
-- [Census API Documentation](https://www.census.gov/data/developers/guidance.html) 
+- [Census API Documentation](https://www.census.gov/data/developers/guidance.html)
+
+## Development
+
+### Project Structure
+
+```
+├── server/                  # Backend Express API
+│   ├── src/
+│   │   ├── controllers/     # Route controllers
+│   │   ├── middleware/      # Express middleware
+│   │   ├── models/          # Mongoose models
+│   │   ├── routes/          # Express routes
+│   │   ├── collectors/      # Data collection modules
+│   │   ├── scripts/         # CLI utilities
+│   │   ├── utils/           # Utility functions
+│   │   └── index.ts         # Entry point
+│   └── tsconfig.json        # TypeScript configuration
+├── admin-dashboard/         # Admin interface
+├── client/                  # User-facing frontend
+│   ├── src/
+│   │   ├── components/      # React components
+│   │   │   ├── common/      # Shared components
+│   │   │   ├── inventory/   # Inventory management
+│   │   │   └── map/         # Map visualization
+│   │   ├── hooks/           # Custom React hooks
+│   │   └── App.tsx          # Main application
+│   └── tsconfig.json        # TypeScript configuration
+├── .github/                # GitHub configuration
+│   └── workflows/          # CI/CD workflows
+├── docs/                    # Documentation
+│   ├── filter-system/       # Filter system documentation
+│   │   ├── architecture.md  # Filter system architecture
+│   │   ├── best-practices.md # Filter system best practices
+│   │   └── testing.md       # Filter system testing
+└── package.json             # Project dependencies
+```
+
+### Available Scripts 

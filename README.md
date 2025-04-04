@@ -173,6 +173,7 @@ The platform includes comprehensive documentation:
 - [API Documentation](http://localhost:5000/api-docs) - Interactive API documentation
 - [Admin Dashboard Guide](./docs/admin-dashboard.md) - Complete guide to the admin interface
 - [Logging System Documentation](./docs/logging-system.md) - Overview of the logging architecture
+- [Filter System Documentation](./docs/filter-system/architecture.md) - Filter system architecture and best practices
 - [Log Dashboard Guide](./admin-dashboard/docs/logs-dashboard-guide.md) - Guide to using the log visualization dashboard
 - [Log Tools Documentation](./server/src/scripts/README.md) - CLI tools for log management
 

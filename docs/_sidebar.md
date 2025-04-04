@@ -28,6 +28,17 @@
   * [Controller Wizard](components-wizard.md)
   * [US Map](components-map.md)
 
+* Filter System
+  * [Architecture](filter-system/architecture.md)
+  * [Best Practices](filter-system/best-practices.md)
+  * [API Reference](api/filter-system.md)
+  * [Implementation Guides](filter-system/guides/basic-implementation.md)
+    * [Basic Implementation](filter-system/guides/basic-implementation.md)
+    * [Advanced Implementation](filter-system/guides/advanced-implementation.md)
+    * [Custom Filter Components](filter-system/guides/custom-filter-components.md)
+    * [Troubleshooting](filter-system/guides/troubleshooting.md)
+  * [Testing](filter-system/testing.md)
+
 * Features
   * [Export to Excel](features/export-excel.md)
 
