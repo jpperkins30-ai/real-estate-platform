@@ -1,79 +1,104 @@
-import { useState, useCallback, useEffect } from 'react';
-import { savePanelState, loadPanelState, deletePanelState, updatePanelProperty, getPanelStorageKey } from '../services/panelStateService';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { savePanelState, loadPanelState, deletePanelState } from '../services/panelStateService';
 import { PanelContentType } from '../types/layout.types';
 
 interface PanelStateOptions {
   panelId: string;
-  initialState?: Record<string, any>;
+  initialState: Record<string, any>;
+  contentType?: PanelContentType;
   onStateChange?: (state: Record<string, any>) => void;
   persistState?: boolean;
+  persistenceKey?: string;
+  sessionOnly?: boolean;
 }
 
+interface PanelStateMetadata {
+  isLoading: boolean;
+  hasError: boolean;
+  version: number;
+}
+
+/**
+ * Enhanced usePanelState hook with versioning, error handling, and storage options
+ */
 export function usePanelState({ 
   panelId, 
   initialState = {}, 
+  contentType = 'map' as PanelContentType, // Default to 'map' which is a valid PanelContentType
   onStateChange,
-  persistState = true
+  persistState = true,
+  persistenceKey,
+  sessionOnly = false
 }: PanelStateOptions) {
+  // Use provided persistenceKey or default to panelId
+  const stateKey = persistenceKey || panelId;
+  
+  // Track version for conflict resolution
+  const [version, setVersion] = useState<number>(1);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [hasError, setHasError] = useState<boolean>(false);
+  const lastSavedRef = useRef<string>('');
+  
   // Load saved state or use initial state with error handling
-  const loadInitialState = (): Record<string, any> => {
+  const loadInitialState = useCallback((): Record<string, any> => {
     if (!persistState) {
+      setIsLoading(false);
       return initialState;
     }
     
     try {
-      // For test compatibility, first try to get directly from localStorage
-      const storageKey = getPanelStorageKey(panelId);
-      const rawStoredState = localStorage.getItem(storageKey);
+      setIsLoading(true);
+      setHasError(false);
       
-      if (rawStoredState) {
-        try {
-          // For tests, assume direct JSON structure
-          const parsedState = JSON.parse(rawStoredState);
-          // Merge with initial state to ensure all expected properties exist
-          return { ...initialState, ...parsedState };
-        } catch (error) {
-          // If direct parsing fails, try the service approach
-          console.warn(`Direct parse of panel state failed, trying service: ${error}`);
-        }
-      }
-      
-      // If direct access fails or is empty, use the service
-      const savedState = loadPanelState(panelId);
+      const savedState = loadPanelState(stateKey, sessionOnly);
       
       if (savedState) {
-        // Merge saved state with initial state to ensure all expected properties exist
+        // Set version from saved state or default to 1
+        if (savedState.version) {
+          setVersion(savedState.version);
+        }
+        
+        // Save serialized state for comparison
+        lastSavedRef.current = JSON.stringify(savedState.state);
+        
+        setIsLoading(false);
+        // Merge with initial state to ensure all expected properties exist
         return { ...initialState, ...savedState.state };
       }
     } catch (error) {
       console.error(`Error loading panel state for ${panelId}:`, error);
+      setHasError(true);
     }
     
+    setIsLoading(false);
     return initialState;
-  };
+  }, [panelId, initialState, persistState, stateKey, sessionOnly]);
   
   const [state, setState] = useState<Record<string, any>>(loadInitialState);
   
-  // Update state and save changes
+  // Update state and save changes with versioning
   const updateState = useCallback((newState: Record<string, any> | ((prevState: Record<string, any>) => Record<string, any>)) => {
-    setState((prev) => {
+    setState(prev => {
       try {
-        // Handle functional updates
+        // Calculate the updated state
         const updatedState = typeof newState === 'function' 
           ? (newState as Function)(prev) 
           : { ...prev, ...newState };
         
-        // Save the updated state to storage if persistence is enabled
+        // Only persist state if enabled
         if (persistState) {
-          // For test compatibility, store directly in localStorage as well
-          const storageKey = getPanelStorageKey(panelId);
-          localStorage.setItem(storageKey, JSON.stringify(updatedState));
+          // Increment version
+          const newVersion = version + 1;
+          setVersion(newVersion);
           
-          // Also use the service for actual app functionality
-          savePanelState(panelId, state.contentType || 'default', updatedState);
+          // Save the updated state with version
+          savePanelState(stateKey, contentType, updatedState, newVersion, sessionOnly);
+          
+          // Save serialized state for comparison
+          lastSavedRef.current = JSON.stringify(updatedState);
         }
         
-        // Notify parent component if callback provided
+        // Call onStateChange if provided
         if (onStateChange) {
           onStateChange(updatedState);
         }
@@ -81,17 +106,11 @@ export function usePanelState({
         return updatedState;
       } catch (error) {
         console.error(`Error updating panel state for ${panelId}:`, error);
-        return prev; // Return previous state in case of error
+        setHasError(true);
+        return prev;
       }
     });
-  }, [panelId, state.contentType, onStateChange, persistState]);
-  
-  // Update a single property
-  const updateProperty = useCallback((propertyName: string, propertyValue: any) => {
-    updateState({
-      [propertyName]: propertyValue
-    });
-  }, [updateState]);
+  }, [panelId, contentType, persistState, stateKey, sessionOnly, version, onStateChange]);
   
   // Update position within the state
   const updatePosition = useCallback((position: { x: number; y: number }) => {
@@ -111,46 +130,57 @@ export function usePanelState({
   // Reset state
   const resetState = useCallback(() => {
     setState(initialState);
+    
     if (persistState) {
+      setVersion(1);
+      
       try {
-        // For test compatibility, remove directly from localStorage
-        const storageKey = getPanelStorageKey(panelId);
-        localStorage.removeItem(storageKey);
+        deletePanelState(stateKey, sessionOnly);
         
-        // Also use the service for actual app functionality
-        deletePanelState(panelId);
+        // Update saved state ref
+        lastSavedRef.current = JSON.stringify(initialState);
+        
+        // Call onStateChange if provided
+        if (onStateChange) {
+          onStateChange(initialState);
+        }
       } catch (error) {
         console.error(`Error deleting panel state for ${panelId}:`, error);
+        setHasError(true);
       }
     }
-  }, [panelId, initialState, persistState]);
+  }, [panelId, initialState, persistState, stateKey, sessionOnly, onStateChange]);
   
   // Clean up on unmount
   useEffect(() => {
     return () => {
       if (persistState) {
         try {
-          // For test compatibility, store directly in localStorage
-          const storageKey = getPanelStorageKey(panelId);
-          localStorage.setItem(storageKey, JSON.stringify(state));
+          // Only save if state has changed (compare with last saved)
+          const currentStateStr = JSON.stringify(state);
           
-          // Also use the service for actual app functionality
-          savePanelState(panelId, state.contentType || 'default', state);
+          if (currentStateStr !== lastSavedRef.current) {
+            savePanelState(stateKey, contentType, state, version, sessionOnly);
+          }
         } catch (error) {
           console.error(`Error saving panel state during cleanup for ${panelId}:`, error);
         }
       }
     };
-  }, [panelId, state, persistState]);
+  }, [panelId, state, persistState, stateKey, sessionOnly, version, contentType]);
   
   // Return state and functions as an object to match expected API
   return {
     state,
     updateState,
-    updateProperty,
     updatePosition,
     updateSize,
     toggleMaximized,
-    resetState
+    resetState,
+    metadata: { 
+      isLoading, 
+      hasError, 
+      version 
+    }
   };
 } 

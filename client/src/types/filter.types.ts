@@ -33,6 +33,7 @@ export interface FilterConfig {
   isDefault?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  version?: number;
 }
 
 // Keep existing types for backward compatibility and internal use

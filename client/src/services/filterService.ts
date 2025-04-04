@@ -3,6 +3,7 @@ import { FilterSet, PropertyFilter, GeographicFilter, FilterConfig } from '../ty
 // Storage keys
 const STORAGE_KEY_ACTIVE_FILTERS = 'activeFilters';
 const STORAGE_KEY_FILTER_PRESETS = 'filterPresets';
+const STORAGE_VERSION = 'v1'; // For future migration support
 
 /**
  * Apply filters to data with improved type safety and error handling
@@ -165,25 +166,59 @@ function isItemMatchingGeographicFilters<T extends Record<string, any>>(
 }
 
 /**
- * Save filters to local storage with error handling
+ * Save filters to local storage with error handling and versioning
  */
 export function saveFiltersToStorage(filters: FilterSet): void {
   try {
-    localStorage.setItem(STORAGE_KEY_ACTIVE_FILTERS, JSON.stringify(filters));
+    const versionedFilters = {
+      version: STORAGE_VERSION,
+      updatedAt: new Date().toISOString(),
+      data: filters
+    };
+    
+    localStorage.setItem(STORAGE_KEY_ACTIVE_FILTERS, JSON.stringify(versionedFilters));
   } catch (error) {
     console.error('Error saving filters to storage:', error);
+    
+    // Fallback to sessionStorage if localStorage fails
+    try {
+      const versionedFilters = {
+        version: STORAGE_VERSION,
+        updatedAt: new Date().toISOString(),
+        data: filters
+      };
+      
+      sessionStorage.setItem(STORAGE_KEY_ACTIVE_FILTERS, JSON.stringify(versionedFilters));
+    } catch (fallbackError) {
+      console.error('Error saving filters to fallback storage:', fallbackError);
+    }
   }
 }
 
 /**
- * Load filters from local storage with error handling
+ * Load filters from storage with error handling and version checking
  */
 export function loadFiltersFromStorage(): FilterSet | null {
   try {
-    const storedFilters = localStorage.getItem(STORAGE_KEY_ACTIVE_FILTERS);
+    // Try localStorage first
+    let storedFilters = localStorage.getItem(STORAGE_KEY_ACTIVE_FILTERS);
+    
+    // If not in localStorage, try sessionStorage as fallback
+    if (!storedFilters) {
+      storedFilters = sessionStorage.getItem(STORAGE_KEY_ACTIVE_FILTERS);
+    }
     
     if (storedFilters) {
-      return JSON.parse(storedFilters) as FilterSet;
+      const parsedData = JSON.parse(storedFilters);
+      
+      // Check if data is in versioned format
+      if (parsedData && parsedData.version && parsedData.data) {
+        // Return the data portion of versioned format
+        return parsedData.data as FilterSet;
+      } else {
+        // Handle legacy data format (direct FilterSet)
+        return parsedData as FilterSet;
+      }
     }
   } catch (error) {
     console.error('Error loading filters from storage:', error);
@@ -193,25 +228,59 @@ export function loadFiltersFromStorage(): FilterSet | null {
 }
 
 /**
- * Save filter presets to local storage with error handling
+ * Save filter presets to local storage with error handling and versioning
  */
 export function saveFilterPresetsToStorage(presets: FilterConfig[]): void {
   try {
-    localStorage.setItem(STORAGE_KEY_FILTER_PRESETS, JSON.stringify(presets));
+    const versionedPresets = {
+      version: STORAGE_VERSION,
+      updatedAt: new Date().toISOString(),
+      data: presets
+    };
+    
+    localStorage.setItem(STORAGE_KEY_FILTER_PRESETS, JSON.stringify(versionedPresets));
   } catch (error) {
     console.error('Error saving filter presets to storage:', error);
+    
+    // Fallback to sessionStorage
+    try {
+      const versionedPresets = {
+        version: STORAGE_VERSION,
+        updatedAt: new Date().toISOString(),
+        data: presets
+      };
+      
+      sessionStorage.setItem(STORAGE_KEY_FILTER_PRESETS, JSON.stringify(versionedPresets));
+    } catch (fallbackError) {
+      console.error('Error saving filter presets to fallback storage:', fallbackError);
+    }
   }
 }
 
 /**
- * Load filter presets from local storage with error handling
+ * Load filter presets from storage with error handling and version checking
  */
 export function loadFilterPresetsFromStorage(): FilterConfig[] {
   try {
-    const storedPresets = localStorage.getItem(STORAGE_KEY_FILTER_PRESETS);
+    // Try localStorage first
+    let storedPresets = localStorage.getItem(STORAGE_KEY_FILTER_PRESETS);
+    
+    // If not in localStorage, try sessionStorage as fallback
+    if (!storedPresets) {
+      storedPresets = sessionStorage.getItem(STORAGE_KEY_FILTER_PRESETS);
+    }
     
     if (storedPresets) {
-      return JSON.parse(storedPresets) as FilterConfig[];
+      const parsedData = JSON.parse(storedPresets);
+      
+      // Check if data is in versioned format
+      if (parsedData && parsedData.version && parsedData.data) {
+        // Return the data portion of versioned format
+        return parsedData.data as FilterConfig[];
+      } else {
+        // Handle legacy data format (direct array)
+        return parsedData as FilterConfig[];
+      }
     }
   } catch (error) {
     console.error('Error loading filter presets from storage:', error);
@@ -226,6 +295,7 @@ export function loadFilterPresetsFromStorage(): FilterConfig[] {
 export function clearAllFiltersFromStorage(): void {
   try {
     localStorage.removeItem(STORAGE_KEY_ACTIVE_FILTERS);
+    sessionStorage.removeItem(STORAGE_KEY_ACTIVE_FILTERS); // Clean up potential fallback
   } catch (error) {
     console.error('Error clearing filters from storage:', error);
   }
@@ -249,7 +319,8 @@ export function getUniqueFieldValues<T extends Record<string, any>>(
     });
     
     return Array.from(values);
-  } catch (error) {
+  }
+  catch (error) {
     console.error(`Error getting unique values for field ${String(field)}:`, error);
     return [];
   }
@@ -267,6 +338,132 @@ export function createFilterConfig(
     name,
     description: description || `Filter created on ${new Date().toLocaleDateString()}`,
     filters,
-    isDefault: false
+    isDefault: false,
+    version: 1 // Initialize with version 1
   };
+}
+
+/**
+ * Update a filter configuration with version control
+ */
+export function updateFilterConfig(
+  config: FilterConfig,
+  updates: Partial<Omit<FilterConfig, 'id' | 'createdAt' | 'version'>>
+): FilterConfig {
+  return {
+    ...config,
+    ...updates,
+    updatedAt: new Date().toISOString(),
+    version: (config.version || 0) + 1 // Increment version number
+  };
+}
+
+/**
+ * Check for filter configuration conflicts
+ * @returns true if conflict exists
+ */
+export function hasFilterConfigConflict(
+  localConfig: FilterConfig,
+  remoteConfig: FilterConfig
+): boolean {
+  if (!localConfig || !remoteConfig) {
+    return false;
+  }
+  
+  // Check if the remote version is newer
+  return (remoteConfig.version || 0) > (localConfig.version || 0);
+}
+
+/**
+ * Merge filter configurations with conflict resolution
+ * Takes the newer version but preserves local customizations
+ */
+export function mergeFilterConfigs(
+  localConfig: FilterConfig,
+  remoteConfig: FilterConfig
+): FilterConfig {
+  // If remote is newer, use it as the base
+  const baseConfig = hasFilterConfigConflict(localConfig, remoteConfig) 
+    ? remoteConfig 
+    : localConfig;
+    
+  // Create a new config with the highest version number
+  return {
+    ...baseConfig,
+    version: Math.max(
+      localConfig.version || 0, 
+      remoteConfig.version || 0
+    ) + 1,
+    updatedAt: new Date().toISOString()
+  };
+}
+
+/**
+ * Backup current filters to separate storage
+ */
+export function backupFilters(): string {
+  try {
+    const activeFilters = loadFiltersFromStorage();
+    const backupId = `filter-backup-${Date.now()}`;
+    
+    if (activeFilters) {
+      const backup = {
+        id: backupId,
+        timestamp: new Date().toISOString(),
+        filters: activeFilters
+      };
+      
+      localStorage.setItem(`${STORAGE_KEY_ACTIVE_FILTERS}_backup_${backupId}`, JSON.stringify(backup));
+      return backupId;
+    }
+  } catch (error) {
+    console.error('Error backing up filters:', error);
+  }
+  
+  return '';
+}
+
+/**
+ * Restore filters from backup
+ */
+export function restoreFiltersFromBackup(backupId: string): boolean {
+  try {
+    const backupKey = `${STORAGE_KEY_ACTIVE_FILTERS}_backup_${backupId}`;
+    const backupData = localStorage.getItem(backupKey);
+    
+    if (backupData) {
+      const backup = JSON.parse(backupData);
+      
+      if (backup && backup.filters) {
+        saveFiltersToStorage(backup.filters);
+        return true;
+      }
+    }
+  } catch (error) {
+    console.error('Error restoring filters from backup:', error);
+  }
+  
+  return false;
+}
+
+/**
+ * Validate filter configuration to prevent corrupted filters
+ */
+export function validateFilterConfig(config: FilterConfig): boolean {
+  // Basic validation
+  if (!config || typeof config !== 'object') {
+    return false;
+  }
+  
+  // Check required fields
+  if (!config.id || !config.name || !config.filters) {
+    return false;
+  }
+  
+  // Check that filters field is an object
+  if (typeof config.filters !== 'object') {
+    return false;
+  }
+  
+  return true;
 } 

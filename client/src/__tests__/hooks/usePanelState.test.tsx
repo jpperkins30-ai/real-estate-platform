@@ -1,31 +1,31 @@
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { usePanelState } from '../../hooks/usePanelState';
+import * as panelStateService from '../../services/panelStateService';
+import { PanelContentType } from '../../types/layout.types';
+
+// Mock the panel state service
+vi.mock('../../services/panelStateService', () => ({
+  loadPanelState: vi.fn(),
+  savePanelState: vi.fn(),
+  deletePanelState: vi.fn()
+}));
 
 describe('usePanelState hook', () => {
-  // Mock localStorage
-  const originalGetItem = window.localStorage.getItem;
-  const originalSetItem = window.localStorage.setItem;
-  const originalRemoveItem = window.localStorage.removeItem;
-  
   beforeEach(() => {
     vi.clearAllMocks();
     
-    // Mock localStorage methods
-    window.localStorage.getItem = vi.fn();
-    window.localStorage.setItem = vi.fn();
-    window.localStorage.removeItem = vi.fn();
-  });
-  
-  afterEach(() => {
-    // Restore original methods
-    window.localStorage.getItem = originalGetItem;
-    window.localStorage.setItem = originalSetItem;
-    window.localStorage.removeItem = originalRemoveItem;
+    // Reset panel state service mocks
+    vi.mocked(panelStateService.loadPanelState).mockReset();
+    vi.mocked(panelStateService.savePanelState).mockReset();
+    vi.mocked(panelStateService.deletePanelState).mockReset();
   });
   
   it('initializes with default state', () => {
-    const { result } = renderHook(() => usePanelState({ panelId: 'test-panel' }));
+    const { result } = renderHook(() => usePanelState({ 
+      panelId: 'test-panel',
+      initialState: {} 
+    }));
     
     expect(result.current.state).toEqual({});
   });
@@ -50,14 +50,21 @@ describe('usePanelState hook', () => {
       size: { width: 400, height: 300 }
     };
     
-    // Set up mock return value
-    (window.localStorage.getItem as jest.Mock).mockReturnValue(JSON.stringify(savedState));
+    // Set up mock return value with the proper panel state structure
+    vi.mocked(panelStateService.loadPanelState).mockReturnValue({
+      id: 'test-panel',
+      contentType: 'map' as PanelContentType,
+      state: savedState,
+      lastUpdated: new Date().toISOString(),
+      version: 1
+    });
     
     const { result } = renderHook(() => usePanelState({ 
-      panelId: 'test-panel'
+      panelId: 'test-panel',
+      initialState: {}
     }));
     
-    expect(window.localStorage.getItem).toHaveBeenCalledWith('panel-test-panel-state');
+    expect(panelStateService.loadPanelState).toHaveBeenCalledWith('test-panel', false);
     expect(result.current.state).toEqual(savedState);
   });
   
@@ -73,8 +80,14 @@ describe('usePanelState hook', () => {
       customProp2: 'saved value'
     };
     
-    // Set up mock return value
-    (window.localStorage.getItem as jest.Mock).mockReturnValue(JSON.stringify(savedState));
+    // Set up mock return value with the proper panel state structure
+    vi.mocked(panelStateService.loadPanelState).mockReturnValue({
+      id: 'test-panel',
+      contentType: 'map' as PanelContentType,
+      state: savedState,
+      lastUpdated: new Date().toISOString(),
+      version: 1
+    });
     
     const { result } = renderHook(() => usePanelState({ 
       panelId: 'test-panel',
@@ -92,7 +105,8 @@ describe('usePanelState hook', () => {
   
   it('updates position correctly', () => {
     const { result } = renderHook(() => usePanelState({ 
-      panelId: 'test-panel'
+      panelId: 'test-panel',
+      initialState: {}
     }));
     
     act(() => {
@@ -100,15 +114,13 @@ describe('usePanelState hook', () => {
     });
     
     expect(result.current.state.position).toEqual({ x: 100, y: 150 });
-    expect(window.localStorage.setItem).toHaveBeenCalledWith(
-      'panel-test-panel-state',
-      expect.any(String)
-    );
+    expect(panelStateService.savePanelState).toHaveBeenCalled();
   });
   
   it('updates size correctly', () => {
     const { result } = renderHook(() => usePanelState({ 
-      panelId: 'test-panel'
+      panelId: 'test-panel',
+      initialState: {}
     }));
     
     act(() => {
@@ -120,7 +132,8 @@ describe('usePanelState hook', () => {
   
   it('toggles maximized state correctly', () => {
     const { result } = renderHook(() => usePanelState({ 
-      panelId: 'test-panel'
+      panelId: 'test-panel',
+      initialState: {}
     }));
     
     // Initially not maximized
@@ -139,13 +152,16 @@ describe('usePanelState hook', () => {
     expect(result.current.state.isMaximized).toBe(false);
   });
   
-  it('updates arbitrary properties', () => {
+  it('updates custom properties', () => {
     const { result } = renderHook(() => usePanelState({ 
-      panelId: 'test-panel'
+      panelId: 'test-panel',
+      initialState: {}
     }));
     
     act(() => {
-      result.current.updateProperty('customProp', 'test value');
+      result.current.updateState({
+        customProp: 'test value'
+      });
     });
     
     expect(result.current.state.customProp).toBe('test value');
@@ -153,7 +169,8 @@ describe('usePanelState hook', () => {
   
   it('updates multiple properties at once', () => {
     const { result } = renderHook(() => usePanelState({ 
-      panelId: 'test-panel'
+      panelId: 'test-panel',
+      initialState: {}
     }));
     
     act(() => {
@@ -197,7 +214,7 @@ describe('usePanelState hook', () => {
     
     // Verify state was reset to initial values
     expect(result.current.state).toEqual(initialState);
-    expect(window.localStorage.removeItem).toHaveBeenCalledWith('panel-test-panel-state');
+    expect(panelStateService.deletePanelState).toHaveBeenCalledWith('test-panel', false);
   });
   
   it('calls onStateChange when state changes', () => {
@@ -205,6 +222,7 @@ describe('usePanelState hook', () => {
     
     const { result } = renderHook(() => usePanelState({ 
       panelId: 'test-panel',
+      initialState: {},
       onStateChange: onStateChangeMock
     }));
     
@@ -220,6 +238,7 @@ describe('usePanelState hook', () => {
   it('does not persist state when persistState is false', () => {
     const { result } = renderHook(() => usePanelState({ 
       panelId: 'test-panel',
+      initialState: {},
       persistState: false
     }));
     
@@ -227,6 +246,6 @@ describe('usePanelState hook', () => {
       result.current.updatePosition({ x: 100, y: 150 });
     });
     
-    expect(window.localStorage.setItem).not.toHaveBeenCalled();
+    expect(panelStateService.savePanelState).not.toHaveBeenCalled();
   });
 }); 

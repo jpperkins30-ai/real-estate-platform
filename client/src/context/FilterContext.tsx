@@ -1,6 +1,12 @@
 import React, { createContext, useCallback, useEffect, useState } from 'react';
 import { FilterSet, FilterConfig } from '../types/filter.types';
-import { loadFiltersFromStorage, saveFiltersToStorage, loadFilterPresetsFromStorage, saveFilterPresetsToStorage } from '../services/filterService';
+import { 
+  loadFiltersFromStorage, 
+  saveFiltersToStorage, 
+  loadFilterPresetsFromStorage, 
+  saveFilterPresetsToStorage,
+  validateFilterConfig
+} from '../services/filterService';
 
 interface FilterContextType {
   activeFilters: FilterSet;
@@ -10,6 +16,7 @@ interface FilterContextType {
   saveFilter: (config: Omit<FilterConfig, 'id' | 'createdAt' | 'updatedAt'>) => void;
   deleteFilter: (id: string) => void;
   loadFilter: (id: string) => void;
+  mergeFilters: (filters: FilterSet) => void;
 }
 
 // Create a default context value to avoid null checks
@@ -20,7 +27,8 @@ const defaultContextValue: FilterContextType = {
   clearFilters: () => {},
   saveFilter: () => {},
   deleteFilter: () => {},
-  loadFilter: () => {}
+  loadFilter: () => {},
+  mergeFilters: () => {}
 };
 
 export const FilterContext = createContext<FilterContextType>(defaultContextValue);
@@ -47,12 +55,45 @@ export const FilterContextProvider: React.FC<{ children: React.ReactNode }> = ({
     saveFilterPresetsToStorage(savedFilters);
   }, [savedFilters]);
   
-  // Apply filters
+  // Apply filters (replace current filters)
   const applyFilters = useCallback((filters: FilterSet) => {
-    setActiveFilters(prev => ({
-      ...prev,
-      ...filters
-    }));
+    setActiveFilters(filters);
+  }, []);
+  
+  // Merge filters (combine with current filters)
+  const mergeFilters = useCallback((filters: FilterSet) => {
+    setActiveFilters(prev => {
+      // Deep merge the filters
+      const newFilters = { ...prev };
+      
+      // Merge property filters
+      if (filters.property) {
+        newFilters.property = {
+          ...newFilters.property,
+          ...filters.property
+        };
+      }
+      
+      // Merge geographic filters
+      if (filters.geographic) {
+        newFilters.geographic = {
+          ...newFilters.geographic,
+          ...filters.geographic
+        };
+      }
+      
+      // Merge any other filter types
+      Object.keys(filters).forEach(key => {
+        if (key !== 'property' && key !== 'geographic') {
+          newFilters[key] = {
+            ...newFilters[key],
+            ...filters[key]
+          };
+        }
+      });
+      
+      return newFilters;
+    });
   }, []);
   
   // Clear filters
@@ -66,7 +107,8 @@ export const FilterContextProvider: React.FC<{ children: React.ReactNode }> = ({
       ...config,
       id: `filter-${Date.now()}`,
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
+      version: 1 // Initial version
     };
     
     setSavedFilters(prev => [...prev, newFilter]);
@@ -81,8 +123,10 @@ export const FilterContextProvider: React.FC<{ children: React.ReactNode }> = ({
   const loadFilter = useCallback((id: string) => {
     const filter = savedFilters.find(filter => filter.id === id);
     
-    if (filter) {
+    if (filter && validateFilterConfig(filter)) {
       setActiveFilters(filter.filters);
+    } else {
+      console.error(`Filter with id ${id} not found or invalid`);
     }
   }, [savedFilters]);
   
@@ -94,7 +138,8 @@ export const FilterContextProvider: React.FC<{ children: React.ReactNode }> = ({
     clearFilters,
     saveFilter,
     deleteFilter,
-    loadFilter
+    loadFilter,
+    mergeFilters
   };
   
   return (

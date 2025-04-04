@@ -21,55 +21,42 @@ const localStorageMock = (() => {
     }),
     clear: vi.fn(() => {
       store = {}
-    })
+    }),
+    length: 0,
+    key: vi.fn((index: number) => Object.keys(store)[index] || null)
+  }
+})()
+
+// Setup session storage mock
+const sessionStorageMock = (() => {
+  let store: Record<string, string> = {}
+  return {
+    getItem: vi.fn((key: string) => store[key] || null),
+    setItem: vi.fn((key: string, value: string) => {
+      store[key] = value.toString()
+    }),
+    removeItem: vi.fn((key: string) => {
+      delete store[key]
+    }),
+    clear: vi.fn(() => {
+      store = {}
+    }),
+    length: 0,
+    key: vi.fn((index: number) => Object.keys(store)[index] || null)
   }
 })()
 
 // Add matchers to expect
 expect.extend(matchers)
 
-// Mock window objects and browser APIs
+// Setup global mocks
 Object.defineProperty(window, 'localStorage', { value: localStorageMock })
-Object.defineProperty(window, 'sessionStorage', { value: localStorageMock })
-
-// Mock matchMedia
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: vi.fn().mockImplementation(query => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
-  }))
-})
-
-// Mock ResizeObserver
-window.ResizeObserver = vi.fn().mockImplementation(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-}))
-
-// Mock IntersectionObserver
-window.IntersectionObserver = vi.fn().mockImplementation(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-  root: null,
-  rootMargin: '',
-  thresholds: []
-}))
-
-// Mock fetch
-global.fetch = vi.fn()
+Object.defineProperty(window, 'sessionStorage', { value: sessionStorageMock })
 
 // Reset mocks before each test
 beforeEach(() => {
   localStorageMock.clear()
+  sessionStorageMock.clear()
   vi.resetAllMocks()
 })
 
