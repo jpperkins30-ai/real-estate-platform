@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EnhancedMultiFrameContainer } from '../../../components/multiframe/EnhancedMultiFrameContainer';
+import { LayoutType, LayoutConfig } from '../../../types/layout.types';
 
 // Create mock components and hooks
 vi.mock('../../../hooks/useAdvancedLayout', () => ({
@@ -14,56 +15,68 @@ vi.mock('../../../hooks/useAdvancedLayout', () => ({
   })
 }));
 
-// Mock test panel component
-const TestPanelComponent: React.FC<{ id: string; isMaximized: boolean }> = ({ id, isMaximized }) => (
-  <div data-testid={`panel-${id}`}>
-    Test Panel {id} {isMaximized ? '(maximized)' : ''}
-  </div>
-);
+// Mock MultiFrameContainer component to verify it gets rendered
+vi.mock('../../../components/multiframe/MultiFrameContainer', () => ({
+  MultiFrameContainer: ({ 
+    initialLayout, 
+    defaultPanelContent 
+  }: { 
+    initialLayout: LayoutType; 
+    defaultPanelContent: Record<string, string>; 
+  }) => (
+    <div data-testid="multi-frame-container">
+      <div data-testid="layout-type">{initialLayout}</div>
+      <div data-testid="panel-content">{JSON.stringify(defaultPanelContent)}</div>
+    </div>
+  )
+}));
 
 describe('EnhancedMultiFrameContainer', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
   });
 
   it('renders with default layout', () => {
     render(
       <EnhancedMultiFrameContainer
-        initialPanels={[
-          {
-            id: 'test-panel',
-            title: 'Test Panel',
-            type: 'test',
-            position: { x: 0, y: 0, width: 400, height: 300 }
-          }
-        ]}
-        panelComponents={{
-          'test': TestPanelComponent
-        }}
+        initialLayout="single"
+        defaultPanelContent={{ test: 'Test Content' }}
       />
     );
     
-    expect(screen.getByText(/layout would be displayed here/i)).toBeInTheDocument();
+    // Check that the container is rendered
+    expect(screen.getByTestId('enhanced-multi-frame-container')).toBeInTheDocument();
+    // Check that the MultiFrameContainer is rendered with correct props
+    expect(screen.getByTestId('layout-type').textContent).toBe('single');
   });
 
-  it('renders with advanced layout', () => {
+  it('renders with saved layouts', () => {
+    const savedLayouts: LayoutConfig[] = [
+      {
+        id: 'layout1',
+        name: 'Test Layout',
+        type: 'dual',
+        panels: [
+          {
+            id: 'panel1',
+            contentType: 'map',
+            title: 'Map Panel'
+          }
+        ]
+      }
+    ];
+
     render(
       <EnhancedMultiFrameContainer
-        initialLayoutType="advanced"
-        initialPanels={[
-          {
-            id: 'test-panel',
-            title: 'Test Panel',
-            type: 'test',
-            position: { x: 0, y: 0, width: 400, height: 300 }
-          }
-        ]}
-        panelComponents={{
-          'test': TestPanelComponent
-        }}
+        initialLayout="dual"
+        savedLayouts={savedLayouts}
+        defaultPanelContent={{ map: 'Map Content' }}
       />
     );
     
-    expect(screen.getByText(/Reset Layout/i)).toBeInTheDocument();
+    // Check that the layout selector is rendered with the saved layout
+    expect(screen.getByTestId('layout-selector')).toBeInTheDocument();
+    // Check that the option with saved layout exists
+    expect(screen.getByText('Test Layout')).toBeInTheDocument();
   });
 }); 
