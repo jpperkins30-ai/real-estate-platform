@@ -5,6 +5,17 @@ import { FilterContextProvider } from '../../../../context/FilterContext';
 import { PanelSyncProvider } from '../../../../context/PanelSyncContext';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
+// Mock broadcast function
+const mockBroadcast = vi.fn();
+
+// Mock usePanelSync hook
+vi.mock('../../../../hooks/usePanelSync', () => ({
+  usePanelSync: () => ({
+    broadcast: mockBroadcast,
+    subscribe: vi.fn(() => () => {})
+  })
+}));
+
 // Mock local storage
 const mockLocalStorage = (() => {
   let store: Record<string, string> = {};
@@ -73,6 +84,53 @@ describe('FilterPanel', () => {
 
     // Check if filters were saved to localStorage
     expect(mockLocalStorage.setItem).toHaveBeenCalled();
+  });
+
+  it('broadcasts filters correctly when applied', () => {
+    render(
+      <TestWrapper>
+        <FilterPanel panelId="test-panel" />
+      </TestWrapper>
+    );
+
+    // Select property type
+    const propertyTypeSelect = screen.getByLabelText(/Property Type:/i);
+    fireEvent.change(propertyTypeSelect, { target: { value: 'residential' } });
+    
+    // Apply filters
+    const applyButton = screen.getByText(/Apply Filters/i);
+    fireEvent.click(applyButton);
+
+    // Check if broadcast was called with the correct arguments
+    expect(mockBroadcast).toHaveBeenCalledWith(
+      'filter', 
+      { 
+        filters: {
+          property: { propertyType: 'residential' },
+          geographic: undefined
+        }
+      }, 
+      'test-panel'
+    );
+  });
+
+  it('broadcasts correctly when clearing filters', () => {
+    render(
+      <TestWrapper>
+        <FilterPanel panelId="test-panel" />
+      </TestWrapper>
+    );
+
+    // Clear filters
+    const clearButton = screen.getByText(/Clear Filters/i);
+    fireEvent.click(clearButton);
+
+    // Check if broadcast was called with the correct arguments
+    expect(mockBroadcast).toHaveBeenCalledWith(
+      'clearFilters',
+      null,
+      'test-panel'
+    );
   });
 
   it('handles clear filters correctly', () => {

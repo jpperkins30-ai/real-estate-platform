@@ -16,7 +16,11 @@ const TestBroadcaster = ({
   return (
     <button 
       data-testid={testId} 
-      onClick={() => broadcast(eventData)}
+      onClick={() => broadcast(
+        eventData.type, 
+        eventData.payload, 
+        eventData.source
+      )}
     >
       Broadcast
     </button>
@@ -128,11 +132,7 @@ describe('PanelSyncContext', () => {
           </button>
           <button 
             data-testid="broadcast-button" 
-            onClick={() => broadcast({ 
-              type: 'test', 
-              payload: 'test', 
-              source: 'test' 
-            })}
+            onClick={() => broadcast('test', 'test', 'test')}
           >
             Broadcast
           </button>
@@ -168,11 +168,11 @@ describe('PanelSyncContext', () => {
       const [history, setHistory] = React.useState<PanelSyncEvent[]>([]);
       
       const broadcastEvent = (id: number) => {
-        broadcast({
-          type: 'test-event',
-          payload: { id },
-          source: 'history-test'
-        });
+        broadcast(
+          'test-event',
+          { id },
+          'history-test'
+        );
       };
       
       const checkHistory = () => {

@@ -7,6 +7,11 @@ export interface PanelState {
   lastUpdated: string;
 }
 
+// Generate a standard storage key for a panel
+export function getPanelStorageKey(panelId: string): string {
+  return `panel-${panelId}-state`;
+}
+
 /**
  * Save panel state
  */
@@ -19,20 +24,9 @@ export function savePanelState(panelId: string, contentType: PanelContentType, s
       lastUpdated: new Date().toISOString()
     };
     
-    // Save to session storage for persistence
-    const storedStates = sessionStorage.getItem('panelStates');
-    let states: Record<string, PanelState> = {};
-    
-    if (storedStates) {
-      try {
-        states = JSON.parse(storedStates);
-      } catch (error) {
-        console.error('Error parsing stored panel states:', error);
-      }
-    }
-    
-    states[panelId] = panelState;
-    sessionStorage.setItem('panelStates', JSON.stringify(states));
+    // Save to session storage using the panel-specific key
+    const storageKey = getPanelStorageKey(panelId);
+    sessionStorage.setItem(storageKey, JSON.stringify(panelState));
     
     return panelState;
   } catch (error) {
@@ -46,14 +40,14 @@ export function savePanelState(panelId: string, contentType: PanelContentType, s
  */
 export function loadPanelState(panelId: string): PanelState | null {
   try {
-    const storedStates = sessionStorage.getItem('panelStates');
+    const storageKey = getPanelStorageKey(panelId);
+    const storedState = sessionStorage.getItem(storageKey);
     
-    if (storedStates) {
+    if (storedState) {
       try {
-        const states: Record<string, PanelState> = JSON.parse(storedStates);
-        return states[panelId] || null;
+        return JSON.parse(storedState);
       } catch (error) {
-        console.error('Error parsing stored panel states:', error);
+        console.error('Error parsing stored panel state:', error);
       }
     }
     
@@ -69,21 +63,42 @@ export function loadPanelState(panelId: string): PanelState | null {
  */
 export function deletePanelState(panelId: string): void {
   try {
-    const storedStates = sessionStorage.getItem('panelStates');
-    
-    if (storedStates) {
-      try {
-        const states: Record<string, PanelState> = JSON.parse(storedStates);
-        
-        if (panelId in states) {
-          delete states[panelId];
-          sessionStorage.setItem('panelStates', JSON.stringify(states));
-        }
-      } catch (error) {
-        console.error('Error parsing stored panel states:', error);
-      }
-    }
+    const storageKey = getPanelStorageKey(panelId);
+    sessionStorage.removeItem(storageKey);
   } catch (error) {
     console.error('Error deleting panel state:', error);
+  }
+}
+
+/**
+ * Update a single property in the panel state
+ */
+export function updatePanelProperty(
+  panelId: string, 
+  contentType: PanelContentType, 
+  propertyName: string, 
+  propertyValue: any
+): PanelState | null {
+  try {
+    const currentState = loadPanelState(panelId);
+    
+    if (currentState) {
+      const updatedState = {
+        ...currentState.state,
+        [propertyName]: propertyValue
+      };
+      
+      return savePanelState(panelId, contentType, updatedState);
+    }
+    
+    // If no current state, create a new one with just this property
+    const newState = {
+      [propertyName]: propertyValue
+    };
+    
+    return savePanelState(panelId, contentType, newState);
+  } catch (error) {
+    console.error(`Error updating panel property ${propertyName}:`, error);
+    return null;
   }
 } 

@@ -49,11 +49,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ panelId }) => {
     applyFilters(filters);
     
     // Broadcast filter event to other panels
-    broadcast({
-      type: 'filter',
-      source: panelId,
-      payload: filters
-    });
+    broadcast('filter', { filters }, panelId);
   }, [applyFilters, propertyFilter, geographicFilter, panelId, broadcast]);
   
   // Clear all filters
@@ -63,11 +59,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ panelId }) => {
     clearFilters();
     
     // Broadcast clear filter event to other panels
-    broadcast({
-      type: 'clearFilters',
-      source: panelId,
-      payload: null
-    });
+    broadcast('clearFilters', null, panelId);
   }, [clearFilters, panelId, broadcast]);
   
   // Save current filter configuration
