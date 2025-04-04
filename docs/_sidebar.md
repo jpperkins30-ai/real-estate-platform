@@ -16,12 +16,14 @@
 
 * Development
   * [Development Guide](development.md)
+  * [Git Reference Guide](development/git-guide.md)
   * [Local Development](development/local-dev.md)
   * [Content Migration](development/content-migration.md)
   * [Versioning](development/versioning.md)
   * [Authentication Setup](authentication-setup.md)
   * [Property Management](property-management.md)
   * [Testing](testing.md)
+  * [Test Plan](test-plan.md)
 
 * Components
   * [Inventory Module](inventory-module.md)

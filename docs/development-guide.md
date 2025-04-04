@@ -243,6 +243,187 @@ Follow the conventional commits format:
 - `test:` - Adding or updating tests
 - `ci:` - CI/CD changes
 
+## Testing Guide
+
+The Real Estate Platform includes a comprehensive testing framework to ensure code quality and prevent regressions. This section provides guidance on running tests and writing effective test cases.
+
+### Test Structure
+
+The project follows a structured approach to testing:
+
+```
+client/src/__tests__/
+├── components/       # Component tests
+├── hooks/            # Custom React hook tests
+├── integration/      # Integration tests
+├── services/         # Service layer tests
+└── setup/            # Test setup utilities
+```
+
+### Running Tests
+
+#### Running All Tests
+
+```bash
+# In the client directory
+npm test
+
+# Run with coverage report
+npm test -- --coverage
+```
+
+#### Running Specific Tests
+
+```bash
+# Run a specific test file
+npm test -- src/__tests__/hooks/useAdvancedLayout.test.tsx
+
+# Run tests matching a pattern
+npm test -- --grep="PanelIntegration"
+
+# Run tests without watching
+npm test -- --no-watch
+```
+
+#### Debugging Tests
+
+```bash
+# Run tests in debug mode
+npm test -- --debug
+
+# Run a single test with verbose output
+npm test -- src/__tests__/hooks/usePanelState.test.tsx --verbose
+```
+
+### Writing Effective Tests
+
+Follow these best practices when writing tests:
+
+1. **Test Naming**
+   - Use descriptive names that explain the test's purpose
+   - Follow the pattern: `it('should do something when something happens')`
+
+2. **Test Structure**
+   - Arrange: Set up the test environment
+   - Act: Perform the action being tested
+   - Assert: Verify the expected outcome
+
+3. **Isolation**
+   - Each test should be independent
+   - Use `beforeEach` to set up and `afterEach` to clean up
+   - Mock external dependencies
+
+4. **Mocking**
+   - Use `vi.mock()` for module mocking
+   - Use `vi.fn()` for function mocking
+   - Keep mocks as simple as possible
+
+Example of a well-structured test:
+
+```typescript
+import { renderHook, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { useMaximizable } from '../../hooks/useMaximizable';
+
+describe('useMaximizable hook', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.getItem = vi.fn();
+    localStorage.setItem = vi.fn();
+  });
+
+  it('should toggle maximized state when toggleMaximize is called', () => {
+    // Arrange
+    const mockRef = { current: document.createElement('div') };
+    const { result } = renderHook(() => useMaximizable());
+    
+    // Act
+    act(() => {
+      result.current.toggleMaximize(mockRef as React.RefObject<HTMLElement>);
+    });
+    
+    // Assert
+    expect(result.current.isMaximized).toBe(true);
+  });
+});
+```
+
+### Testing React Components
+
+When testing React components:
+
+1. Use React Testing Library's render function
+2. Query elements using accessible selectors
+3. Simulate user events with fireEvent or userEvent
+4. Test component behavior, not implementation details
+
+Example:
+
+```typescript
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { PanelHeader } from '../../components/multiframe/PanelHeader';
+
+describe('PanelHeader', () => {
+  it('should call onAction when maximize button is clicked', () => {
+    // Arrange
+    const handleAction = vi.fn();
+    
+    // Act
+    render(<PanelHeader title="Test Panel" onAction={handleAction} />);
+    fireEvent.click(screen.getByLabelText('Maximize panel'));
+    
+    // Assert
+    expect(handleAction).toHaveBeenCalledWith({ type: 'maximize' });
+  });
+});
+```
+
+### Integration Testing
+
+Integration tests verify that different parts of the application work together:
+
+1. Test real component interactions
+2. Minimal mocking - only external APIs
+3. Focus on user workflows and data flow
+
+Example:
+
+```typescript
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { EnhancedPanelContainer } from '../../components/multiframe/EnhancedPanelContainer';
+
+describe('Panel Integration', () => {
+  it('should broadcast actions from panel content', () => {
+    // Arrange
+    const mockBroadcast = vi.fn();
+    vi.mock('../../hooks/usePanelSync', () => ({
+      usePanelSync: () => ({
+        broadcast: mockBroadcast,
+        subscribe: () => vi.fn()
+      })
+    }));
+    
+    // Act
+    render(<EnhancedPanelContainer id="test-panel" title="Test" contentType="filter" />);
+    fireEvent.click(screen.getByTestId('select-action-button'));
+    
+    // Assert
+    expect(mockBroadcast).toHaveBeenCalledWith('select', expect.any(Object), 'test-panel');
+  });
+});
+```
+
+### Test Coverage Goals
+
+Aim for the following minimum coverage targets:
+- 80% overall code coverage
+- 90% coverage for core layout functionality
+- 100% coverage for critical components
+
+For detailed information about all test cases, procedures, and requirements, refer to the [Comprehensive Test Plan](./test-plan.md).
+
 ## Overview
 
 The Real Estate Platform consists of several integrated modules:

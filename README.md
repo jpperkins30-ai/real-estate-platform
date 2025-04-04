@@ -27,6 +27,17 @@ The platform consists of several key components:
 - **Collection Framework**: Modular data collection system
 - **GitHub Workflows**: Automated CI/CD pipelines
 
+## Testing
+
+The platform has a comprehensive testing strategy to ensure reliability and quality:
+
+- **Unit Testing**: Testing individual components and functions
+- **Integration Testing**: Testing interactions between components
+- **End-to-End Testing**: Testing complete user workflows
+- **Performance Testing**: Ensuring the system meets performance requirements
+
+For detailed information about our testing approach, refer to the [Test Plan](./docs/test-plan.md) which documents all test cases, test execution procedures, and quality metrics.
+
 ## Branch Structure
 
 The repository follows a structured branching strategy:
@@ -176,6 +187,7 @@ The platform includes comprehensive documentation:
 - [Filter System Documentation](./docs/filter-system/architecture.md) - Filter system architecture and best practices
 - [Log Dashboard Guide](./admin-dashboard/docs/logs-dashboard-guide.md) - Guide to using the log visualization dashboard
 - [Log Tools Documentation](./server/src/scripts/README.md) - CLI tools for log management
+- [Comprehensive Test Plan](./docs/test-plan.md) - Detailed test cases and quality assurance procedures
 
 ## Development
 
@@ -305,82 +317,4 @@ run-claude-code-all-in-one.bat
 
 Once inside the container:
 
-1. Your current directory is mounted to `/app` in the container
-2. Claude Code will be automatically installed
-3. Use the `claude` command to run Claude Code
-4. Type `exit` to leave the container
-
-## Example Usage
-
-Inside the Docker container:
-
-```bash
-# Basic usage
-claude "Explain how to use Claude Code"
-
-# List available commands
-claude --help
-
-# Run in print mode (non-interactive)
-claude -p "Generate a React component that displays a counter"
-```
-
-## Troubleshooting
-
-- If Docker isn't running, start Docker Desktop
-- If you encounter permission issues, run your terminal as Administrator
-- If the container fails to start, check your internet connection
-
-# PowerShell Scripts for Windows Development
-
-This project includes several PowerShell scripts to make development easier on Windows systems where the `&&` operator isn't supported for command chaining.
-
-## Quick Start
-
-1. First-time setup:
-   ```powershell
-   .\setup.ps1
-   ```
-
-2. Start the application:
-   ```powershell
-   .\run.ps1  # Interactive menu
-   # OR
-   .\start-app.ps1  # Full application (server + client)
-   # OR
-   .\server\scripts\start-server.ps1  # Server only
-   ```
-
-## Available Scripts
-
-- `run.ps1`: Interactive menu for all commands
-- `setup.ps1`: First-time setup script 
-- `start-app.ps1`: Starts both server and client
-
-### Server Scripts
-
-- `server\scripts\start-server.ps1`: Starts the server in TypeScript mode
-- `server\scripts\run-simple-server.ps1`: Runs a simple Express server for testing
-- `server\scripts\fix-env.ps1`: Checks and fixes environment variables
-- `server\scripts\create-usmap.ps1`: Initializes the US Map in the database
-- `server\scripts\check-swagger.ps1`: Tests Swagger documentation
-
-## Troubleshooting
-
-If you encounter any issues with the TypeScript server:
-
-1. Run the environment checker:
-   ```powershell
-   .\server\scripts\fix-env.ps1
-   ```
-
-2. Try the simple server for basic functionality:
-   ```powershell
-   .\server\scripts\run-simple-server.ps1
-   ```
-
-## API Access
-
-- API: http://localhost:4000/api
-- Swagger Docs: http://localhost:4000/api-docs
-- Health Check: http://localhost:4000/api/health 
+1. Your current directory is mounted to `/app`

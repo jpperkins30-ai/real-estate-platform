@@ -284,6 +284,97 @@ The error handling system implements consistent patterns across all geographic d
 4. User-facing error messages are sanitized for security
 5. Appropriate HTTP status codes are used based on error type
 
+## Test Architecture
+
+The platform implements a comprehensive testing strategy to ensure reliability, maintainability, and quality. The testing architecture is organized into several layers that address different aspects of the system.
+
+### Test Structure
+```mermaid
+graph TD
+    A[Test Suite] --> B[Unit Tests]
+    A --> C[Integration Tests]
+    A --> D[Component Tests]
+    A --> E[End-to-End Tests]
+    
+    B --> B1[Hook Tests]
+    B --> B2[Service Tests]
+    B --> B3[Utility Tests]
+    
+    C --> C1[API Tests]
+    C --> C2[Database Tests]
+    C --> C3[Inter-service Tests]
+    
+    D --> D1[React Component Tests]
+    D --> D2[Layout Component Tests]
+    D --> D3[Panel Component Tests]
+    
+    E --> E1[User Workflows]
+    E --> E2[Performance Tests]
+    E --> E3[Accessibility Tests]
+```
+
+### Testing Framework
+```mermaid
+graph LR
+    A[Vitest] --> B[React Testing Library]
+    A --> C[Mock System]
+    
+    B --> D[Component Testing]
+    B --> E[Hook Testing]
+    
+    C --> F[Service Mocks]
+    C --> G[API Mocks]
+    
+    H[Testing Environment] --> I[JSDOM]
+    H --> J[Testing Utilities]
+```
+
+### Test Execution Flow
+```mermaid
+sequenceDiagram
+    participant D as Developer
+    participant T as Test Runner
+    participant C as Component/Module
+    participant M as Mock System
+    participant R as Result Reporter
+    
+    D->>T: Execute Tests
+    T->>M: Setup Mocks
+    T->>C: Initialize Component
+    T->>C: Execute Test Actions
+    C->>M: Interact with Mocks
+    M-->>C: Return Mock Data
+    C-->>T: Return Results
+    T->>R: Report Test Results
+    R-->>D: Display Test Summary
+```
+
+### Test Types and Categories
+
+The test architecture is divided into several test types:
+
+1. **Hook Tests**
+   - Tests for custom React hooks
+   - Focus on state management and effects
+   - Isolation from UI components
+
+2. **Service Tests**
+   - Tests for backend services
+   - API endpoint validation
+   - Data processing logic
+
+3. **Component Tests**
+   - UI component validation
+   - User interaction simulation
+   - Visual consistency checks
+
+4. **Integration Tests**
+   - Cross-module communication
+   - End-to-end workflows
+   - System behavior validation
+
+For detailed information on all test cases, test execution procedures, and quality metrics, refer to the [Comprehensive Test Plan](./test-plan.md).
+
 ## Deployment Architecture
 
 ### CI/CD Pipeline

@@ -1,8 +1,101 @@
 # Testing Guide
 
+> **Note**: This document provides a general overview of testing practices. For a comprehensive list of test cases and detailed testing procedures, refer to the [Test Plan](./test-plan.md).
+
 ## Overview
 
-This guide covers testing practices and procedures for the Real Estate Platform. We use Jest as our primary testing framework along with Supertest for API testing.
+Testing is a critical part of our development process to ensure the reliability and quality of the Real Estate Platform. This guide outlines the general approach to testing, while the detailed test cases and execution procedures are documented in the [Test Plan](./test-plan.md).
+
+## Testing Types
+
+The platform uses several types of tests:
+
+1. **Unit Tests**: Testing individual components and functions
+2. **Integration Tests**: Testing interactions between components
+3. **End-to-End Tests**: Testing complete user workflows
+4. **Accessibility Tests**: Ensuring the platform is accessible to all users
+
+## Test Structure
+
+Tests are organized in the `__tests__` directory, which mirrors the structure of the source code:
+
+```
+client/src/__tests__/
+├── components/       # Component tests
+├── hooks/            # Custom React hook tests
+├── integration/      # Integration tests
+├── services/         # Service layer tests
+└── setup/            # Test setup utilities
+```
+
+## Running Tests
+
+### Basic Commands
+
+```bash
+# Run all tests
+npm test
+
+# Run tests with coverage report
+npm test -- --coverage
+
+# Run a specific test file
+npm test -- src/__tests__/hooks/useAdvancedLayout.test.tsx
+
+# Run tests without watching
+npm test -- --no-watch
+```
+
+## Writing Tests
+
+### Best Practices
+
+1. Follow the AAA pattern (Arrange, Act, Assert)
+2. Keep tests isolated and independent
+3. Test behavior, not implementation details
+4. Use descriptive test names
+5. Mock external dependencies
+
+### Example Test
+
+```typescript
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { Button } from '../components/Button';
+
+describe('Button', () => {
+  it('should call onClick when clicked', () => {
+    // Arrange
+    const handleClick = vi.fn();
+    
+    // Act
+    render(<Button onClick={handleClick}>Click Me</Button>);
+    fireEvent.click(screen.getByText('Click Me'));
+    
+    // Assert
+    expect(handleClick).toHaveBeenCalledTimes(1);
+  });
+});
+```
+
+## Test Coverage
+
+We aim for the following coverage targets:
+- 80% overall code coverage
+- 90% coverage for core functionality
+- 100% coverage for critical components
+
+## Continuous Integration
+
+Tests are automatically run as part of our CI/CD pipeline:
+
+1. All tests must pass before a pull request can be merged
+2. Coverage reports are generated and reviewed
+3. Test performance is monitored
+
+## Further Reading
+
+For detailed information about all test cases, procedures, and requirements, refer to the [Comprehensive Test Plan](./test-plan.md).
 
 ## Test Structure
 
