@@ -1,3 +1,7 @@
+# Server Authentication
+
+> **Note**: This document is part of the Real Estate Platform's security documentation. For a complete overview of security measures and best practices, see the [main security guide](../../docs/SECURITY.md).
+
 # Role Authorization for Real Estate Platform
 
 This documentation explains the role-based authorization implementation for the Real Estate Platform API.

@@ -1,99 +1,102 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchControllerStatus } from '../../../services/controllerService';
 import './ControllerWizardLauncher.css';
 
-interface ControllerWizardLauncherProps {
+export interface ControllerWizardLauncherProps {
   entityType: 'state' | 'county';
   entityId: string;
-  buttonLabel?: string;
-  showStatus?: boolean;
-  className?: string;
+  timeout?: number;
 }
 
-/**
- * Component that provides a button to launch the Controller Wizard for a specific entity
- */
-export function ControllerWizardLauncher({
+export const ControllerWizardLauncher: React.FC<ControllerWizardLauncherProps> = ({
   entityType,
   entityId,
-  buttonLabel,
-  showStatus = true,
-  className = ''
-}: ControllerWizardLauncherProps) {
+  timeout = 5000
+}) => {
   const navigate = useNavigate();
-  const [status, setStatus] = useState<{ 
-    hasController: boolean;
-    status: 'active' | 'paused' | 'error' | null;
-  }>({ hasController: false, status: null });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // Fetch controller status
+  const [timedOut, setTimedOut] = useState(false);
+  const [hasController, setHasController] = useState(false);
+
   useEffect(() => {
-    const fetchStatus = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const result = await fetchControllerStatus(entityType, entityId);
-        setStatus({
-          hasController: result.data.hasController,
-          status: result.data.status
-        });
-      } catch (error) {
-        console.error('Error fetching controller status:', error);
-        setError('Error loading controller status');
-      } finally {
+    let timeoutId: number;
+    let isMounted = true;
+
+    const checkTimeout = () => {
+      if (isMounted) {
+        setTimedOut(true);
         setLoading(false);
       }
     };
-    
-    fetchStatus();
-  }, [entityType, entityId]);
-  
-  // Determine button label based on status
-  const label = buttonLabel || (status.hasController 
-    ? 'Edit Controller' 
-    : 'Create Controller');
-  
-  const handleLaunchWizard = useCallback(() => {
-    navigate('/controller-wizard', {
-      state: {
-        entityType,
-        entityId,
-        step: status.hasController ? 'EditController' : 'SelectControllerType'
+
+    const fetchStatus = async () => {
+      try {
+        const result = await fetchControllerStatus();
+        
+        if (isMounted) {
+          setHasController(result.hasController);
+          setLoading(false);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError('Failed to load controller status');
+          setLoading(false);
+        }
       }
-    });
-  }, [navigate, entityType, entityId, status.hasController]);
-  
+    };
+
+    // Set timeout timer
+    timeoutId = window.setTimeout(checkTimeout, timeout);
+
+    fetchStatus();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
+  }, [entityType, entityId, timeout]);
+
+  const handleLaunchWizard = () => {
+    const wizardPath = `/wizard/${entityType}/${entityId}`;
+    const state = { entityType, entityId, step: 2 };
+    navigate(wizardPath, { state });
+  };
+
+  const handleRetry = () => {
+    setLoading(true);
+    setError(null);
+    setTimedOut(false);
+  };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (timedOut) {
+    return (
+      <div>
+        <p>Loading timeout exceeded</p>
+        <button onClick={handleRetry}>Retry</button>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div>
+        <p>{error}</p>
+        <button onClick={handleRetry}>Retry</button>
+      </div>
+    );
+  }
+
   return (
-    <div 
-      className={`controller-launcher ${className}`}
-      data-testid="controller-wizard-launcher"
-    >
-      {showStatus && (
-        <div className={`controller-status status-${status.status || 'none'}`}>
-          {loading ? (
-            <span className="status-loading">Loading...</span>
-          ) : error ? (
-            <span className="status-error">{error}</span>
-          ) : status.hasController ? (
-            <span className="status-indicator">{status.status}</span>
-          ) : (
-            <span className="status-none">No controller</span>
-          )}
-        </div>
-      )}
-      
-      <button 
-        className="launcher-button"
-        onClick={handleLaunchWizard}
-        aria-label={`Configure controller for ${entityType} ${entityId}`}
-        disabled={loading}
-      >
-        <span className="button-icon"></span>
-        <span className="button-text">{label}</span>
+    <div>
+      <button onClick={handleLaunchWizard}>
+        Launch Wizard
       </button>
     </div>
   );
-}
+}; 

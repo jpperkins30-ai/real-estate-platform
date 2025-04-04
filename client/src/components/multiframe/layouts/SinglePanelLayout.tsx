@@ -1,6 +1,6 @@
 import React from 'react';
+import { PanelConfig } from '../../../types/layout.types';
 import { PanelContainer } from '../PanelContainer';
-import { PanelConfig, StandardPanelConfig } from '../../../types/layout.types';
 import './SinglePanelLayout.css';
 
 interface SinglePanelLayoutProps {
@@ -15,7 +15,7 @@ export const SinglePanelLayout: React.FC<SinglePanelLayoutProps> = ({
   onPanelAction
 }) => {
   // For single panel layout, we only use the first panel
-  const panel = panels[0] as StandardPanelConfig;
+  const panel = panels[0];
   
   if (!panel) {
     return <div className="empty-layout" data-testid="empty-single-layout">No panel configured</div>;
@@ -27,10 +27,8 @@ export const SinglePanelLayout: React.FC<SinglePanelLayoutProps> = ({
         id={panel.id}
         title={panel.title}
         contentType={panel.contentType}
-        initialState={panel.state}
+        initialState={panel.initialState}
         className="full-size-panel"
-        maximizable={panel.maximizable}
-        closable={panel.closable}
         onStateChange={newState => onPanelStateChange?.(panel.id, newState)}
         onAction={action => onPanelAction?.(panel.id, action)}
       />

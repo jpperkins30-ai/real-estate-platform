@@ -2,9 +2,11 @@ import React, { ReactElement } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { vi } from 'vitest';
-import { PanelConfig, StandardPanelConfig } from './types/layout.types';
+import { PanelContentType, AdvancedPanelPosition, StandardPanelConfig } from './types/layout.types';
 
 /** Router testing utilities */
+
+// Define router options type
 interface RouterOptions extends RenderOptions {
   route?: string;
   routes?: Array<{path: string, element: ReactElement}>;
@@ -49,7 +51,7 @@ export const createPanelHeaderProps = (overrides = {}) => ({
 export const createDraggablePanelProps = (overrides = {}) => ({
   id: 'test-panel',
   title: 'Test Panel',
-  contentType: 'map',
+  contentType: 'map' as PanelContentType,
   initialState: {},
   onStateChange: vi.fn(),
   onAction: vi.fn(),
@@ -65,6 +67,7 @@ export const createControllerWizardProps = (overrides = {}) => ({
   buttonLabel: 'Launch Wizard',
   showStatus: true,
   className: '',
+  timeout: 5000,
   ...overrides
 });
 
@@ -85,6 +88,18 @@ export function createMockPanelConfig(overrides: Partial<StandardPanelConfig> = 
   };
 }
 
+// Create mock panels array
+export function createMockPanels() {
+  return [
+    createMockPanelConfig({ id: 'panel-1' }),
+    createMockPanelConfig({ 
+      id: 'panel-2', 
+      contentType: 'property',
+      position: { row: 1, col: 0 }
+    })
+  ];
+}
+
 /**
  * Create mock localStorage for testing
  */
@@ -103,6 +118,18 @@ export function createMockLocalStorage() {
     })
   };
 }
+
+// Helper to create a text matcher that's flexible
+export function textMatcher(text: string) {
+  return (content: string, element: Element): boolean => {
+    const normalizedText = content.replace(/\s+/g, ' ').trim().toLowerCase();
+    const normalizedTarget = text.replace(/\s+/g, ' ').trim().toLowerCase();
+    return normalizedText.includes(normalizedTarget);
+  };
+}
+
+// Mock navigate function for router tests
+export const mockNavigate = vi.fn();
 
 // Re-export everything from testing-library
 export * from '@testing-library/react';

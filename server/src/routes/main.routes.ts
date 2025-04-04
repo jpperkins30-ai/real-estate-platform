@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { auth } from '../middleware/auth';
 import { Property } from '../models/property.model';
-import { State } from '../models/State';
-import { County } from '../models/County';
-import { USMap } from '../models/USMap';
+import { State } from '../models/state.model';
+import { County } from '../models/county.model';
+import { USMap } from '../models/usmap.model';
 import express from 'express';
 
 const router = Router();

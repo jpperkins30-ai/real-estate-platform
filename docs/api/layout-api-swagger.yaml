@@ -1,0 +1,563 @@
+openapi: 3.0.0
+info:
+  title: Layout Configuration API
+  description: API for managing panel layout configurations
+  version: 1.0.0
+servers:
+  - url: https://api.example.com/v1
+    description: Production server
+  - url: https://api-staging.example.com/v1
+    description: Staging server
+  - url: http://localhost:3000/api/v1
+    description: Local development server
+tags:
+  - name: Layouts
+    description: Layout configuration operations
+  - name: Panels
+    description: Panel configuration operations
+paths:
+  /layouts:
+    get:
+      tags:
+        - Layouts
+      summary: Get all layouts for the authenticated user
+      description: Returns a list of all layout configurations accessible by the user
+      parameters:
+        - in: query
+          name: includeGlobal
+          schema:
+            type: boolean
+          description: Include global layouts
+          required: false
+        - in: query
+          name: tags
+          schema:
+            type: array
+            items:
+              type: string
+          description: Filter by tags
+          required: false
+        - in: query
+          name: layoutType
+          schema:
+            type: string
+            enum: [single, dual, tri, quad, custom]
+          description: Filter by layout type
+          required: false
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LayoutSummary'
+        '401':
+          description: Unauthorized
+    post:
+      tags:
+        - Layouts
+      summary: Create a new layout
+      description: Creates a new layout configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LayoutCreateRequest'
+      responses:
+        '201':
+          description: Layout created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LayoutResponse'
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+  /layouts/{layoutId}:
+    get:
+      tags:
+        - Layouts
+      summary: Get layout by ID
+      description: Returns a layout configuration by ID
+      parameters:
+        - in: path
+          name: layoutId
+          schema:
+            type: string
+          required: true
+          description: Layout ID
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LayoutResponse'
+        '404':
+          description: Layout not found
+        '401':
+          description: Unauthorized
+    put:
+      tags:
+        - Layouts
+      summary: Update layout
+      description: Updates an existing layout configuration
+      parameters:
+        - in: path
+          name: layoutId
+          schema:
+            type: string
+          required: true
+          description: Layout ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LayoutUpdateRequest'
+      responses:
+        '200':
+          description: Layout updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LayoutResponse'
+        '400':
+          description: Invalid request
+        '404':
+          description: Layout not found
+        '401':
+          description: Unauthorized
+    delete:
+      tags:
+        - Layouts
+      summary: Delete layout
+      description: Deletes a layout configuration
+      parameters:
+        - in: path
+          name: layoutId
+          schema:
+            type: string
+          required: true
+          description: Layout ID
+      responses:
+        '204':
+          description: Layout deleted
+
+  /layouts/clone/{layoutId}:
+    post:
+      tags:
+        - Layouts
+      summary: Clone layout
+      description: Creates a new layout by cloning an existing one
+      parameters:
+        - in: path
+          name: layoutId
+          schema:
+            type: string
+          required: true
+          description: Source layout ID
+        - in: query
+          name: newName
+          schema:
+            type: string
+          required: true
+          description: Name for the cloned layout
+      responses:
+        '201':
+          description: Layout cloned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LayoutResponse'
+        '404':
+          description: Source layout not found
+        '401':
+          description: Unauthorized
+        
+  /layouts/{layoutId}/panels:
+    get:
+      tags:
+        - Panels
+      summary: Get panels for layout
+      description: Returns all panel configurations for a layout
+      parameters:
+        - in: path
+          name: layoutId
+          schema:
+            type: string
+          required: true
+          description: Layout ID
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/PanelConfig'
+        '404':
+          description: Layout not found
+        '401':
+          description: Unauthorized
+    post:
+      tags:
+        - Panels
+      summary: Add panel to layout
+      description: Adds a new panel to a layout configuration
+      parameters:
+        - in: path
+          name: layoutId
+          schema:
+            type: string
+          required: true
+          description: Layout ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PanelConfig'
+      responses:
+        '201':
+          description: Panel added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PanelConfig'
+        '400':
+          description: Invalid request
+        '404':
+          description: Layout not found
+        '401':
+          description: Unauthorized
+          
+  /layouts/{layoutId}/panels/{panelId}:
+    get:
+      tags:
+        - Panels
+      summary: Get panel by ID
+      description: Returns a panel configuration by ID
+      parameters:
+        - in: path
+          name: layoutId
+          schema:
+            type: string
+          required: true
+          description: Layout ID
+        - in: path
+          name: panelId
+          schema:
+            type: string
+          required: true
+          description: Panel ID
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PanelConfig'
+        '404':
+          description: Layout or panel not found
+        '401':
+          description: Unauthorized
+    put:
+      tags:
+        - Panels
+      summary: Update panel
+      description: Updates an existing panel configuration
+      parameters:
+        - in: path
+          name: layoutId
+          schema:
+            type: string
+          required: true
+          description: Layout ID
+        - in: path
+          name: panelId
+          schema:
+            type: string
+          required: true
+          description: Panel ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PanelUpdateRequest'
+      responses:
+        '200':
+          description: Panel updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PanelConfig'
+        '400':
+          description: Invalid request
+        '404':
+          description: Layout or panel not found
+        '401':
+          description: Unauthorized
+    delete:
+      tags:
+        - Panels
+      summary: Delete panel
+      description: Removes a panel from a layout configuration
+      parameters:
+        - in: path
+          name: layoutId
+          schema:
+            type: string
+          required: true
+          description: Layout ID
+        - in: path
+          name: panelId
+          schema:
+            type: string
+          required: true
+          description: Panel ID
+      responses:
+        '204':
+          description: Panel deleted
+        '404':
+          description: Layout or panel not found
+        '401':
+          description: Unauthorized
+
+components:
+  schemas:
+    LayoutSummary:
+      type: object
+      properties:
+        layoutId:
+          type: string
+          example: "user_123_analysis_layout"
+        name:
+          type: string
+          example: "Analysis Layout"
+        description:
+          type: string
+          example: "Layout for data analysis"
+        layoutType:
+          type: string
+          enum: [single, dual, tri, quad, custom]
+          example: "tri"
+        isGlobal:
+          type: boolean
+          example: false
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["analysis", "counties"]
+        panelCount:
+          type: integer
+          example: 3
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2023-11-20T09:45:12.456Z"
+    
+    LayoutCreateRequest:
+      type: object
+      required:
+        - name
+        - layoutType
+        - panels
+      properties:
+        name:
+          type: string
+          example: "County Analysis Layout"
+        description:
+          type: string
+          example: "Layout for analyzing county data"
+        layoutType:
+          type: string
+          enum: [single, dual, tri, quad, custom]
+          example: "tri"
+        isGlobal:
+          type: boolean
+          default: false
+          example: false
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["analysis", "counties"]
+        panels:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/PanelConfig'
+        customConfig:
+          type: object
+          example: { "theme": "light", "refreshInterval": 300000 }
+    
+    LayoutUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Updated Layout Name"
+        description:
+          type: string
+          example: "Updated layout description"
+        layoutType:
+          type: string
+          enum: [single, dual, tri, quad, custom]
+          example: "quad"
+        isGlobal:
+          type: boolean
+          example: false
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["analysis", "counties", "updated"]
+        customConfig:
+          type: object
+          example: { "theme": "dark", "refreshInterval": 600000 }
+    
+    LayoutResponse:
+      type: object
+      properties:
+        layoutId:
+          type: string
+          example: "user_123_county_analysis"
+        userId:
+          type: string
+          example: "user_123"
+        name:
+          type: string
+          example: "County Analysis Layout"
+        description:
+          type: string
+          example: "Layout for analyzing county data"
+        layoutType:
+          type: string
+          enum: [single, dual, tri, quad, custom]
+          example: "tri"
+        isGlobal:
+          type: boolean
+          example: false
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["analysis", "counties"]
+        panels:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/PanelConfig'
+        customConfig:
+          type: object
+          example: { "theme": "light", "refreshInterval": 300000 }
+        createdAt:
+          type: string
+          format: date-time
+          example: "2023-10-15T14:22:30.123Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2023-11-20T09:45:12.456Z"
+    
+    PanelConfig:
+      type: object
+      required:
+        - id
+        - contentType
+        - title
+      properties:
+        id:
+          type: string
+          example: "map-panel"
+        contentType:
+          type: string
+          example: "map"
+        title:
+          type: string
+          example: "County Map"
+        position:
+          type: object
+          properties:
+            row:
+              type: integer
+              example: 0
+            col:
+              type: integer
+              example: 0
+        size:
+          type: object
+          properties:
+            width:
+              type: integer
+              example: 2
+            height:
+              type: integer
+              example: 1
+        state:
+          type: object
+          example: { "center": [37.7749, -122.4194], "zoom": 6 }
+        visible:
+          type: boolean
+          default: true
+          example: true
+        minimized:
+          type: boolean
+          default: false
+          example: false
+        maximized:
+          type: boolean
+          default: false
+          example: false
+    
+    PanelUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          example: "Updated Map Panel"
+        position:
+          type: object
+          properties:
+            row:
+              type: integer
+              example: 1
+            col:
+              type: integer
+              example: 1
+        size:
+          type: object
+          properties:
+            width:
+              type: integer
+              example: 3
+            height:
+              type: integer
+              example: 2
+        state:
+          type: object
+          example: { "center": [34.0522, -118.2437], "zoom": 8 }
+        visible:
+          type: boolean
+          example: true
+        minimized:
+          type: boolean
+          example: false
+        maximized:
+          type: boolean
+          example: true
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - BearerAuth: [] 

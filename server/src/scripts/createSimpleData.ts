@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import path from 'path';
-import { USMap } from '../models/USMap';
+import { USMap } from '../models/usmap.model';
 import logger from '../utils/logger';
 
 // Load environment variables

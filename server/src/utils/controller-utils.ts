@@ -1,7 +1,7 @@
 import { ObjectId } from 'mongodb';
 import mongoose from 'mongoose';
-import { Controller } from '../models/Controller';
-import { County } from '../models/County';
+import { Controller } from '../models/controller.model';
+import { County } from '../models/county.model';
 import logger from '../utils/logger';
 
 /**

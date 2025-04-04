@@ -1,5 +1,10 @@
 # Inventory Module Implementation Report
 
+> **Note**: This document is part of the Real Estate Platform's technical documentation suite. For related guides, see:
+> - [Architecture Guide](./architecture.md) - System architecture and component relationships
+> - [Development Guide](./development-guide.md) - Development environment setup and workflows
+> - [Component Testing Guide](./component-test-guide.md) - Testing procedures and guidelines
+
 ## Executive Summary
 
 This report summarizes the implementation of the Inventory Module for the Real Estate Investment Platform. The module provides a comprehensive solution for managing property inventory data in a hierarchical structure following the State → County → Property relationship. The implementation focuses on creating a robust frontend with React Query for state management, ensuring efficient data fetching, caching, and synchronization with the backend API.

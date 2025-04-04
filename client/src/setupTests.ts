@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom'
-import { vi, expect, afterEach } from 'vitest'
+import { vi, expect, afterEach, beforeEach } from 'vitest'
 import { cleanup } from '@testing-library/react'
 import * as matchers from '@testing-library/jest-dom/matchers'
 
@@ -73,10 +73,28 @@ beforeEach(() => {
   vi.resetAllMocks()
 })
 
+// Mock document functions used in components
+document.createRange = () => {
+  const range = new Range()
+  range.getBoundingClientRect = vi.fn()
+  
+  // Create a properly shaped DOMRectList
+  const domRectList = {
+    length: 0,
+    item: () => null,
+    [Symbol.iterator]: function* () {
+      yield* []
+    }
+  }
+  
+  range.getClientRects = vi.fn(() => domRectList as unknown as DOMRectList)
+  return range
+}
+
 // Optional: Mock console methods to reduce test noise
 // Uncomment if needed
 /*
 console.error = vi.fn()
 console.warn = vi.fn()
 console.info = vi.fn()
-*/ 
+*/

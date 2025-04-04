@@ -1,5 +1,12 @@
 # Inventory Module Documentation
 
+> **Note**: This document is part of the Real Estate Platform's technical documentation suite. For related guides, see:
+> - [Architecture Guide](./architecture.md) - System architecture and component relationships
+> - [Development Guide](./development-guide.md) - Development environment setup and workflows
+> - [Testing Guide](../TESTING-GUIDE.md) - Testing procedures and guidelines
+> - [Component Testing Guide](./component-test-guide.md) - Detailed component testing procedures
+> - [Security Guide](./SECURITY.md) - Security considerations and best practices
+
 ## Overview
 
 The Inventory Module provides a comprehensive solution for managing property inventory data in a hierarchical structure, following a State → County → Property relationship. This documentation covers the module's architecture, API endpoints, and usage guidelines.

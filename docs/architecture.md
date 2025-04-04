@@ -1,5 +1,11 @@
 # System Architecture
 
+> **Note**: This document is part of the Real Estate Platform's technical documentation suite. For related guides, see:
+> - [Security Guide](./SECURITY.md) - Security measures and best practices
+> - [Development Guide](./development-guide.md) - Development environment setup and workflows
+> - [Authentication Setup](./authentication-setup.md) - Detailed authentication implementation
+> - [Component Testing Guide](./component-test-guide.md) - Testing procedures and guidelines
+
 ## Overview
 
 The Real Estate Platform follows a modular monolithic architecture with the following key components:
@@ -578,90 +584,112 @@ The application is containerized using Docker and can be deployed in various con
 }
 ```
 
-# Real Estate Platform Architecture - Chunk 5
+## Collector Framework Architecture
 
-## Overview
-Chunk 5 implements an enhanced panel system with controller integration, providing a flexible and interactive user interface for managing real estate data and operations.
+### Collector Component Structure
+```mermaid
+graph TB
+    CF[Collector Framework]
+    Config[Configuration Module]
+    Runner[Runner Module]
+    Monitor[Monitor Module]
+    Storage[Storage Module]
+    
+    CF --> Config
+    CF --> Runner
+    CF --> Monitor
+    CF --> Storage
+    
+    Config --> Validation[Config Validation]
+    Config --> Schema[Schema Definition]
+    
+    Runner --> Queue[Collection Queue]
+    Runner --> Workers[Worker Pool]
+    Runner --> Rate[Rate Limiting]
+    
+    Monitor --> Progress[Progress Tracking]
+    Monitor --> Status[Status Updates]
+    Monitor --> Metrics[Performance Metrics]
+    
+    Storage --> Cache[Result Cache]
+    Storage --> DB[(MongoDB)]
+```
 
-## Core Components
+### Collection Flow
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant API as API Module
+    participant CF as Collector Framework
+    participant DB as MongoDB
+    participant Map as Map Component
+    
+    C->>API: Configure Collection
+    API->>CF: Initialize Collection
+    CF->>CF: Validate Config
+    CF->>DB: Create Collection Job
+    CF-->>API: Return Job ID
+    API-->>C: Return Status
+    
+    loop Collection Process
+        CF->>CF: Execute Collection
+        CF->>DB: Store Results
+        CF->>Map: Update Visualization
+        CF-->>C: Progress Update
+    end
+```
 
-### Enhanced Panel System
-- **EnhancedPanelContainer**
-  - Core container component managing panel layouts and interactions
-  - Supports dragging, resizing, and maximizing panels
-  - Integrates with layout context for state management
+### Integration Points
 
-### Panel Components
-- **PanelHeader**
-  - Customizable header with title and controls
-  - Supports maximize, refresh, export, and close actions
-  - Implements drag handle functionality
+The Collector Framework integrates with other system components:
 
-- **DraggablePanel**
-  - Implements panel dragging behavior
-  - Manages panel position state
-  - Integrates with localStorage for persistence
+1. **Inventory Module**
+   - Provides data structure for collected properties
+   - Manages property relationships and hierarchy
+   - Handles property deduplication
 
-### Controller Integration
-- **ControllerWizardLauncher**
-  - Entry point for controller configuration
-  - Manages controller status and operations
-  - Provides real-time status updates
+2. **Map Component**
+   - Real-time visualization of collection progress
+   - Geographic filtering of collection targets
+   - Status indicators for collected areas
 
-## Custom Hooks
+3. **Export Module**
+   - Formats collected data for export
+   - Provides collection-specific export templates
+   - Handles batch export of collection results
 
-### Panel Management
-- **useDraggable**
-  - Manages drag operations
-  - Handles mouse events and position calculations
-  - Supports custom drag handles
+## Consolidated Branch Architecture
 
-- **useResizable**
-  - Implements panel resizing functionality
-  - Manages size constraints
-  - Handles corner and edge resizing
+The platform uses a consolidated branch structure to manage features:
 
-### Controller Integration
-- **useController**
-  - Manages controller state and operations
-  - Handles API communication
-  - Provides status updates and error handling
-
-## Services
-
-### Controller Service
-- Handles API communication for controller operations
-- Manages controller status and history
-- Implements error handling and retry logic
-
-## State Management
-- Uses React Context for layout management
-- Implements local storage persistence
-- Manages panel state synchronization
-
-## Testing Infrastructure
-- Comprehensive test suite using Vitest
-- Component and hook testing utilities
-- Mock service implementations
-
-## Cross-References
-- [Panel System Documentation](./panels.md)
-- [Controller Documentation](./controllers.md)
-- [Testing Guide](./testing.md)
-- [Previous Chunks Documentation](./previous-chunks.md)
-
-## Technical Decisions
-1. **React Hooks for State Management**
-   - Provides modular and reusable state logic
-   - Simplifies component testing
-   - Enables custom behavior composition
-
-2. **Controller Service Architecture**
-   - Centralizes API communication
-   - Implements consistent error handling
-   - Supports future extensibility
-
-3. **Testing Strategy**
-   - Component-level unit tests
-   - Integration tests for controller operations
-   - Mock implementations for external dependencies 
+```mermaid
+graph TB
+    Main[main branch]
+    Dev[develop branch]
+    Inv[feature/inventory-consolidated]
+    Exp[feature/export-consolidated]
+    Map[feature/map-consolidated]
+    
+    Main --> Dev
+    Dev --> Inv
+    Dev --> Exp
+    Dev --> Map
+    
+    subgraph Inventory
+        Inv --> Collector[Collector Framework]
+        Inv --> DataModel[Data Models]
+        Inv --> API[REST API]
+    end
+    
+    subgraph Export
+        Exp --> Templates[Export Templates]
+        Exp --> Formats[Format Handlers]
+        Exp --> Queue[Export Queue]
+    end
+    
+    subgraph Map
+        Map --> Visualization[Map Component]
+        Map --> GeoData[GeoJSON Handler]
+        Map --> Updates[Real-time Updates]
+    end
+``` 

@@ -1,6 +1,256 @@
-# Inventory Module - Development Guide
+# Real Estate Platform - Development Guide
+
+> **Note**: This document is part of the Real Estate Platform's technical documentation suite. For related guides, see:
+> - [Architecture Guide](./architecture.md) - System architecture and component design
+> - [Security Guide](./SECURITY.md) - Security measures and best practices
+> - [Component Testing Guide](./component-test-guide.md) - Testing procedures and guidelines
+> - [Authentication Setup](./authentication-setup.md) - Authentication implementation details
+
+This guide provides comprehensive instructions for setting up and working with the Real Estate Platform development environment.
+
+## Development Environment Setup
+
+### Required Tools
+
+1. **Node.js and npm**
+   - Node.js 16+ (LTS recommended)
+   - npm 8+
+
+2. **MongoDB**
+   - MongoDB 5.0+
+   - MongoDB Compass (optional, for GUI management)
+
+3. **Git**
+   - Git 2.30+
+   - GitHub CLI (optional, for PR management)
+
+4. **Development Tools**
+   - Visual Studio Code (recommended)
+   - MongoDB extension for VS Code
+   - ESLint extension
+   - Prettier extension
+
+### Environment Configuration
+
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/your-org/real-estate-platform.git
+   cd real-estate-platform
+   ```
+
+2. **Install Dependencies**
+   ```bash
+   # Install server dependencies
+   cd server
+   npm install
+
+   # Install client dependencies
+   cd ../client
+   npm install
+   ```
+
+3. **Environment Variables**
+   ```bash
+   # Server environment
+   cd server
+   cp .env.example .env
+
+   # Client environment
+   cd ../client
+   cp .env.example .env
+   ```
+
+4. **Configure MongoDB**
+   - Create a new MongoDB database
+   - Update .env with connection string
+   - Run initial migrations:
+     ```bash
+     cd server
+     npm run migrate:up
+     ```
+
+### Running the Application
+
+1. **Development Mode**
+   ```powershell
+   # Using PowerShell script
+   ./run-dev.ps1
+
+   # Or manually:
+   cd server
+   npm run dev
+   # In another terminal:
+   cd client
+   npm start
+   ```
+
+2. **Testing**
+   ```bash
+   # Run server tests
+   cd server
+   npm test
+
+   # Run client tests
+   cd client
+   npm test
+   ```
+
+## Working with Consolidated Branches
+
+### Branch Overview
+
+The platform uses three main consolidated branches:
+
+1. **feature/inventory-consolidated**
+   - Core inventory management
+   - Collector framework integration
+   - Property data models
+   - REST API endpoints
+
+2. **feature/export-consolidated**
+   - Export functionality
+   - Data formatting
+   - Template management
+   - Batch processing
+
+3. **feature/map-consolidated**
+   - Map visualization
+   - GeoJSON processing
+   - Real-time updates
+   - Interactive controls
+
+### Development Workflow
+
+1. **Starting New Work**
+   ```bash
+   # Checkout the appropriate consolidated branch
+   git checkout feature/inventory-consolidated
+
+   # Create a working branch
+   git checkout -b feature/inventory/your-feature
+   ```
+
+2. **Making Changes**
+   - Follow the component architecture
+   - Update tests as needed
+   - Document new features
+   - Update relevant guides
+
+3. **Testing Changes**
+   ```bash
+   # Run specific test suites
+   npm test -- --grep="YourFeature"
+
+   # Run integration tests
+   npm run test:integration
+   ```
+
+4. **Submitting Changes**
+   ```bash
+   # Commit changes
+   git add .
+   git commit -m "feat: Your descriptive message"
+
+   # Push to remote
+   git push origin feature/inventory/your-feature
+
+   # Create PR to consolidated branch
+   gh pr create --base feature/inventory-consolidated
+   ```
+
+### Integration Testing
+
+When working across consolidated branches:
+
+1. **Local Integration**
+   ```bash
+   # Checkout consolidated branch
+   git checkout feature/inventory-consolidated
+
+   # Create integration branch
+   git checkout -b integration/inventory-map
+
+   # Merge map changes
+   git merge feature/map-consolidated
+   ```
+
+2. **Testing Integration**
+   - Run full test suite
+   - Test cross-component features
+   - Verify documentation accuracy
+
+3. **Resolving Conflicts**
+   - Use Visual Studio Code's merge conflict resolver
+   - Maintain component boundaries
+   - Update integration tests
+
+## Development Workflow
+
+### Branch Structure
+
+The project follows a structured branching strategy:
+
+- `main` - Production-ready code, protected branch
+- `develop` - Integration branch for feature development
+- Feature branches:
+  - `feature/inventory-consolidated` - Inventory management with collector framework
+  - `feature/export-consolidated` - Data export functionality
+  - `feature/map-consolidated` - Interactive map visualization
+
+### Branch Protection Rules
+
+The repository implements branch protection rules to maintain code quality:
+
+- Protected branches: `main`, `develop`
+- Required reviews before merging
+- Status checks must pass before merging
+- Up-to-date branch required before merge
+
+### Development Process
+
+1. Create a new feature branch from `develop`:
+   ```bash
+   git checkout develop
+   git pull origin develop
+   git checkout -b feature/your-feature-name
+   ```
+
+2. Make your changes and commit them:
+   ```bash
+   git add .
+   git commit -m "feat: Your descriptive commit message"
+   ```
+
+3. Push your feature branch:
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+
+4. Create a pull request to merge into `develop`
+5. After review and approval, merge into `develop`
+6. Delete the feature branch after successful merge
+
+### Commit Message Format
+
+Follow the conventional commits format:
+
+- `feat:` - New features
+- `fix:` - Bug fixes
+- `chore:` - Maintenance tasks
+- `docs:` - Documentation updates
+- `style:` - Code style changes
+- `refactor:` - Code refactoring
+- `test:` - Adding or updating tests
+- `ci:` - CI/CD changes
 
 ## Overview
+
+The Real Estate Platform consists of several integrated modules:
+
+1. Inventory Module - Core property management
+2. Collection Framework - Data acquisition system
+3. Map Visualization - Geographic data display
+4. Export Module - Data export functionality
 
 The Inventory Module is a core component of the Real Estate Platform that manages the hierarchical data structure for real estate properties across the United States. This guide provides detailed information on setting up, extending, and working with the Inventory Module.
 

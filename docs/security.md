@@ -1,508 +1,197 @@
 # Security Documentation
 
 ## Overview
-This document outlines the security measures, best practices, and guidelines implemented in the Real Estate Platform to protect user data, prevent unauthorized access, and maintain system integrity.
 
-## Authentication and Authorization
+This document serves as the central reference for all security-related concerns, implementations, and best practices in the Real Estate Platform.
 
-### JWT Implementation
-```javascript
-// JWT configuration
-const jwt = require('jsonwebtoken');
+## Security Vulnerabilities
 
-const generateToken = (user) => {
-  return jwt.sign(
-    { 
-      id: user._id,
-      email: user.email,
-      role: user.role 
-    },
-    process.env.JWT_SECRET,
-    { 
-      expiresIn: '24h',
-      algorithm: 'HS256'
-    }
-  );
-};
+### Known Vulnerabilities
 
-// Token verification middleware
-const verifyToken = (req, res, next) => {
-  try {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) throw new Error('No token provided');
-    
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch (error) {
-    res.status(401).json({ error: 'Invalid or expired token' });
-  }
-};
-```
+1. **JWT Secret Management**
+   - **Risk**: Application may fallback to hardcoded JWT secret if not configured
+   - **Mitigation**: Strict environment variable validation, application exits if JWT_SECRET not set
+   - **Status**: Fixed in latest version
 
-### Password Security
-```javascript
-// Password hashing configuration
-const bcrypt = require('bcrypt');
-const SALT_ROUNDS = 12;
+2. **Password Security**
+   - **Risk**: Weak password policies could lead to compromised accounts
+   - **Mitigation**: Implemented strong password requirements:
+     - Minimum 8 characters
+     - Mixed case letters
+     - Numbers and special characters
+     - No common passwords
+   - **Status**: Implemented and enforced
 
-// Hash password before saving
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  
-  try {
-    this.password = await bcrypt.hash(this.password, SALT_ROUNDS);
-    next();
-  } catch (error) {
-    next(error);
-  }
-});
+3. **Session Management**
+   - **Risk**: Long-lived sessions could be hijacked
+   - **Mitigation**: 
+     - Short-lived access tokens (15 minutes)
+     - Secure refresh token mechanism
+     - HTTP-only cookies
+     - Strict same-site policy
+   - **Status**: Implemented
 
-// Password validation method
-userSchema.methods.validatePassword = async function(password) {
-  return bcrypt.compare(password, this.password);
-};
-```
+4. **CORS Configuration**
+   - **Risk**: Cross-origin attacks possible with loose CORS settings
+   - **Mitigation**: Environment-specific CORS configuration with strict settings in production
+   - **Status**: Implemented
 
-### Role-Based Access Control (RBAC)
-```javascript
-// Role definitions
-const ROLES = {
-  ADMIN: 'admin',
-  AGENT: 'agent',
-  USER: 'user'
-};
+### Security Measures
 
-// Role-based middleware
-const checkRole = (roles) => {
-  return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
-        error: 'Insufficient permissions'
-      });
-    }
-    next();
-  };
-};
+1. **Authentication**
+   ```typescript
+   // Example of secure token generation
+   const generateToken = (user) => {
+     return jwt.sign(
+       { id: user._id, role: user.role },
+       process.env.JWT_SECRET,
+       { expiresIn: '15m' }
+     );
+   };
+   ```
 
-// Usage example
-router.post('/properties',
-  verifyToken,
-  checkRole([ROLES.ADMIN, ROLES.AGENT]),
-  createProperty
-);
-```
+2. **Authorization**
+   ```typescript
+   // Role-based access control
+   const authorize = (roles) => {
+     return (req, res, next) => {
+       if (!roles.includes(req.user.role)) {
+         return res.status(403).json({
+           error: 'Insufficient permissions'
+         });
+       }
+       next();
+     };
+   };
+   ```
 
-## Data Protection
-
-### Input Validation and Sanitization
-```javascript
-// Input validation middleware
-const { body, validationResult } = require('express-validator');
-
-const propertyValidation = [
-  body('address')
-    .trim()
-    .escape()
-    .isLength({ min: 5, max: 200 })
-    .withMessage('Address must be between 5 and 200 characters'),
-    
-  body('price')
-    .isFloat({ min: 0, max: 1000000000 })
-    .withMessage('Invalid price range'),
-    
-  // Validate and sanitize other fields
-  
-  (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-    next();
-  }
-];
-```
-
-### File Upload Security
-```javascript
-// File upload configuration
-const multer = require('multer');
-const path = require('path');
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const fileFilter = (req, file, cb) => {
-  // Allow only specific file types
-  const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-  if (!allowedTypes.includes(file.mimetype)) {
-    cb(new Error('Invalid file type'), false);
-    return;
-  }
-  cb(null, true);
-};
-
-const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  }
-});
-```
-
-### Data Encryption
-```javascript
-// Encryption utility
-const crypto = require('crypto');
-
-const encryption = {
-  algorithm: 'aes-256-gcm',
-  
-  encrypt: (text) => {
-    const iv = crypto.randomBytes(16);
-    const key = Buffer.from(process.env.ENCRYPTION_KEY, 'hex');
-    
-    const cipher = crypto.createCipheriv(encryption.algorithm, key, iv);
-    let encrypted = cipher.update(text, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-    
-    const authTag = cipher.getAuthTag();
-    return {
-      content: encrypted,
-      iv: iv.toString('hex'),
-      authTag: authTag.toString('hex')
-    };
-  },
-  
-  decrypt: (encrypted) => {
-    const key = Buffer.from(process.env.ENCRYPTION_KEY, 'hex');
-    const iv = Buffer.from(encrypted.iv, 'hex');
-    const authTag = Buffer.from(encrypted.authTag, 'hex');
-    
-    const decipher = crypto.createDecipheriv(encryption.algorithm, key, iv);
-    decipher.setAuthTag(authTag);
-    
-    let decrypted = decipher.update(encrypted.content, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-    return decrypted;
-  }
-};
-```
-
-## API Security
-
-### Rate Limiting
-```javascript
-// Rate limiting configuration
-const rateLimit = require('express-rate-limit');
-
-// Global rate limiter
-const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
-});
-
-// Strict limiter for authentication routes
-const authLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 5, // limit each IP to 5 requests per windowMs
-  message: 'Too many login attempts, please try again later'
-});
-
-// Apply limiters
-app.use(globalLimiter);
-app.use('/api/auth', authLimiter);
-```
-
-### CORS Configuration
-```javascript
-// CORS setup
-const cors = require('cors');
-
-const corsOptions = {
-  origin: process.env.ALLOWED_ORIGINS.split(','),
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  exposedHeaders: ['Content-Range', 'X-Content-Range'],
-  credentials: true,
-  maxAge: 86400 // 24 hours
-};
-
-app.use(cors(corsOptions));
-```
-
-### Request Validation
-```javascript
-// Request validation middleware
-const validateRequest = (schema) => {
-  return (req, res, next) => {
-    const { error } = schema.validate(req.body);
-    if (error) {
-      return res.status(400).json({
-        error: error.details[0].message
-      });
-    }
-    next();
-  };
-};
-
-// Usage with Joi schema
-const propertySchema = Joi.object({
-  address: Joi.string().required().min(5).max(200),
-  price: Joi.number().required().min(0).max(1000000000),
-  // ... other validations
-});
-
-router.post('/properties',
-  validateRequest(propertySchema),
-  createProperty
-);
-```
-
-## Session Management
-
-### Session Configuration
-```javascript
-// Session setup
-const session = require('express-session');
-const MongoStore = require('connect-mongo');
-
-app.use(session({
-  secret: process.env.SESSION_SECRET,
-  name: 'sessionId', // Don't use default connect.sid
-  cookie: {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  },
-  store: MongoStore.create({
-    mongoUrl: process.env.MONGODB_URI,
-    ttl: 24 * 60 * 60 // 24 hours
-  }),
-  resave: false,
-  saveUninitialized: false
-}));
-```
-
-### Session Management
-```javascript
-// Session management utilities
-const sessionManager = {
-  // Create new session
-  create: (req, user) => {
-    req.session.userId = user._id;
-    req.session.role = user.role;
-    req.session.lastActive = Date.now();
-  },
-  
-  // Validate session
-  validate: (req, res, next) => {
-    if (!req.session.userId) {
-      return res.status(401).json({
-        error: 'Session expired'
-      });
-    }
-    
-    // Update last active timestamp
-    req.session.lastActive = Date.now();
-    next();
-  },
-  
-  // Destroy session
-  destroy: (req) => {
-    return new Promise((resolve) => {
-      req.session.destroy((err) => {
-        if (err) console.error('Session destruction error:', err);
-        resolve();
-      });
-    });
-  }
-};
-```
-
-## Security Headers
-
-### Helmet Configuration
-```javascript
-// Security headers setup
-const helmet = require('helmet');
-
-app.use(helmet());
-
-// Custom CSP configuration
-app.use(helmet.contentSecurityPolicy({
-  directives: {
-    defaultSrc: ["'self'"],
-    scriptSrc: ["'self'", "'unsafe-inline'"],
-    styleSrc: ["'self'", "'unsafe-inline'"],
-    imgSrc: ["'self'", "data:", "https:"],
-    connectSrc: ["'self'", "https://api.example.com"],
-    fontSrc: ["'self'", "https://fonts.gstatic.com"],
-    objectSrc: ["'none'"],
-    mediaSrc: ["'self'"],
-    frameSrc: ["'none'"]
-  }
-}));
-```
-
-## Logging and Monitoring
-
-### Security Event Logging
-```javascript
-// Security event logger
-const winston = require('winston');
-
-const securityLogger = winston.createLogger({
-  level: 'info',
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.json()
-  ),
-  transports: [
-    new winston.transports.File({
-      filename: 'logs/security.log',
-      level: 'info'
-    })
-  ]
-});
-
-// Log security events
-const logSecurityEvent = (event) => {
-  securityLogger.info({
-    ...event,
-    timestamp: new Date(),
-    environment: process.env.NODE_ENV
-  });
-};
-
-// Usage example
-app.post('/api/auth/login', async (req, res) => {
-  try {
-    // ... login logic
-    logSecurityEvent({
-      type: 'LOGIN_SUCCESS',
-      user: user.email,
-      ip: req.ip
-    });
-  } catch (error) {
-    logSecurityEvent({
-      type: 'LOGIN_FAILURE',
-      attempt: req.body.email,
-      ip: req.ip,
-      reason: error.message
-    });
-  }
-});
-```
-
-### Activity Monitoring
-```javascript
-// Activity monitoring middleware
-const monitorActivity = (req, res, next) => {
-  const start = Date.now();
-  
-  // Log request details
-  const requestLog = {
-    method: req.method,
-    path: req.path,
-    ip: req.ip,
-    userAgent: req.get('user-agent'),
-    timestamp: new Date()
-  };
-  
-  // Log response details
-  res.on('finish', () => {
-    const duration = Date.now() - start;
-    const responseLog = {
-      ...requestLog,
-      statusCode: res.statusCode,
-      duration,
-      user: req.user?.id
-    };
-    
-    // Log suspicious activity
-    if (duration > 5000 || res.statusCode >= 400) {
-      logSecurityEvent({
-        type: 'SUSPICIOUS_ACTIVITY',
-        ...responseLog
-      });
-    }
-  });
-  
-  next();
-};
-```
+3. **Data Protection**
+   ```typescript
+   // Example of data encryption
+   const encryption = {
+     encrypt: (text) => {
+       const iv = crypto.randomBytes(16);
+       const cipher = crypto.createCipheriv(
+         'aes-256-gcm',
+         Buffer.from(process.env.ENCRYPTION_KEY, 'hex'),
+         iv
+       );
+       let encrypted = cipher.update(text, 'utf8', 'hex');
+       encrypted += cipher.final('hex');
+       return { encrypted, iv: iv.toString('hex') };
+     }
+   };
+   ```
 
 ## Security Best Practices
 
-### Password Requirements
-- Minimum 8 characters
-- At least one uppercase letter
-- At least one lowercase letter
-- At least one number
-- At least one special character
-- No common passwords
-- No personal information
+### Development
 
-### API Security Checklist
-1. Use HTTPS everywhere
-2. Implement proper authentication
-3. Use secure session management
-4. Validate all inputs
-5. Implement rate limiting
-6. Use security headers
-7. Monitor for suspicious activity
-8. Regular security audits
-9. Keep dependencies updated
-10. Implement proper error handling
+1. **Code Security**
+   - Use parameterized queries
+   - Validate all inputs
+   - Implement proper error handling
+   - Keep dependencies updated
 
-### Development Guidelines
-1. Never commit sensitive data
-2. Use environment variables
-3. Regular dependency updates
-4. Code review security aspects
-5. Regular security training
-6. Incident response plan
-7. Regular backups
-8. Audit logging
-9. Secure deployment process
-10. Regular penetration testing
+2. **API Security**
+   - Rate limiting on all endpoints
+   - Input validation middleware
+   - Proper error responses
+   - Security headers
+
+3. **Data Security**
+   - Encrypt sensitive data
+   - Use secure connections (HTTPS)
+   - Implement proper access controls
+   - Regular security audits
+
+### Deployment
+
+1. **Environment Configuration**
+   - Secure environment variables
+   - Production-specific security settings
+   - Regular security updates
+   - SSL/TLS configuration
+
+2. **Monitoring**
+   - Security event logging
+   - Failed login monitoring
+   - Rate limit monitoring
+   - Regular log analysis
+
+## Security Checklist
+
+### Pre-deployment
+- [ ] Run security audit (`npm audit`)
+- [ ] Check for outdated dependencies
+- [ ] Verify environment variables
+- [ ] Test security measures
+- [ ] Review access controls
+- [ ] Check SSL configuration
+- [ ] Validate CORS settings
+
+### Post-deployment
+- [ ] Monitor security logs
+- [ ] Check rate limiting
+- [ ] Verify SSL/TLS
+- [ ] Test authentication
+- [ ] Validate authorization
+- [ ] Monitor failed logins
+- [ ] Review error logs
 
 ## Incident Response
 
-### Response Plan
+### Steps
 1. Identify and isolate the incident
 2. Assess the damage
 3. Notify affected parties
 4. Fix the vulnerability
-5. Review and improve security measures
+5. Document the incident
+6. Implement preventive measures
 
 ### Contact Information
 - Security Team: security@example.com
 - Emergency Contact: +1-XXX-XXX-XXXX
 - Legal Team: legal@example.com
 
-## Compliance
+## Regular Security Tasks
 
-### GDPR Compliance
-- Data minimization
-- User consent management
-- Data deletion requests
-- Privacy policy
-- Data breach notification
+### Daily
+- Monitor security logs
+- Check failed login attempts
+- Review rate limit violations
 
-### PCI Compliance
-- Secure card data handling
-- Regular security assessments
-- Incident response procedures
-- Employee training
-- Access control 
+### Weekly
+- Review security patches
+- Update dependencies
+- Check security alerts
+
+### Monthly
+- Full security audit
+- Update security documentation
+- Review access permissions
+- Test security measures
+
+## Related Documentation
+
+### Core Security Documents
+- [`docs/security-improvements.md`](./security-improvements.md) - Detailed changelog of security improvements and fixes
+- [`docs/authentication-setup.md`](./authentication-setup.md) - Authentication implementation details and configuration
+- [`docs/deployment.md#security-measures`](./deployment.md#security-measures) - Deployment-specific security configurations
+
+### Component-Specific Security
+- [`client/src/components/maps/DOCUMENTATION.md#security-considerations`](../client/src/components/maps/DOCUMENTATION.md#security-considerations) - Map component security
+- [`server/README-AUTH.md`](../server/README-AUTH.md) - Server-side authentication details
+
+### Implementation Examples
+- [`server/src/utils/appLogger.ts`](../server/src/utils/appLogger.ts) - Security event logging implementation
+- [`server/src/index.simple.ts`](../server/src/index.simple.ts) - Basic security setup example
+
+For detailed implementation guidelines, refer to the respective documentation files. This guide serves as the central reference point for all security-related concerns.
+
+## Additional Resources
+
+- [OWASP Security Guidelines](https://owasp.org/www-project-top-ten/)
+- [Node.js Security Best Practices](https://nodejs.org/en/docs/guides/security/)
+- [Express.js Security Best Practices](https://expressjs.com/en/advanced/best-practice-security.html)
+- [MongoDB Security Checklist](https://docs.mongodb.com/manual/administration/security-checklist/) 

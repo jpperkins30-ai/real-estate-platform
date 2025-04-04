@@ -1,0 +1,321 @@
+{
+  "info": {
+    "name": "Layout Configuration API",
+    "description": "API for managing panel layout configurations",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api/v1"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Layouts",
+      "item": [
+        {
+          "name": "Get All Layouts",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/layouts?includeGlobal=true&tags=analysis&layoutType=tri",
+              "host": ["{{baseUrl}}"],
+              "path": ["layouts"],
+              "query": [
+                {
+                  "key": "includeGlobal",
+                  "value": "true",
+                  "description": "Include global layouts"
+                },
+                {
+                  "key": "tags",
+                  "value": "analysis",
+                  "description": "Filter by tags"
+                },
+                {
+                  "key": "layoutType",
+                  "value": "tri",
+                  "description": "Filter by layout type"
+                }
+              ]
+            },
+            "description": "Returns a list of all layout configurations accessible by the user"
+          },
+          "response": []
+        },
+        {
+          "name": "Create New Layout",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/layouts",
+              "host": ["{{baseUrl}}"],
+              "path": ["layouts"]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"County Analysis Layout\",\n  \"description\": \"Layout for analyzing county data\",\n  \"layoutType\": \"tri\",\n  \"isGlobal\": false,\n  \"tags\": [\"analysis\", \"counties\"],\n  \"panels\": {\n    \"map-panel\": {\n      \"id\": \"map-panel\",\n      \"contentType\": \"map\",\n      \"title\": \"County Map\",\n      \"position\": { \"row\": 0, \"col\": 0 },\n      \"size\": { \"width\": 2, \"height\": 1 },\n      \"state\": {\n        \"center\": [37.7749, -122.4194],\n        \"zoom\": 6,\n        \"layers\": [\"counties\", \"properties\"]\n      },\n      \"visible\": true,\n      \"minimized\": false,\n      \"maximized\": false\n    },\n    \"stats-panel\": {\n      \"id\": \"stats-panel\",\n      \"contentType\": \"stats\",\n      \"title\": \"County Statistics\",\n      \"position\": { \"row\": 1, \"col\": 0 },\n      \"size\": { \"width\": 3, \"height\": 1 },\n      \"state\": {\n        \"metrics\": [\"population\", \"properties\", \"land_value\"],\n        \"chartType\": \"bar\"\n      },\n      \"visible\": true\n    }\n  },\n  \"customConfig\": {\n    \"theme\": \"light\",\n    \"refreshInterval\": 300000\n  }\n}"
+            },
+            "description": "Creates a new layout configuration"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Layout By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/layouts/:layoutId",
+              "host": ["{{baseUrl}}"],
+              "path": ["layouts", ":layoutId"],
+              "variable": [
+                {
+                  "key": "layoutId",
+                  "value": "user_123_county_analysis",
+                  "description": "Layout ID"
+                }
+              ]
+            },
+            "description": "Returns a layout configuration by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Layout",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{baseUrl}}/layouts/:layoutId",
+              "host": ["{{baseUrl}}"],
+              "path": ["layouts", ":layoutId"],
+              "variable": [
+                {
+                  "key": "layoutId",
+                  "value": "user_123_county_analysis",
+                  "description": "Layout ID"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Layout Name\",\n  \"description\": \"Updated layout description\",\n  \"layoutType\": \"quad\",\n  \"tags\": [\"analysis\", \"counties\", \"updated\"],\n  \"customConfig\": {\n    \"theme\": \"dark\",\n    \"refreshInterval\": 600000\n  }\n}"
+            },
+            "description": "Updates an existing layout configuration"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Layout",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/layouts/:layoutId",
+              "host": ["{{baseUrl}}"],
+              "path": ["layouts", ":layoutId"],
+              "variable": [
+                {
+                  "key": "layoutId",
+                  "value": "user_123_county_analysis",
+                  "description": "Layout ID"
+                }
+              ]
+            },
+            "description": "Deletes a layout configuration"
+          },
+          "response": []
+        },
+        {
+          "name": "Clone Layout",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/layouts/clone/:layoutId?newName=Cloned County Analysis",
+              "host": ["{{baseUrl}}"],
+              "path": ["layouts", "clone", ":layoutId"],
+              "query": [
+                {
+                  "key": "newName",
+                  "value": "Cloned County Analysis",
+                  "description": "Name for the cloned layout"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "layoutId",
+                  "value": "user_123_county_analysis",
+                  "description": "Source layout ID"
+                }
+              ]
+            },
+            "description": "Creates a new layout by cloning an existing one"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Panels",
+      "item": [
+        {
+          "name": "Get Panels For Layout",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/layouts/:layoutId/panels",
+              "host": ["{{baseUrl}}"],
+              "path": ["layouts", ":layoutId", "panels"],
+              "variable": [
+                {
+                  "key": "layoutId",
+                  "value": "user_123_county_analysis",
+                  "description": "Layout ID"
+                }
+              ]
+            },
+            "description": "Returns all panel configurations for a layout"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Panel To Layout",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/layouts/:layoutId/panels",
+              "host": ["{{baseUrl}}"],
+              "path": ["layouts", ":layoutId", "panels"],
+              "variable": [
+                {
+                  "key": "layoutId",
+                  "value": "user_123_county_analysis",
+                  "description": "Layout ID"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"property-panel\",\n  \"contentType\": \"property\",\n  \"title\": \"Property Details\",\n  \"position\": { \"row\": 1, \"col\": 1 },\n  \"size\": { \"width\": 1, \"height\": 2 },\n  \"state\": {\n    \"selectedProperty\": \"prop123\",\n    \"showDetails\": true\n  },\n  \"visible\": true,\n  \"minimized\": false,\n  \"maximized\": false\n}"
+            },
+            "description": "Adds a new panel to a layout configuration"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Panel By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/layouts/:layoutId/panels/:panelId",
+              "host": ["{{baseUrl}}"],
+              "path": ["layouts", ":layoutId", "panels", ":panelId"],
+              "variable": [
+                {
+                  "key": "layoutId",
+                  "value": "user_123_county_analysis",
+                  "description": "Layout ID"
+                },
+                {
+                  "key": "panelId",
+                  "value": "map-panel",
+                  "description": "Panel ID"
+                }
+              ]
+            },
+            "description": "Returns a panel configuration by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Panel",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{baseUrl}}/layouts/:layoutId/panels/:panelId",
+              "host": ["{{baseUrl}}"],
+              "path": ["layouts", ":layoutId", "panels", ":panelId"],
+              "variable": [
+                {
+                  "key": "layoutId",
+                  "value": "user_123_county_analysis",
+                  "description": "Layout ID"
+                },
+                {
+                  "key": "panelId",
+                  "value": "map-panel",
+                  "description": "Panel ID"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Map Panel\",\n  \"position\": { \"row\": 1, \"col\": 1 },\n  \"size\": { \"width\": 3, \"height\": 2 },\n  \"state\": {\n    \"center\": [34.0522, -118.2437],\n    \"zoom\": 8\n  },\n  \"visible\": true,\n  \"minimized\": false,\n  \"maximized\": true\n}"
+            },
+            "description": "Updates an existing panel configuration"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Panel",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/layouts/:layoutId/panels/:panelId",
+              "host": ["{{baseUrl}}"],
+              "path": ["layouts", ":layoutId", "panels", ":panelId"],
+              "variable": [
+                {
+                  "key": "layoutId",
+                  "value": "user_123_county_analysis",
+                  "description": "Layout ID"
+                },
+                {
+                  "key": "panelId",
+                  "value": "map-panel",
+                  "description": "Panel ID"
+                }
+              ]
+            },
+            "description": "Removes a panel from a layout configuration"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
