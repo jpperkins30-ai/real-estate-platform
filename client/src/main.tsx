@@ -1,11 +1,15 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
-import App from './App'
+import { RouterProvider } from 'react-router-dom'
+import { router } from './router'
 
 const rootElement = document.getElementById('root')
 
 if (rootElement) {
-  ReactDOM.render(<App />, rootElement)
+  ReactDOM.render(
+    <RouterProvider router={router} />,
+    rootElement
+  )
 } else {
   console.error("Root element not found!")
 }

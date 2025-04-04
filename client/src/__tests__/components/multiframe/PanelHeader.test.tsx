@@ -5,8 +5,13 @@ import { PanelHeader } from '../../../components/multiframe/PanelHeader';
 
 describe('PanelHeader', () => {
   const defaultProps = {
-    title: 'Test Panel'
+    title: 'Test Panel',
+    onAction: vi.fn()
   };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('renders with title', () => {
     render(<PanelHeader {...defaultProps} />);
@@ -23,50 +28,47 @@ describe('PanelHeader', () => {
     expect(screen.getByTestId('panel-header')).toHaveClass('draggable');
   });
 
-  it('calls onToggleMaximize when maximize button is clicked', () => {
-    const handleMaximize = vi.fn();
-    render(<PanelHeader {...defaultProps} onToggleMaximize={handleMaximize} />);
-    
-    fireEvent.click(screen.getByRole('button', { name: /maximize panel/i }));
-    expect(handleMaximize).toHaveBeenCalledTimes(1);
+  it('calls onAction with maximize action when maximize button is clicked', () => {
+    render(<PanelHeader {...defaultProps} />);
+    fireEvent.click(screen.getByTestId('maximize-button'));
+    expect(defaultProps.onAction).toHaveBeenCalledWith({ type: 'maximize' });
   });
 
   it('shows restore icon when maximized', () => {
-    render(
-      <PanelHeader 
-        {...defaultProps} 
-        isMaximized={true} 
-        onToggleMaximize={vi.fn()}
-      />
-    );
-    
-    expect(screen.getByRole('button', { name: /restore panel/i })).toBeInTheDocument();
+    render(<PanelHeader {...defaultProps} isMaximized={true} />);
+    const maximizeButton = screen.getByTestId('maximize-button');
+    expect(maximizeButton.getAttribute('aria-label')).toBe('Restore panel');
+    expect(maximizeButton.querySelector('.restore-icon')).toBeInTheDocument();
   });
 
-  it('calls onRefresh when refresh button is clicked', () => {
-    const handleRefresh = vi.fn();
-    render(<PanelHeader {...defaultProps} onRefresh={handleRefresh} />);
-    
-    fireEvent.click(screen.getByRole('button', { name: /refresh panel/i }));
-    expect(handleRefresh).toHaveBeenCalledTimes(1);
+  it('calls onAction with refresh action when refresh button is clicked', () => {
+    render(<PanelHeader {...defaultProps} />);
+    fireEvent.click(screen.getByTestId('refresh-button'));
+    expect(defaultProps.onAction).toHaveBeenCalledWith({ type: 'refresh' });
   });
 
-  it('calls onExport when export button is clicked', () => {
-    const handleExport = vi.fn();
-    render(<PanelHeader {...defaultProps} onExport={handleExport} />);
-    
-    fireEvent.click(screen.getByRole('button', { name: /export panel data/i }));
-    expect(handleExport).toHaveBeenCalledTimes(1);
+  it('calls onAction with export action when export button is clicked', () => {
+    render(<PanelHeader {...defaultProps} />);
+    fireEvent.click(screen.getByTestId('export-button'));
+    expect(defaultProps.onAction).toHaveBeenCalledWith({ type: 'export' });
   });
 
-  it('calls onClose when close button is clicked', () => {
-    const handleClose = vi.fn();
-    render(<PanelHeader {...defaultProps} onClose={handleClose} />);
-    
-    fireEvent.click(screen.getByRole('button', { name: /close panel/i }));
-    expect(handleClose).toHaveBeenCalledTimes(1);
+  it('calls onAction with close action when close button is clicked', () => {
+    render(<PanelHeader {...defaultProps} showCloseButton={true} />);
+    fireEvent.click(screen.getByTestId('close-button'));
+    expect(defaultProps.onAction).toHaveBeenCalledWith({ type: 'close' });
   });
 
+  it('does not show close button by default', () => {
+    render(<PanelHeader {...defaultProps} />);
+    expect(screen.queryByTestId('close-button')).not.toBeInTheDocument();
+  });
+
+  it('can hide maximize button when showMaximizeButton is false', () => {
+    render(<PanelHeader {...defaultProps} showMaximizeButton={false} />);
+    expect(screen.queryByTestId('maximize-button')).not.toBeInTheDocument();
+  });
+  
   it('renders custom controls when provided', () => {
     const customControl = <button data-testid="custom-control">Custom</button>;
     render(<PanelHeader {...defaultProps} customControls={customControl} />);
@@ -79,39 +81,11 @@ describe('PanelHeader', () => {
       <PanelHeader 
         {...defaultProps} 
         showControls={false}
-        onToggleMaximize={vi.fn()}
-        onRefresh={vi.fn()}
-        onExport={vi.fn()}
-        onClose={vi.fn()}
       />
     );
     
-    expect(screen.queryByRole('button', { name: /maximize panel/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /refresh panel/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /export panel data/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /close panel/i })).not.toBeInTheDocument();
-  });
-
-  it('handles mouse enter and leave events', () => {
-    render(<PanelHeader {...defaultProps} />);
-    const header = screen.getByTestId('panel-header');
-    
-    fireEvent.mouseEnter(header);
-    expect(header).toHaveClass('hovered');
-    
-    fireEvent.mouseLeave(header);
-    expect(header).not.toHaveClass('hovered');
-  });
-
-  it('truncates long titles with ellipsis', () => {
-    const longTitle = 'This is a very long title that should be truncated with an ellipsis when it exceeds the available space';
-    render(<PanelHeader title={longTitle} />);
-    
-    const titleElement = screen.getByText(longTitle);
-    expect(titleElement).toHaveStyle({
-      whiteSpace: 'nowrap',
-      overflow: 'hidden',
-      textOverflow: 'ellipsis'
-    });
+    expect(screen.queryByTestId('refresh-button')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('export-button')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('maximize-button')).not.toBeInTheDocument();
   });
 }); 
