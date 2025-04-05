@@ -1,5 +1,21 @@
 # Real Estate Platform Test Plan Document
 
+## Key Testing Resources
+
+Before reviewing this test plan, please consult the following resources that define our standardized testing approach:
+
+- [TEST-GUIDE.md](../client/TEST-GUIDE.md) - Quick reference guide for developers implementing tests
+- [TESTING.md](../client/TESTING.md) - Comprehensive testing documentation and standards
+- [test-plan.json](../client/test-plan.json) - Machine-readable test case catalog with requirements traceability
+
+Our testing approach implements a standardized methodology with:
+- Unique test case IDs for traceability (format: "TC101: test description")
+- Flattened test directory structure with consistent naming conventions
+- Pre-execution validation to enforce standards
+- Multiple enforcement layers (educational, preventive, enforcement, runtime)
+
+For new test cases, please ensure they follow this standardized approach and reference the appropriate test case ID from test-plan.json.
+
 ## 1. Overview
 
 This test plan documents the testing approach for the Real Estate Platform's advanced layout and component system. The tests are organized into several categories reflecting the architecture of the application: Hooks, Services, Components, and Integration tests. The goal is to ensure the reliability, functionality, and performance of the system's key features, with special attention to the advanced layout capabilities, panel management, and component interaction.

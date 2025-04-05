@@ -127,22 +127,19 @@ export function EnhancedPanelContainer({
   
   // Register panel with layout context on mount
   useEffect(() => {
-    const config: StandardPanelConfig = {
+    registerPanel(id, {
       id,
-      title,
       contentType,
-      visible: true,
-      closable,
-      maximizable,
+      title,
+      position: panelState.position || initialPosition,
+      size: panelState.size || initialSize,
       state: panelState
-    };
-    
-    registerPanel(id, config);
+    });
     
     return () => {
       unregisterPanel(id);
     };
-  }, [id, contentType, title, registerPanel, unregisterPanel, panelState, closable, maximizable]);
+  }, [id, contentType, title, registerPanel, unregisterPanel, panelState, initialPosition, initialSize]);
   
   // Subscribe to events from other panels
   useEffect(() => {
@@ -158,48 +155,20 @@ export function EnhancedPanelContainer({
     return unsubscribe;
   }, [id, subscribe, updateState]);
   
+  // Toggle maximize state
+  const handleToggleMaximize = useCallback(() => {
+    toggleMaximized();
+  }, [toggleMaximized]);
+  
   // Handle panel actions
-  const handlePanelAction = useCallback((action: { type: string, payload?: any }) => {
-    switch (action.type) {
-      case 'maximize':
-        toggleMaximized();
-        break;
-      case 'close':
-        if (onClose) onClose();
-        break;
-      case 'refresh':
-        console.log(`Refreshing panel ${id}`);
-        break;
-      case 'export':
-        console.log(`Exporting panel ${id}`);
-        break;
-      default:
-        if (['select', 'filter', 'highlight'].includes(action.type)) {
-          broadcast(action.type, action.payload, id);
-        }
+  const handleAction = useCallback((action: { type: string, payload?: any }) => {
+    if (['select', 'filter', 'highlight'].includes(action.type)) {
+      broadcast(action.type, action.payload, id);
     }
-  }, [id, broadcast, toggleMaximized, onClose]);
+  }, [id, broadcast]);
   
   // Get panel content component
   const PanelContent = getPanelContent(contentType);
-  
-  // Set refs using callbacks rather than direct assignment
-  const setRefs = useCallback((el: HTMLDivElement | null) => {
-    if (panelRef && typeof panelRef === 'object') {
-      // @ts-ignore - Need to ignore to avoid read-only errors
-      panelRef.current = el;
-    }
-    
-    if (draggable && draggableRef && typeof draggableRef === 'object') {
-      // @ts-ignore - Need to ignore to avoid read-only errors
-      draggableRef.current = el;
-    }
-    
-    if (resizable && resizableRef && typeof resizableRef === 'object') {
-      // @ts-ignore - Need to ignore to avoid read-only errors
-      resizableRef.current = el;
-    }
-  }, [draggable, resizable, draggableRef, resizableRef]);
   
   // Class names based on state
   const containerClassNames = [
@@ -212,7 +181,18 @@ export function EnhancedPanelContainer({
   
   return (
     <div 
-      ref={setRefs}
+      // Using an inline function to call the setter functions of each ref directly
+      ref={(node) => {
+        // These hooks expect a callback to set the ref
+        if (draggable && typeof draggableRef === 'function') {
+          draggableRef(node);
+        }
+        if (resizable && typeof resizableRef === 'function') {
+          resizableRef(node);
+        }
+        // Always update the panel ref
+        panelRef.current = node;
+      }}
       className={containerClassNames} 
       style={{
         transform: draggable && !isMaximized ? `translate(${dragPosition.x}px, ${dragPosition.y}px)` : undefined,
@@ -226,7 +206,24 @@ export function EnhancedPanelContainer({
         title={title}
         draggable={draggable}
         isMaximized={isMaximized}
-        onAction={handlePanelAction}
+        onAction={(action) => {
+          switch (action.type) {
+            case 'maximize':
+              handleToggleMaximize();
+              break;
+            case 'refresh':
+              console.log(`Refreshing panel ${id}`);
+              break;
+            case 'export':
+              console.log(`Exporting panel ${id}`);
+              break;
+            case 'close':
+              if (onClose) onClose();
+              break;
+            default:
+              handleAction(action);
+          }
+        }}
         showMaximizeButton={maximizable}
         showCloseButton={closable}
         showControls={showControls}
@@ -239,10 +236,10 @@ export function EnhancedPanelContainer({
             panelId={id}
             initialState={panelState}
             onStateChange={updateState}
-            onAction={handlePanelAction}
+            onAction={handleAction}
           />
         ) : (
-          <div className="no-content">
+          <div className="no-content" data-testid="no-content">
             No content available for type: {contentType}
           </div>
         )}

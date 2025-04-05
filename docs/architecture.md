@@ -313,6 +313,23 @@ graph TD
     E --> E3[Accessibility Tests]
 ```
 
+### Standardized Testing Approach
+
+The platform implements a rigorous standardized testing methodology with the following key features:
+
+1. **Test Case Tracking**: All tests include unique identifiers (e.g., "TC101") that link to the test plan
+2. **Flattened Test Structure**: Tests are organized in a flat directory structure with consistent naming conventions
+3. **Multiple Enforcement Layers**: Testing standards are enforced through:
+   - Pre-commit and pre-push validation hooks
+   - Test generators that create properly structured tests
+   - Pre-test validation that runs before test execution
+   - CI/CD integration for validation during pull requests
+
+For detailed information on the testing methodology:
+- [TEST-GUIDE.md](../client/TEST-GUIDE.md) - Quick reference guide for developers
+- [TESTING.md](../client/TESTING.md) - Comprehensive testing documentation
+- [test-plan.json](../client/test-plan.json) - Complete test case catalog with requirements mapping
+
 ### Testing Framework
 ```mermaid
 graph LR
@@ -373,7 +390,7 @@ The test architecture is divided into several test types:
    - End-to-end workflows
    - System behavior validation
 
-For detailed information on all test cases, test execution procedures, and quality metrics, refer to the [Comprehensive Test Plan](./test-plan.md).
+For detailed information on all test cases, test execution procedures, and quality metrics, refer to the [Comprehensive Test Plan](../client/test-plan.json).
 
 ## Deployment Architecture
 

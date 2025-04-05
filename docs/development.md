@@ -390,6 +390,24 @@ describe('ExportService', () => {
 });
 ```
 
+### Standardized Testing Approach
+
+The project implements a rigorous standardized testing approach that ensures quality and maintainability through:
+
+1. **Test Case ID Tracking**: All tests must include a unique identifier (e.g., "TC101") that references the test plan
+2. **Flattened Directory Structure**: Tests are organized in a flat directory structure with consistent naming conventions
+3. **Pre-execution Validation**: Tests are validated before execution to ensure they meet standards
+4. **Enforcement at Multiple Levels**:
+   - Pre-commit and pre-push Git hooks validate tests before submission
+   - Test generators create properly structured tests
+   - Runtime validation during test execution
+   - CI/CD pipeline integration
+
+For comprehensive guidance on implementing tests following these standards, refer to:
+- [TEST-GUIDE.md](../client/TEST-GUIDE.md) - Quick reference guide for developers
+- [TESTING.md](../client/TESTING.md) - Complete testing documentation and guidelines
+- [test-plan.json](../client/test-plan.json) - Test case catalog with requirements traceability
+
 ### Integration Testing
 
 Integration tests should verify that the export endpoints work correctly:

@@ -8,6 +8,9 @@ import healthRoutes from './health';
 import controllerRoutes from './controller.routes';
 import exportRoutes from './export.routes';
 import taxLienRoutes from './tax-lien.routes';
+import layoutRoutes from './layoutRoutes';
+import countyRoutes from './countyRoutes';
+import userPreferencesRoutes from './userPreferencesRoutes';
 
 const router = express.Router();
 
@@ -28,6 +31,12 @@ const router = express.Router();
  *     description: Data collection management
  *   - name: TaxLien
  *     description: Tax lien status checking
+ *   - name: Layout
+ *     description: Layout configuration management
+ *   - name: County
+ *     description: County data and boundaries
+ *   - name: UserPreferences
+ *     description: User preferences management
  */
 
 // Base routes
@@ -42,5 +51,10 @@ router.use('/controller-types', controllerRoutes.types);
 router.use('/collector-types', controllerRoutes.collectorTypes);
 router.use('/exports', exportRoutes);
 router.use('/tax-liens', taxLienRoutes);
+
+// New layout and preferences routes
+router.use('/layouts', layoutRoutes);
+router.use('/counties', countyRoutes);
+router.use('/user/preferences', userPreferencesRoutes);
 
 export default router; 

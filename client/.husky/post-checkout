@@ -1,0 +1,17 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Check if test files were touched
+# $1 is previous HEAD
+# $2 is new HEAD
+changed_files=$(git diff --name-only $1 $2)
+
+# Check if any test files were modified or the person is checking out a branch with tests
+echo "$changed_files" | grep -q "\.test\." || echo "$changed_files" | grep -q "__tests__"
+if [ $? -eq 0 ]; then
+  # Test files were changed, show guide
+  echo -e "\n\033[1;36m🧪 Test Files Detected in this Branch\033[0m"
+  echo -e "\033[33mThis branch contains test files or changes to tests."
+  echo -e "Please review TEST-GUIDE.md for our testing standards.\033[0m"
+  echo -e "Remember to check the test plan before modifying tests!\n"
+fi 

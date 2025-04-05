@@ -14,6 +14,7 @@ A comprehensive real estate investment platform with property listing, user mana
 - Data Collection Framework with configurable collectors
 - Interactive US Map visualization
 - Export functionality for property data
+- MongoDB-powered layout and preferences persistence
 
 ## Architecture
 
@@ -26,6 +27,8 @@ The platform consists of several key components:
 - **Logging System**: Winston-based structured logging with analytics
 - **Collection Framework**: Modular data collection system
 - **GitHub Workflows**: Automated CI/CD pipelines
+- **Layout Persistence**: MongoDB schema for multi-frame layout configurations
+- **User Preferences**: MongoDB schema for user-specific settings
 
 ## Testing
 
@@ -35,8 +38,21 @@ The platform has a comprehensive testing strategy to ensure reliability and qual
 - **Integration Testing**: Testing interactions between components
 - **End-to-End Testing**: Testing complete user workflows
 - **Performance Testing**: Ensuring the system meets performance requirements
+- **Database Testing**: MongoDB integration testing with in-memory database
 
-For detailed information about our testing approach, refer to the [Test Plan](./docs/test-plan.md) which documents all test cases, test execution procedures, and quality metrics.
+The project implements a standardized testing approach with the following key features:
+- Unique test case IDs that link to the test plan
+- Flattened test directory structure with consistent naming
+- Test files are named with test case IDs (e.g., TC101_components_*)
+- Automated validation through pre-commit and pre-push hooks
+- Pre-test validation that runs before test execution
+- Comprehensive test generators and validation tools
+- Helper scripts for fixing imports and formatting issues
+
+For detailed information about our testing approach, refer to:
+- [TEST-GUIDE.md](./client/TEST-GUIDE.md) - Quick reference guide for developers
+- [TESTING.md](./client/TESTING.md) - Comprehensive testing documentation
+- [test-plan.json](./client/test-plan.json) - Complete test case catalog with requirements traceability
 
 ## Branch Structure
 
@@ -48,6 +64,7 @@ The repository follows a structured branching strategy:
   - `feature/inventory-consolidated` - Inventory management with collector framework
   - `feature/export-consolidated` - Data export functionality
   - `feature/map-consolidated` - Interactive map visualization
+  - `feature/mongodb-layout-api` - MongoDB integration for layout persistence
 
 ### Branch Protection Rules
 
@@ -129,6 +146,35 @@ For an interactive menu of all available commands:
 - `server\scripts\start-server.ps1` - Starts just the server
 - `server\scripts\create-usmap.ps1` - Initializes the US Map in the database
 - `server\scripts\check-swagger.ps1` - Checks if Swagger documentation is working
+- `fix-test-imports.ps1` - Fixes import paths in test files
+- `fix-test-quotes.ps1` - Fixes quote issues in test files
+
+## MongoDB Integration
+
+The platform uses MongoDB to store and manage various types of data:
+
+### MongoDB Schema
+
+- **LayoutConfig**: Stores multi-frame layout configurations
+  - Layout types (single, dual, tri, quad, advanced)
+  - Panel configurations and positions
+  - User-specific layouts
+  - Default system layouts
+
+- **UserPreferences**: Stores user-specific application settings
+  - Theme preferences
+  - Dashboard configurations
+  - Filter presets
+  - Panel state persistence
+
+### Layout Persistence
+
+The platform provides seamless layout persistence:
+
+1. **User Layouts**: Save and load custom layouts
+2. **Panel States**: Remember panel positions, sizes, and content
+3. **Filter Configurations**: Save filter presets for quick access
+4. **Cross-Device Sync**: Access your layouts from any device
 
 ## Accessing the Application
 
@@ -187,6 +233,9 @@ The platform includes comprehensive documentation:
 - [Filter System Documentation](./docs/filter-system/architecture.md) - Filter system architecture and best practices
 - [Log Dashboard Guide](./admin-dashboard/docs/logs-dashboard-guide.md) - Guide to using the log visualization dashboard
 - [Log Tools Documentation](./server/src/scripts/README.md) - CLI tools for log management
+- [TEST-GUIDE.md](./client/TEST-GUIDE.md) - Quick reference for test standards
+- [TESTING.md](./client/TESTING.md) - Comprehensive testing methodology
+- [test-plan.json](./client/test-plan.json) - Test case catalog
 - [Comprehensive Test Plan](./docs/test-plan.md) - Detailed test cases and quality assurance procedures
 
 ## Development
@@ -199,7 +248,11 @@ The platform includes comprehensive documentation:
 │   │   ├── controllers/     # Route controllers
 │   │   ├── middleware/      # Express middleware
 │   │   ├── models/          # Mongoose models
+│   │   │   ├── LayoutConfig.ts  # MongoDB layout schema
+│   │   │   └── UserPreferences.ts # MongoDB preferences schema
 │   │   ├── routes/          # Express routes
+│   │   │   ├── layoutRoutes.ts # Layout API endpoints
+│   │   │   └── userPreferencesRoutes.ts # Preferences API
 │   │   ├── collectors/      # Data collection modules
 │   │   ├── scripts/         # CLI utilities
 │   │   ├── utils/           # Utility functions
@@ -211,8 +264,14 @@ The platform includes comprehensive documentation:
 │   │   ├── components/      # React components
 │   │   │   ├── common/      # Shared components
 │   │   │   ├── inventory/   # Inventory management
+│   │   │   ├── multiframe/  # Multi-frame layout components
 │   │   │   └── map/         # Map visualization
 │   │   ├── hooks/           # Custom React hooks
+│   │   ├── context/         # React context providers
+│   │   ├── test/            # Test utilities 
+│   │   │   ├── mocks/       # Mock components for testing
+│   │   │   └── setup.ts     # Test setup configuration
+│   │   ├── _tests_/         # Test files with TC{ID} prefixes
 │   │   └── App.tsx          # Main application
 │   └── tsconfig.json        # TypeScript configuration
 ├── .github/                # GitHub configuration

@@ -1,0 +1,52 @@
+{
+  "testCases": [
+    {
+      "id": "TC3001",
+      "description": "Verify LayoutConfig model creates a new layout config",
+      "requirements": ["REQ-DB-101"],
+      "priority": "high"
+    },
+    {
+      "id": "TC3002",
+      "description": "Verify LayoutConfig model handles nested panel position and size",
+      "requirements": ["REQ-DB-102"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC3101",
+      "description": "Verify UserPreferences model creates user preference document",
+      "requirements": ["REQ-DB-201"],
+      "priority": "high"
+    },
+    {
+      "id": "TC3102",
+      "description": "Verify UserPreferences model updates user themes correctly",
+      "requirements": ["REQ-DB-202"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC3201",
+      "description": "Verify layoutController creates new layout",
+      "requirements": ["REQ-API-101"],
+      "priority": "high"
+    },
+    {
+      "id": "TC3202",
+      "description": "Verify layoutController retrieves layouts for user",
+      "requirements": ["REQ-API-102"],
+      "priority": "high"
+    },
+    {
+      "id": "TC3203",
+      "description": "Verify layoutController updates existing layout",
+      "requirements": ["REQ-API-103"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC3204",
+      "description": "Verify layoutController deletes layout",
+      "requirements": ["REQ-API-104"],
+      "priority": "medium"
+    }
+  ]
+} 

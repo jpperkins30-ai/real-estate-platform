@@ -1,6 +1,22 @@
 # Testing Guide
 
-> **Note**: This document provides a general overview of testing practices. For a comprehensive list of test cases and detailed testing procedures, refer to the [Test Plan](./test-plan.md).
+> **Note**: This document provides a general overview of testing practices. For details on our standardized testing approach, refer to [TEST-GUIDE.md](../client/TEST-GUIDE.md) and [TESTING.md](../client/TESTING.md).
+
+## Standardized Testing Approach
+
+The Real Estate Platform has implemented a standardized testing methodology that all developers must follow. Key elements of this approach include:
+
+1. **Test Case ID Tracking**: All tests include unique identifiers (e.g., "TC101") that link to the test plan
+2. **Flattened Test Structure**: Tests are organized in a flat directory structure with consistent naming
+3. **Automated Validation**: Pre-commit hooks, pre-test validation, and CI/CD integration ensure tests follow standards
+4. **Comprehensive Test Plan**: All test cases are documented in [test-plan.json](../client/test-plan.json)
+
+Before writing any tests, please review:
+- [TEST-GUIDE.md](../client/TEST-GUIDE.md) - Quick reference guide for the testing process
+- [TESTING.md](../client/TESTING.md) - Comprehensive testing documentation and standards
+- [test-plan.json](../client/test-plan.json) - Machine-readable test case catalog
+
+Our testing system includes multiple enforcement layers to ensure standards are followed throughout the development process.
 
 ## Overview
 
@@ -21,10 +37,10 @@ Tests are organized in the `__tests__` directory, which mirrors the structure of
 
 ```
 client/src/__tests__/
-├── components/       # Component tests
-├── hooks/            # Custom React hook tests
-├── integration/      # Integration tests
-├── services/         # Service layer tests
+├── components_*       # Component tests with flattened structure using underscores
+├── hooks_*            # Custom React hook tests with flattened structure
+├── integration_*      # Integration tests with flattened structure
+├── services_*         # Service layer tests with flattened structure
 └── setup/            # Test setup utilities
 ```
 
@@ -40,7 +56,7 @@ npm test
 npm test -- --coverage
 
 # Run a specific test file
-npm test -- src/__tests__/hooks/useAdvancedLayout.test.tsx
+npm test -- src/__tests__/hooks_useAdvancedLayout.test.tsx
 
 # Run tests without watching
 npm test -- --no-watch
@@ -511,7 +527,7 @@ describe('MultiFrameContainer', () => {
 
 For more detailed information on testing specific components, please refer to:
 
-- [Multiframe Testing Guide](../src/__tests__/components/multiframe/README.md)
+- [Testing Guide with Multiframe Instructions](../src/__tests__/README.md)
 - [Component Architecture Documentation](./architecture/components.md)
 
 ### Testing Stateful Components

@@ -40,14 +40,18 @@ export const PanelHeader: React.FC<PanelHeaderProps> = ({
     onAction({ type: 'close' });
   }, [onAction]);
   
+  const headerClassNames = [
+    'panel-header',
+    className,
+    draggable ? 'draggable' : ''
+  ].filter(Boolean).join(' ');
+  
   return (
-    <div 
-      className={`panel-header ${className} ${draggable ? 'draggable' : ''}`}
-      data-testid="panel-header"
-    >
+    <div className={headerClassNames} data-testid="panel-header">
       <h3 className="panel-title">{title}</h3>
       <div className="panel-actions">
         {customControls}
+        
         {showControls && (
           <>
             <button
@@ -66,27 +70,29 @@ export const PanelHeader: React.FC<PanelHeaderProps> = ({
             >
               <span className="export-icon"></span>
             </button>
-            {showMaximizeButton && (
-              <button
-                className={`action-button ${isMaximized ? 'active' : ''}`}
-                onClick={handleMaximizeClick}
-                aria-label={isMaximized ? 'Restore panel' : 'Maximize panel'}
-                data-testid="maximize-button"
-              >
-                <span className={isMaximized ? 'restore-icon' : 'maximize-icon'}></span>
-              </button>
-            )}
-            {showCloseButton && (
-              <button
-                className="action-button"
-                onClick={handleCloseClick}
-                aria-label="Close panel"
-                data-testid="close-button"
-              >
-                <span className="close-icon"></span>
-              </button>
-            )}
           </>
+        )}
+        
+        {showControls && showMaximizeButton && (
+          <button
+            className={`action-button ${isMaximized ? 'active' : ''}`}
+            onClick={handleMaximizeClick}
+            aria-label={isMaximized ? 'Restore panel' : 'Maximize panel'}
+            data-testid="maximize-button"
+          >
+            <span className={isMaximized ? 'restore-icon' : 'maximize-icon'}></span>
+          </button>
+        )}
+        
+        {showCloseButton && (
+          <button
+            className="action-button"
+            onClick={handleCloseClick}
+            aria-label="Close panel"
+            data-testid="close-button"
+          >
+            <span className="close-icon"></span>
+          </button>
         )}
       </div>
     </div>
