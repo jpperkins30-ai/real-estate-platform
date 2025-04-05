@@ -1,0 +1,173 @@
+name: API Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    - cron: '0 0 * * *'  # Run daily at midnight
+
+jobs:
+  api-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: |
+        npm ci
+        npm install -g newman newman-reporter-htmlextra
+    
+    - name: Start MongoDB
+      uses: supercharge/mongodb-github-action@1.10.0
+      with:
+        mongodb-version: '6.0'
+        mongodb-port: 27017
+    
+    - name: Start API server
+      run: |
+        npm run build
+        npm run start &
+        echo "Waiting for server to start..."
+        sleep 15  # Give the server time to start
+      env:
+        NODE_ENV: test
+        MONGODB_URI: mongodb://localhost:27017/real-estate-test
+        PORT: 5000
+        JWT_SECRET: github-actions-test-secret
+      
+    - name: Create Node.js runner for API tests
+      run: |
+        cat > api-test-runner.js << 'EOF'
+        const fs = require('fs');
+        const path = require('path');
+        const newman = require('newman');
+        
+        // Configuration
+        const config = {
+          collectionsDir: path.join(__dirname, 'postman/collections'),
+          environmentsDir: path.join(__dirname, 'postman/environments'),
+          reportsDir: path.join(__dirname, 'postman/reports'),
+          environmentFile: process.env.ENV_FILE || 'testing.json',
+          collections: [
+            'auth.json',
+            'layouts.json',
+            'preferences.json',
+            'health-check.json',
+            'e2e-flow.json'
+          ]
+        };
+        
+        // Ensure reports directory exists
+        if (!fs.existsSync(config.reportsDir)) {
+          fs.mkdirSync(config.reportsDir, { recursive: true });
+        }
+        
+        // Flag to track failures
+        let hasFailures = false;
+        
+        // Run each collection
+        async function runCollections() {
+          for (const collectionFile of config.collections) {
+            const collectionPath = path.join(config.collectionsDir, collectionFile);
+            const collectionName = path.basename(collectionFile, '.json');
+            const reportPath = path.join(config.reportsDir, `${collectionName}-report.html`);
+            const environmentPath = path.join(config.environmentsDir, config.environmentFile);
+            
+            console.log(`Running collection: ${collectionName}`);
+            
+            // Check if files exist
+            if (!fs.existsSync(collectionPath)) {
+              console.error(`Collection file not found: ${collectionPath}`);
+              hasFailures = true;
+              continue;
+            }
+            
+            if (!fs.existsSync(environmentPath)) {
+              console.error(`Environment file not found: ${environmentPath}`);
+              hasFailures = true;
+              continue;
+            }
+            
+            // Run the collection
+            await new Promise((resolve) => {
+              newman.run({
+                collection: require(collectionPath),
+                environment: require(environmentPath),
+                reporters: ['cli', 'htmlextra'],
+                reporter: {
+                  htmlextra: {
+                    export: reportPath,
+                    template: 'default',
+                    showOnlyFails: false,
+                    noSyntaxHighlighting: false,
+                    testPaging: true,
+                    browserTitle: `API Tests - ${collectionName}`,
+                    title: `Real Estate Platform API - ${collectionName} Tests`
+                  }
+                }
+              }, function (err, summary) {
+                if (err) {
+                  console.error(`Error running collection ${collectionName}:`, err);
+                  hasFailures = true;
+                } else if (summary.run.failures.length > 0) {
+                  console.error(`Collection ${collectionName} had ${summary.run.failures.length} failures.`);
+                  hasFailures = true;
+                } else {
+                  console.log(`Collection ${collectionName} completed successfully.`);
+                }
+                resolve();
+              });
+            });
+          }
+          
+          // Write status file for GitHub Actions to check
+          if (hasFailures) {
+            fs.writeFileSync(path.join(config.reportsDir, 'failed-tests.txt'), 'Tests failed');
+            process.exit(1);
+          } else {
+            console.log('All tests passed successfully!');
+          }
+        }
+        
+        // Run all collections
+        runCollections().catch(err => {
+          console.error('Error running tests:', err);
+          process.exit(1);
+        });
+        EOF
+    
+    - name: Run API tests
+      run: |
+        mkdir -p postman/reports
+        node api-test-runner.js
+      env:
+        ENV_FILE: testing.json
+        GENERATE_TEST_DATA: true
+        CI: true
+        API_BASE_URL: http://localhost:5000/api
+        AUTH_EMAIL: test@example.com
+        AUTH_PASSWORD: Test@123456
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: api-test-reports
+        path: postman/reports
+        if-no-files-found: warn
+    
+    - name: Check test results
+      run: |
+        if [ -f postman/reports/failed-tests.txt ]; then
+          echo "API tests failed. See reports for details."
+          exit 1
+        fi 

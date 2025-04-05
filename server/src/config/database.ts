@@ -11,7 +11,23 @@ import config from '../config';
  */
 export const connectDB = async (): Promise<typeof mongoose> => {
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/real-estate-platform');
+    const mongodbUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/real-estate-platform';
+    
+    // Connection options for both Atlas and local MongoDB
+    // For Atlas, most options are included in the connection string
+    const options: mongoose.ConnectOptions = {
+      serverSelectionTimeoutMS: 5000, // 5 seconds timeout
+      connectTimeoutMS: 10000, // 10 seconds
+    };
+    
+    // If using MongoDB Atlas (SRV connection string)
+    if (mongodbUri.includes('mongodb+srv')) {
+      logger.info('Connecting to MongoDB Atlas...');
+    } else {
+      logger.info('Connecting to local MongoDB...');
+    }
+    
+    const conn = await mongoose.connect(mongodbUri, options);
     
     logger.info(`MongoDB Connected: ${conn.connection.host}`);
     

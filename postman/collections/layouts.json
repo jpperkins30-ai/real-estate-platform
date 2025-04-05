@@ -1,0 +1,359 @@
+{
+  "info": {
+    "_postman_id": "layouts_collection_123456",
+    "name": "Layouts",
+    "description": "API endpoints for managing layout configurations",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get All Layouts",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const response = pm.response.json();",
+              "",
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Response is an array\", function () {",
+              "    pm.expect(Array.isArray(response)).to.be.true;",
+              "});",
+              "",
+              "pm.test(\"Each layout has required properties\", function () {",
+              "    if (response.length > 0) {",
+              "        pm.expect(response[0]).to.have.property('id');",
+              "        pm.expect(response[0]).to.have.property('name');",
+              "        pm.expect(response[0]).to.have.property('type');",
+              "        pm.expect(response[0]).to.have.property('panels');",
+              "        pm.expect(Array.isArray(response[0].panels)).to.be.true;",
+              "    }",
+              "});",
+              "",
+              "// Store first layout ID for subsequent tests if available",
+              "if (response.length > 0) {",
+              "    pm.environment.set(\"layoutId\", response[0].id);",
+              "    console.log(\"Layout ID set to: \" + response[0].id);",
+              "}",
+              ""
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/layouts",
+          "host": ["{{baseUrl}}"],
+          "path": ["layouts"]
+        },
+        "description": "Get all layouts for the current user"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Layout By ID",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const response = pm.response.json();",
+              "",
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Layout has correct ID\", function () {",
+              "    pm.expect(response).to.have.property('id');",
+              "    pm.expect(response.id).to.eql(pm.environment.get(\"layoutId\"));",
+              "});",
+              "",
+              "pm.test(\"Layout has required properties\", function () {",
+              "    pm.expect(response).to.have.property('name');",
+              "    pm.expect(response).to.have.property('type');",
+              "    pm.expect(response).to.have.property('panels');",
+              "    pm.expect(Array.isArray(response.panels)).to.be.true;",
+              "});",
+              "",
+              "pm.test(\"Panels have required properties\", function () {",
+              "    if (response.panels.length > 0) {",
+              "        pm.expect(response.panels[0]).to.have.property('id');",
+              "        pm.expect(response.panels[0]).to.have.property('contentType');",
+              "        pm.expect(response.panels[0]).to.have.property('title');",
+              "    }",
+              "});",
+              ""
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/layouts/{{layoutId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["layouts", "{{layoutId}}"]
+        },
+        "description": "Get a specific layout by ID"
+      },
+      "response": []
+    },
+    {
+      "name": "Create Layout",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const response = pm.response.json();",
+              "",
+              "pm.test(\"Status code is 201\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test(\"Layout has been created with correct properties\", function () {",
+              "    pm.expect(response).to.have.property('id');",
+              "    pm.expect(response).to.have.property('name');",
+              "    pm.expect(response.name).to.eql(\"Test Layout\");",
+              "    pm.expect(response).to.have.property('type');",
+              "    pm.expect(response.type).to.eql(\"quad\");",
+              "    pm.expect(response).to.have.property('panels');",
+              "    pm.expect(response.panels.length).to.eql(4);",
+              "});",
+              "",
+              "// Store the new layout ID for subsequent tests",
+              "pm.environment.set(\"layoutId\", response.id);",
+              "console.log(\"New layout ID set to: \" + response.id);",
+              ""
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n\t\"name\": \"Test Layout\",\n\t\"description\": \"A test layout created via API\",\n\t\"type\": \"quad\",\n\t\"panels\": [\n\t\t{\n\t\t\t\"id\": \"panel1\",\n\t\t\t\"contentType\": \"map\",\n\t\t\t\"title\": \"Map Panel\",\n\t\t\t\"position\": { \"row\": 0, \"col\": 0 },\n\t\t\t\"size\": { \"width\": 50, \"height\": 50 }\n\t\t},\n\t\t{\n\t\t\t\"id\": \"panel2\",\n\t\t\t\"contentType\": \"property\",\n\t\t\t\"title\": \"Property Panel\",\n\t\t\t\"position\": { \"row\": 0, \"col\": 1 },\n\t\t\t\"size\": { \"width\": 50, \"height\": 50 }\n\t\t},\n\t\t{\n\t\t\t\"id\": \"panel3\",\n\t\t\t\"contentType\": \"filter\",\n\t\t\t\"title\": \"Filter Panel\",\n\t\t\t\"position\": { \"row\": 1, \"col\": 0 },\n\t\t\t\"size\": { \"width\": 50, \"height\": 50 }\n\t\t},\n\t\t{\n\t\t\t\"id\": \"panel4\",\n\t\t\t\"contentType\": \"stats\",\n\t\t\t\"title\": \"Stats Panel\",\n\t\t\t\"position\": { \"row\": 1, \"col\": 1 },\n\t\t\t\"size\": { \"width\": 50, \"height\": 50 }\n\t\t}\n\t]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/layouts",
+          "host": ["{{baseUrl}}"],
+          "path": ["layouts"]
+        },
+        "description": "Create a new layout configuration"
+      },
+      "response": []
+    },
+    {
+      "name": "Update Layout",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const response = pm.response.json();",
+              "",
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Layout has been updated correctly\", function () {",
+              "    pm.expect(response).to.have.property('id');",
+              "    pm.expect(response.id).to.eql(pm.environment.get(\"layoutId\"));",
+              "    pm.expect(response).to.have.property('name');",
+              "    pm.expect(response.name).to.eql(\"Updated Test Layout\");",
+              "    pm.expect(response).to.have.property('description');",
+              "    pm.expect(response.description).to.eql(\"This layout was updated via API\");",
+              "});",
+              "",
+              "pm.test(\"Panel count is maintained\", function () {",
+              "    pm.expect(response).to.have.property('panels');",
+              "    pm.expect(response.panels.length).to.eql(4);",
+              "});",
+              ""
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n\t\"name\": \"Updated Test Layout\",\n\t\"description\": \"This layout was updated via API\",\n\t\"type\": \"quad\",\n\t\"panels\": [\n\t\t{\n\t\t\t\"id\": \"panel1\",\n\t\t\t\"contentType\": \"map\",\n\t\t\t\"title\": \"Map Panel\",\n\t\t\t\"position\": { \"row\": 0, \"col\": 0 },\n\t\t\t\"size\": { \"width\": 60, \"height\": 60 }\n\t\t},\n\t\t{\n\t\t\t\"id\": \"panel2\",\n\t\t\t\"contentType\": \"property\",\n\t\t\t\"title\": \"Property Details\",\n\t\t\t\"position\": { \"row\": 0, \"col\": 1 },\n\t\t\t\"size\": { \"width\": 40, \"height\": 60 }\n\t\t},\n\t\t{\n\t\t\t\"id\": \"panel3\",\n\t\t\t\"contentType\": \"filter\",\n\t\t\t\"title\": \"Search Filters\",\n\t\t\t\"position\": { \"row\": 1, \"col\": 0 },\n\t\t\t\"size\": { \"width\": 60, \"height\": 40 }\n\t\t},\n\t\t{\n\t\t\t\"id\": \"panel4\",\n\t\t\t\"contentType\": \"stats\",\n\t\t\t\"title\": \"Market Statistics\",\n\t\t\t\"position\": { \"row\": 1, \"col\": 1 },\n\t\t\t\"size\": { \"width\": 40, \"height\": 40 }\n\t\t}\n\t]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/layouts/{{layoutId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["layouts", "{{layoutId}}"]
+        },
+        "description": "Update an existing layout"
+      },
+      "response": []
+    },
+    {
+      "name": "Clone Layout",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const response = pm.response.json();",
+              "",
+              "pm.test(\"Status code is 201\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test(\"Cloned layout has new ID\", function () {",
+              "    pm.expect(response).to.have.property('id');",
+              "    pm.expect(response.id).to.not.eql(pm.environment.get(\"layoutId\"));",
+              "});",
+              "",
+              "pm.test(\"Cloned layout has correct name\", function () {",
+              "    pm.expect(response).to.have.property('name');",
+              "    pm.expect(response.name).to.eql(\"Copy of Updated Test Layout\");",
+              "});",
+              "",
+              "pm.test(\"Panel structure is preserved\", function () {",
+              "    pm.expect(response).to.have.property('panels');",
+              "    pm.expect(response.panels.length).to.eql(4);",
+              "    ",
+              "    // Check if panel IDs are unique from source",
+              "    const originalId = pm.environment.get(\"layoutId\");",
+              "    pm.expect(response.id).to.not.eql(originalId);",
+              "});",
+              "",
+              "// Store the cloned layout ID",
+              "const clonedLayoutId = response.id;",
+              "pm.environment.set(\"clonedLayoutId\", clonedLayoutId);",
+              "console.log(\"Cloned layout ID set to: \" + clonedLayoutId);",
+              ""
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n\t\"name\": \"Copy of Updated Test Layout\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/layouts/{{layoutId}}/clone",
+          "host": ["{{baseUrl}}"],
+          "path": ["layouts", "{{layoutId}}", "clone"]
+        },
+        "description": "Clone an existing layout"
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Layout",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// Verify layout was deleted by attempting to fetch it",
+              "const getRequest = {",
+              "    url: pm.environment.get(\"baseUrl\") + '/layouts/' + pm.environment.get(\"clonedLayoutId\"),",
+              "    method: 'GET',",
+              "    header: {",
+              "        'Authorization': 'Bearer ' + pm.environment.get(\"authToken\")",
+              "    }",
+              "};",
+              "",
+              "pm.sendRequest(getRequest, function (err, res) {",
+              "    pm.test(\"Layout is no longer accessible\", function () {",
+              "        pm.expect(res.code).to.eql(404);",
+              "    });",
+              "});",
+              ""
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/layouts/{{clonedLayoutId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["layouts", "{{clonedLayoutId}}"]
+        },
+        "description": "Delete a layout configuration"
+      },
+      "response": []
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  }
+} 

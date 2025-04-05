@@ -10,7 +10,13 @@
     "client": "cd client && npm run dev",
     "build": "tsc -p server/tsconfig.json",
     "lint": "eslint 'server/src/**/*.{ts,tsx}'",
-    "test": "jest"
+    "test": "jest",
+    "test:api": "powershell -File .\\run.ps1 -RunApiTests",
+    "test:api:dev": "powershell -File .\\run.ps1 -RunApiTests -ApiEnvironment development",
+    "test:api:testing": "powershell -File .\\run.ps1 -RunApiTests -ApiEnvironment testing",
+    "test:api:data": "powershell -File .\\run.ps1 -RunApiTests -GenerateApiTestData",
+    "start:all": "powershell -File .\\run.ps1 -StartServer -StartClient",
+    "start:test:all": "powershell -File .\\run.ps1 -StartServer -StartClient -RunTests -RunApiTests"
   },
   "dependencies": {
     "@tanstack/react-query": "^4.35.3",
@@ -59,9 +65,12 @@
     "@types/uuid": "^9.0.7",
     "@typescript-eslint/eslint-plugin": "^6.15.0",
     "@typescript-eslint/parser": "^6.15.0",
+    "ajv": "^8.12.0",
     "eslint": "^8.56.0",
     "husky": "^9.1.7",
     "jest": "^29.7.0",
+    "newman": "^6.0.0",
+    "newman-reporter-htmlextra": "^1.22.11",
     "nodemon": "^3.0.2",
     "supertest": "^6.3.3",
     "ts-jest": "^29.1.1",

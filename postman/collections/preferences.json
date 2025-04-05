@@ -1,0 +1,195 @@
+{
+  "info": {
+    "_postman_id": "preferences_collection_123456",
+    "name": "User Preferences",
+    "description": "API endpoints for managing user preferences",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get User Preferences",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const response = pm.response.json();",
+              "",
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Response has theme preferences\", function () {",
+              "    pm.expect(response).to.have.property('theme');",
+              "    pm.expect(response.theme).to.have.property('colorMode');",
+              "    pm.expect(response.theme).to.have.property('mapStyle');",
+              "});",
+              "",
+              "pm.test(\"Response has panel preferences\", function () {",
+              "    pm.expect(response).to.have.property('panel');",
+              "    pm.expect(response.panel).to.have.property('defaultContentTypes');",
+              "    pm.expect(response.panel).to.have.property('showPanelHeader');",
+              "});",
+              "",
+              "pm.test(\"Response has layout preferences\", function () {",
+              "    pm.expect(response).to.have.property('layout');",
+              "    pm.expect(response.layout).to.have.property('defaultLayout');",
+              "    pm.expect(response.layout).to.have.property('saveLayoutOnExit');",
+              "});",
+              "",
+              "pm.test(\"Response has filter preferences\", function () {",
+              "    pm.expect(response).to.have.property('filter');",
+              "    pm.expect(response.filter).to.have.property('showFilterPanel');",
+              "    pm.expect(response.filter).to.have.property('applyFiltersAutomatically');",
+              "});",
+              ""
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/user/preferences",
+          "host": ["{{baseUrl}}"],
+          "path": ["user", "preferences"]
+        },
+        "description": "Get the current user's preferences"
+      },
+      "response": []
+    },
+    {
+      "name": "Update User Preferences",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const response = pm.response.json();",
+              "",
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Theme preferences updated correctly\", function () {",
+              "    pm.expect(response).to.have.property('theme');",
+              "    pm.expect(response.theme.colorMode).to.eql('dark');",
+              "    pm.expect(response.theme.mapStyle).to.eql('satellite');",
+              "    pm.expect(response.theme.accentColor).to.eql('#ff5722');",
+              "});",
+              "",
+              "pm.test(\"Panel preferences updated correctly\", function () {",
+              "    pm.expect(response).to.have.property('panel');",
+              "    pm.expect(response.panel.showPanelHeader).to.eql(true);",
+              "    pm.expect(response.panel.enablePanelResizing).to.eql(true);",
+              "});",
+              "",
+              "pm.test(\"Layout preferences updated correctly\", function () {",
+              "    pm.expect(response).to.have.property('layout');",
+              "    pm.expect(response.layout.saveLayoutOnExit).to.eql(true);",
+              "});",
+              ""
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"theme\": {\n    \"colorMode\": \"dark\",\n    \"mapStyle\": \"satellite\",\n    \"accentColor\": \"#ff5722\",\n    \"fontSize\": \"medium\"\n  },\n  \"panel\": {\n    \"defaultContentTypes\": {\n      \"top-left\": \"map\",\n      \"top-right\": \"property\",\n      \"bottom-left\": \"filter\",\n      \"bottom-right\": \"stats\"\n    },\n    \"showPanelHeader\": true,\n    \"enablePanelResizing\": true,\n    \"enablePanelDragging\": true\n  },\n  \"layout\": {\n    \"defaultLayout\": \"{{layoutId}}\",\n    \"saveLayoutOnExit\": true,\n    \"rememberLastLayout\": true\n  },\n  \"filter\": {\n    \"defaultFilters\": {},\n    \"showFilterPanel\": true,\n    \"applyFiltersAutomatically\": false\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/user/preferences",
+          "host": ["{{baseUrl}}"],
+          "path": ["user", "preferences"]
+        },
+        "description": "Update user preferences"
+      },
+      "response": []
+    },
+    {
+      "name": "Reset User Preferences",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const response = pm.response.json();",
+              "",
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Preferences reset to default values\", function () {",
+              "    pm.expect(response).to.have.property('theme');",
+              "    pm.expect(response.theme.colorMode).to.eql('system');",
+              "    pm.expect(response.theme.mapStyle).to.eql('standard');",
+              "    pm.expect(response.theme.fontSize).to.eql('medium');",
+              "});",
+              "",
+              "pm.test(\"Panel preferences reset to default values\", function () {",
+              "    pm.expect(response).to.have.property('panel');",
+              "    pm.expect(response.panel.showPanelHeader).to.eql(true);",
+              "    pm.expect(response.panel.enablePanelResizing).to.eql(true);",
+              "    pm.expect(response.panel.enablePanelDragging).to.eql(true);",
+              "});",
+              "",
+              "pm.test(\"Filter preferences reset to default values\", function () {",
+              "    pm.expect(response).to.have.property('filter');",
+              "    pm.expect(response.filter.showFilterPanel).to.eql(true);",
+              "    pm.expect(response.filter.applyFiltersAutomatically).to.eql(true);",
+              "});",
+              ""
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/user/preferences/reset",
+          "host": ["{{baseUrl}}"],
+          "path": ["user", "preferences", "reset"]
+        },
+        "description": "Reset user preferences to default values"
+      },
+      "response": []
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  }
+} 

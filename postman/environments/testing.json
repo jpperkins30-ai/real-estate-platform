@@ -1,0 +1,52 @@
+{
+  "id": "env_test_123456",
+  "name": "Testing",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "https://test-api.realestate-platform.com/api",
+      "enabled": true
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "layoutId",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "userEmail",
+      "value": "test@example.com",
+      "enabled": true
+    },
+    {
+      "key": "userPassword",
+      "value": "Test@123456",
+      "enabled": true
+    },
+    {
+      "key": "userFirstName",
+      "value": "Test",
+      "enabled": true
+    },
+    {
+      "key": "userLastName",
+      "value": "User",
+      "enabled": true
+    },
+    {
+      "key": "clonedLayoutId",
+      "value": "",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment"
+} 
