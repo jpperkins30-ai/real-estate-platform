@@ -1,40 +1,32 @@
-import React, { createContext, useCallback, useContext, useRef } from 'react';
+import React, { createContext, useContext, useCallback, useRef } from 'react';
 
+// Define the event type
 export interface PanelSyncEvent {
   type: string;
   payload: any;
   source: string;
-  timestamp?: number;
+  timestamp: number;
 }
 
+// Define callback type
 export type PanelSyncCallback = (event: PanelSyncEvent) => void;
 
+// Define context type
 interface PanelSyncContextType {
   broadcast: (type: string, payload: any, source: string) => void;
   subscribe: (callback: PanelSyncCallback) => () => void;
-  isSubscribed?: (callback: PanelSyncCallback) => boolean;
-  getEventHistory: () => PanelSyncEvent[];
+  isSubscribed: (callback: PanelSyncCallback) => boolean;
 }
 
-export const PanelSyncContext = createContext<PanelSyncContextType | null>(null);
+// Create context
+const PanelSyncContext = createContext<PanelSyncContextType | undefined>(undefined);
 
-export function usePanelSync() {
-  const context = useContext(PanelSyncContext);
-  
-  if (!context) {
-    throw new Error('usePanelSync must be used within a PanelSyncProvider');
-  }
-  
-  return context;
-}
-
+// Provider component
 export const PanelSyncProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Use ref for listeners to avoid re-renders
-  const listenersRef = useRef<PanelSyncCallback[]>([]);
-  // Event history
-  const eventHistoryRef = useRef<PanelSyncEvent[]>([]);
+  const listenersRef = useRef<Set<PanelSyncCallback>>(new Set());
   
-  // Broadcast events to all subscribers
+  // Broadcast event to all subscribers
   const broadcast = useCallback((type: string, payload: any, source: string) => {
     const event: PanelSyncEvent = {
       type,
@@ -42,9 +34,6 @@ export const PanelSyncProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       source,
       timestamp: Date.now()
     };
-    
-    // Add to history
-    eventHistoryRef.current = [event, ...eventHistoryRef.current.slice(0, 9)]; // Keep last 10 events
     
     // Notify all listeners
     listenersRef.current.forEach(listener => {
@@ -58,35 +47,31 @@ export const PanelSyncProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   
   // Subscribe to events
   const subscribe = useCallback((callback: PanelSyncCallback) => {
-    listenersRef.current.push(callback);
+    listenersRef.current.add(callback);
     
     // Return unsubscribe function
     return () => {
-      listenersRef.current = listenersRef.current.filter(cb => cb !== callback);
+      listenersRef.current.delete(callback);
     };
   }, []);
   
   // Check if callback is subscribed
   const isSubscribed = useCallback((callback: PanelSyncCallback) => {
-    return listenersRef.current.includes(callback);
+    return listenersRef.current.has(callback);
   }, []);
-  
-  // Get event history
-  const getEventHistory = useCallback(() => {
-    return [...eventHistoryRef.current];
-  }, []);
-  
-  // Context value
-  const contextValue = {
-    broadcast,
-    subscribe,
-    isSubscribed,
-    getEventHistory
-  };
   
   return (
-    <PanelSyncContext.Provider value={contextValue}>
+    <PanelSyncContext.Provider value={{ broadcast, subscribe, isSubscribed }}>
       {children}
     </PanelSyncContext.Provider>
   );
+};
+
+// Custom hook to use the context
+export const usePanelSync = () => {
+  const context = useContext(PanelSyncContext);
+  if (context === undefined) {
+    throw new Error('usePanelSync must be used within a PanelSyncProvider');
+  }
+  return context;
 }; 

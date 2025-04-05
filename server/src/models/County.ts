@@ -1,61 +1,60 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-export interface CountyStats {
-  medianHomePrice: number;
-  avgDaysOnMarket: number;
-  listingCount: number;
-  priceChangeYoY: number;
-  lastUpdated: Date;
-}
-
 export interface ICounty extends Document {
-  stateId: string;
   name: string;
+  stateId: mongoose.Types.ObjectId;
   fips: string;
-  boundaries: any; // GeoJSON
-  population: number;
-  propertyCount: number;
-  stats: CountyStats;
+  boundaries?: any; // GeoJSON object
+  population?: number;
+  medianIncome?: number;
+  medianHomeValue?: number;
+  unemploymentRate?: number;
+  propertyCount?: number;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const CountySchema = new Schema({
-  stateId: {
+  name: {
     type: String,
     required: true,
     index: true
   },
-  name: {
-    type: String,
-    required: true
+  stateId: {
+    type: Schema.Types.ObjectId,
+    ref: 'State',
+    required: true,
+    index: true
   },
   fips: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
+    index: true
   },
   boundaries: {
     type: Schema.Types.Mixed,
-    required: true
+    default: null
   },
   population: {
+    type: Number,
+    default: 0
+  },
+  medianIncome: {
+    type: Number,
+    default: 0
+  },
+  medianHomeValue: {
+    type: Number,
+    default: 0
+  },
+  unemploymentRate: {
     type: Number,
     default: 0
   },
   propertyCount: {
     type: Number,
     default: 0
-  },
-  stats: {
-    medianHomePrice: Number,
-    avgDaysOnMarket: Number,
-    listingCount: Number,
-    priceChangeYoY: Number,
-    lastUpdated: {
-      type: Date,
-      default: Date.now
-    }
   },
   createdAt: {
     type: Date,
@@ -73,7 +72,7 @@ CountySchema.pre('save', function(next) {
   next();
 });
 
-// Indexes for optimization
-CountySchema.index({ stateId: 1, name: 1 });
+// Create a geospatial index on boundaries
+CountySchema.index({ boundaries: '2dsphere' });
 
 export const County = mongoose.model<ICounty>('County', CountySchema); 
