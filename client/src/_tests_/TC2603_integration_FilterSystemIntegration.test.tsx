@@ -10,7 +10,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import * as FilterHook from "../hooks/useFilter";
 
 // Mock the services to avoid localStorage issues in tests
-vi.mock('../../services/filterService', () => ({
+vi.mock('../services/filterService', () => ({
   loadFiltersFromStorage: vi.fn(() => null),
   saveFiltersToStorage: vi.fn(),
   loadFilterPresetsFromStorage: vi.fn(() => []),
@@ -29,7 +29,7 @@ vi.mock('../../services/filterService', () => ({
   })
 }));
 
-vi.mock('../../services/panelStateService', () => ({
+vi.mock('../services/panelStateService', () => ({
   loadPanelState: vi.fn(),
   savePanelState: vi.fn(),
   deletePanelState: vi.fn()
@@ -39,7 +39,7 @@ vi.mock('../../services/panelStateService', () => ({
 const mockApplyFilters = vi.fn();
 const mockClearFilters = vi.fn();
 
-vi.mock('../../hooks/useFilter', () => ({
+vi.mock('../hooks/useFilter', () => ({
   useFilter: () => ({
     activeFilters: {},
     applyFilters: mockApplyFilters,

@@ -62,12 +62,21 @@ describe('Database Connection Service', () => {
     const originalUri = process.env.MONGODB_URI;
     process.env.MONGODB_URI = 'mongodb://invalid-host:12345/test';
     
-    await expect(connectToDatabase()).rejects.toThrow();
+    // Disconnect first to ensure clean test
+    if (mongoose.connection.readyState) {
+      await disconnectFromDatabase();
+    }
+    
+    // Add longer timeout and make sure the error is caught properly
+    await expect(async () => {
+      await connectToDatabase();
+    }).rejects.toThrow();
+    
     expect(consoleSpy.error).toHaveBeenCalled();
     
     // Restore the original URI
     process.env.MONGODB_URI = originalUri;
-  });
+  }, 10000); // Increase timeout to 10 seconds
   
   it('creates a Layout schema with correct fields', async () => {
     // Ensure we're connected
