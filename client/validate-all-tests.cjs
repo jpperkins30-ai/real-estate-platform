@@ -52,9 +52,9 @@ const validTestCaseIds = new Set(testPlan.testCases.map(tc => tc.id));
 
 // Validation rules
 const validationRules = {
-  filenamePattern: /^(components|services|hooks|context|utils|integration)_.*\.(test|spec)\.(ts|tsx)$/,
-  importPathPattern: /from\s+['"]\.\.\/\.\.\/src\//,
-  wrongImportPathPattern: /from\s+['"]\.\.\/(\.\.\/){2,}/,
+  filenamePattern: /^TC\d+_(components|services|hooks|context|utils|integration)_.*\.(test|spec)\.(ts|tsx)$/,
+  importPathPattern: /from\s+['"]\.\.\/(?!\.\.\/)/,
+  wrongImportPathPattern: /from\s+['"]\.\.\/(\.\.\/){3,}/,
   assertionPattern: /expect\s*\(/,
   mockPattern: /vi\.mock\s*\(['"]/,
   describePattern: /describe\s*\(['"]/,
@@ -184,7 +184,7 @@ function validateTestFile(filePath) {
     
     // Check 1: Filename matches pattern
     if (!validationRules.filenamePattern.test(filename)) {
-      issues.push(`Filename does not follow the convention: ${filename}. Should be like 'category_name.test.ts'`);
+      issues.push(`Filename does not follow the convention: ${filename}. Should be like 'TC123_category_name.test.ts'`);
     }
     
     // Check 2: Content has proper import paths

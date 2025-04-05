@@ -455,6 +455,54 @@
       "description": "Verify ControllerWizardLauncher integration with panels",
       "requirements": ["REQ-INT-004"],
       "priority": "medium"
+    },
+    {
+      "id": "TC3001",
+      "description": "Verify PreferencesContext loads preferences on mount",
+      "requirements": ["REQ-PREF-001"],
+      "priority": "high"
+    },
+    {
+      "id": "TC3002",
+      "description": "Verify PreferencesContext updates preferences when called",
+      "requirements": ["REQ-PREF-002"],
+      "priority": "high"
+    },
+    {
+      "id": "TC3101",
+      "description": "Verify ThemeSettings renders color mode options correctly",
+      "requirements": ["REQ-PREF-UI-001"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC3102",
+      "description": "Verify ThemeSettings renders map style options correctly",
+      "requirements": ["REQ-PREF-UI-002"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC3103",
+      "description": "Verify ThemeSettings renders font size options correctly",
+      "requirements": ["REQ-PREF-UI-003"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC3104",
+      "description": "Verify ThemeSettings updates color mode when option is clicked",
+      "requirements": ["REQ-PREF-UI-004"],
+      "priority": "high"
+    },
+    {
+      "id": "TC3105",
+      "description": "Verify ThemeSettings updates map style when option is clicked",
+      "requirements": ["REQ-PREF-UI-005"],
+      "priority": "high"
+    },
+    {
+      "id": "TC3106",
+      "description": "Verify ThemeSettings updates font size when option is clicked",
+      "requirements": ["REQ-PREF-UI-006"],
+      "priority": "high"
     }
   ]
 } 
