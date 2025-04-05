@@ -1,0 +1,68 @@
+.filter-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.settings-section {
+  margin-bottom: 20px;
+}
+
+.settings-section h3 {
+  margin: 0 0 12px 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.settings-section p {
+  margin: 0 0 16px 0;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.toggle-option {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.toggle-option label {
+  width: 200px;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.option-description {
+  width: 100%;
+  margin: 4px 0 0 0;
+  font-size: 0.8rem;
+  color: #666;
+  padding-left: 200px;
+}
+
+.default-filters {
+  background-color: #f9f9f9;
+  padding: 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.default-filters p {
+  margin-bottom: 12px;
+}
+
+.secondary-button {
+  padding: 8px 16px;
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.secondary-button:hover {
+  background-color: #e0e0e0;
+} 

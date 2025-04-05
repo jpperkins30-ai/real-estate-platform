@@ -1,0 +1,65 @@
+.panel-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.settings-section {
+  margin-bottom: 20px;
+}
+
+.settings-section h3 {
+  margin: 0 0 12px 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.settings-section p {
+  margin: 0 0 16px 0;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.content-type-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 16px;
+  border: 1px solid #e0e0e0;
+  padding: 16px;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+}
+
+.grid-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.grid-cell label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #666;
+}
+
+.grid-cell select {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+  font-size: 0.9rem;
+}
+
+.toggle-option {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.toggle-option label {
+  flex: 1;
+  font-size: 0.9rem;
+  color: #333;
+} 
