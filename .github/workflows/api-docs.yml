@@ -1,0 +1,44 @@
+name: Generate API Documentation
+
+on:
+  push:
+    branches: [ develop ]
+    paths:
+      - 'server/src/routes/**'
+      - 'server/src/models/**'
+      - 'server/src/controllers/**'
+      - 'server/src/swagger/**'
+      - '.github/workflows/api-docs.yml'
+
+jobs:
+  build-docs:
+    name: Build and Deploy API Docs
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: |
+          cd server
+          npm ci
+      
+      - name: Generate Swagger JSON
+        run: |
+          cd server
+          npm run generate-swagger
+      
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./server/docs
+          publish_branch: gh-pages
+          destination_dir: api-docs 

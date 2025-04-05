@@ -42,6 +42,29 @@ export const defaultLayouts: LayoutConfig[] = [
     isPublic: true
   },
   {
+    id: 'default-county-explorer',
+    name: 'County Explorer',
+    description: 'Focus on county data visualization',
+    type: 'dual',
+    panels: [
+      {
+        id: 'map',
+        contentType: 'map',
+        title: 'Counties Map',
+        position: { row: 0, col: 0 },
+        size: { width: 50, height: 100 }
+      },
+      {
+        id: 'county',
+        contentType: 'county',
+        title: 'County Details',
+        position: { row: 0, col: 1 },
+        size: { width: 50, height: 100 }
+      }
+    ],
+    isPublic: true
+  },
+  {
     id: 'default-tri-analysis',
     name: 'Analysis View',
     description: 'Three panel layout for data analysis',
@@ -184,7 +207,9 @@ export const defaultLayouts: LayoutConfig[] = [
   }
 ];
 
-// Function to initialize default layouts in the system
+/**
+ * Initialize default layouts in the system
+ */
 export async function initializeDefaultLayouts(layoutService: any): Promise<void> {
   try {
     // Fetch existing layouts first to avoid duplicates
@@ -193,7 +218,7 @@ export async function initializeDefaultLayouts(layoutService: any): Promise<void
     // Check for each default layout
     for (const defaultLayout of defaultLayouts) {
       // Check if this default layout already exists
-      const exists = existingLayouts.some((layout: LayoutConfig) => layout.id === defaultLayout.id);
+      const exists = existingLayouts.some(layout => layout.id === defaultLayout.id);
       
       if (!exists) {
         // Create the default layout

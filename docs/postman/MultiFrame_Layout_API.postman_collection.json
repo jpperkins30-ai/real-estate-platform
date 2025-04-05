@@ -1,0 +1,272 @@
+{
+  "info": {
+    "_postman_id": "a8b5f6d7-c9e0-4123-8a7b-d654e32f1b4c",
+    "name": "MultiFrame Layout API",
+    "description": "API collection for testing the multi-frame layout endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get All Layouts",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/layouts",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "layouts"
+          ],
+          "query": [
+            {
+              "key": "isPublic",
+              "value": "true",
+              "description": "Filter by public layouts",
+              "disabled": true
+            }
+          ]
+        },
+        "description": "Retrieve all layouts for the current user"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Layout by ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/layouts/{{layoutId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "layouts",
+            "{{layoutId}}"
+          ]
+        },
+        "description": "Retrieve a specific layout by ID"
+      },
+      "response": []
+    },
+    {
+      "name": "Create Layout",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Quad Layout Example\",\n  \"description\": \"A layout with four panels\",\n  \"type\": \"quad\",\n  \"panels\": [\n    {\n      \"id\": \"top-left\",\n      \"contentType\": \"map\",\n      \"title\": \"Map View\",\n      \"position\": {\n        \"row\": 0,\n        \"col\": 0\n      },\n      \"size\": {\n        \"width\": 50,\n        \"height\": 50\n      },\n      \"maximizable\": true,\n      \"closable\": false\n    },\n    {\n      \"id\": \"top-right\",\n      \"contentType\": \"state\",\n      \"title\": \"State View\",\n      \"position\": {\n        \"row\": 0,\n        \"col\": 1\n      },\n      \"size\": {\n        \"width\": 50,\n        \"height\": 50\n      },\n      \"maximizable\": true,\n      \"closable\": false\n    },\n    {\n      \"id\": \"bottom-left\",\n      \"contentType\": \"county\",\n      \"title\": \"County View\",\n      \"position\": {\n        \"row\": 1,\n        \"col\": 0\n      },\n      \"size\": {\n        \"width\": 50,\n        \"height\": 50\n      },\n      \"maximizable\": true,\n      \"closable\": false\n    },\n    {\n      \"id\": \"bottom-right\",\n      \"contentType\": \"property\",\n      \"title\": \"Property View\",\n      \"position\": {\n        \"row\": 1,\n        \"col\": 1\n      },\n      \"size\": {\n        \"width\": 50,\n        \"height\": 50\n      },\n      \"maximizable\": true,\n      \"closable\": false\n    }\n  ],\n  \"isDefault\": false,\n  \"isPublic\": true\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/layouts",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "layouts"
+          ]
+        },
+        "description": "Create a new layout configuration"
+      },
+      "response": []
+    },
+    {
+      "name": "Create Advanced Layout",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Advanced Layout Example\",\n  \"description\": \"A custom advanced layout\",\n  \"type\": \"advanced\",\n  \"panels\": [\n    {\n      \"id\": \"panel-1\",\n      \"contentType\": \"map\",\n      \"title\": \"Map View\",\n      \"position\": {\n        \"x\": 0,\n        \"y\": 0,\n        \"width\": 70,\n        \"height\": 70\n      },\n      \"maximizable\": true,\n      \"closable\": true\n    },\n    {\n      \"id\": \"panel-2\",\n      \"contentType\": \"property\",\n      \"title\": \"Property View\",\n      \"position\": {\n        \"x\": 70,\n        \"y\": 0,\n        \"width\": 30,\n        \"height\": 70\n      },\n      \"maximizable\": true,\n      \"closable\": true\n    },\n    {\n      \"id\": \"panel-3\",\n      \"contentType\": \"county\",\n      \"title\": \"County View\",\n      \"position\": {\n        \"x\": 0,\n        \"y\": 70,\n        \"width\": 100,\n        \"height\": 30\n      },\n      \"maximizable\": true,\n      \"closable\": true\n    }\n  ],\n  \"isDefault\": false,\n  \"isPublic\": true\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/layouts",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "layouts"
+          ]
+        },
+        "description": "Create a new advanced layout configuration"
+      },
+      "response": []
+    },
+    {
+      "name": "Update Layout",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Updated Layout\",\n  \"description\": \"Updated description\",\n  \"type\": \"dual\",\n  \"panels\": [\n    {\n      \"id\": \"left\",\n      \"contentType\": \"map\",\n      \"title\": \"Map View\",\n      \"position\": {\n        \"row\": 0,\n        \"col\": 0\n      },\n      \"size\": {\n        \"width\": 60,\n        \"height\": 100\n      },\n      \"maximizable\": true,\n      \"closable\": false\n    },\n    {\n      \"id\": \"right\",\n      \"contentType\": \"property\",\n      \"title\": \"Property View\",\n      \"position\": {\n        \"row\": 0,\n        \"col\": 1\n      },\n      \"size\": {\n        \"width\": 40,\n        \"height\": 100\n      },\n      \"maximizable\": true,\n      \"closable\": false\n    }\n  ],\n  \"isDefault\": false,\n  \"isPublic\": true\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/layouts/{{layoutId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "layouts",
+            "{{layoutId}}"
+          ]
+        },
+        "description": "Update an existing layout"
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Layout",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/layouts/{{layoutId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "layouts",
+            "{{layoutId}}"
+          ]
+        },
+        "description": "Delete a layout configuration"
+      },
+      "response": []
+    },
+    {
+      "name": "Clone Layout",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Cloned Layout\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/layouts/{{layoutId}}/clone",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "layouts",
+            "{{layoutId}}",
+            "clone"
+          ]
+        },
+        "description": "Clone an existing layout"
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "layoutId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string",
+      "description": "JWT token for authentication"
+    }
+  ]
+} 

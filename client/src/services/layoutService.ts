@@ -1,6 +1,6 @@
-import axios from 'axios';
 import { LayoutConfig } from '../types/layout.types';
 import { getLocalPreferences } from './preferencesService';
+import layoutApi from '../api/layoutApi';
 
 /**
  * Fetch all available layouts from the server or local storage
@@ -9,11 +9,9 @@ import { getLocalPreferences } from './preferencesService';
  */
 export async function fetchLayouts(includePublic: boolean = false): Promise<LayoutConfig[]> {
   try {
-    // Attempt to fetch from server
-    const response = await axios.get('/api/layouts', { 
-      params: { includePublic } 
-    });
-    return response.data;
+    // Attempt to fetch from server using the API
+    const layouts = await layoutApi.getLayouts(includePublic);
+    return layouts;
   } catch (error) {
     console.error('Error fetching layouts:', error);
     
@@ -29,9 +27,9 @@ export async function fetchLayouts(includePublic: boolean = false): Promise<Layo
  */
 export async function fetchLayout(id: string): Promise<LayoutConfig | null> {
   try {
-    // Attempt to fetch from server
-    const response = await axios.get(`/api/layouts/${id}`);
-    return response.data;
+    // Attempt to fetch from server using the API
+    const layout = await layoutApi.getLayout(id);
+    return layout;
   } catch (error) {
     console.error(`Error fetching layout with ID ${id}:`, error);
     
@@ -49,17 +47,17 @@ export async function fetchLayout(id: string): Promise<LayoutConfig | null> {
 export async function saveLayout(layout: LayoutConfig): Promise<LayoutConfig> {
   try {
     // If the layout has an ID, update it. Otherwise create a new one.
-    let response;
+    let savedLayout;
     if (layout.id) {
-      response = await axios.put(`/api/layouts/${layout.id}`, layout);
+      savedLayout = await layoutApi.updateLayout(layout.id, layout);
     } else {
-      response = await axios.post('/api/layouts', layout);
+      savedLayout = await layoutApi.createLayout(layout);
     }
     
     // Save to local storage as well
-    saveLocalLayout(response.data);
+    saveLocalLayout(savedLayout);
     
-    return response.data;
+    return savedLayout;
   } catch (error) {
     console.error('Error saving layout:', error);
     
@@ -76,8 +74,8 @@ export async function saveLayout(layout: LayoutConfig): Promise<LayoutConfig> {
  */
 export async function deleteLayout(id: string): Promise<boolean> {
   try {
-    // Attempt to delete from server
-    await axios.delete(`/api/layouts/${id}`);
+    // Attempt to delete from server using the API
+    await layoutApi.deleteLayout(id);
     
     // Also remove from local storage
     deleteLocalLayout(id);
@@ -90,6 +88,39 @@ export async function deleteLayout(id: string): Promise<boolean> {
     deleteLocalLayout(id);
     
     return false;
+  }
+}
+
+/**
+ * Clone a layout
+ * @param id Layout ID to clone
+ * @param name Name for the new layout
+ * @returns Promise<LayoutConfig> The cloned layout
+ */
+export async function cloneLayout(id: string, name: string): Promise<LayoutConfig | null> {
+  try {
+    // Attempt to clone using the API
+    const clonedLayout = await layoutApi.cloneLayout(id, name);
+    
+    // Save to local storage as well
+    saveLocalLayout(clonedLayout);
+    
+    return clonedLayout;
+  } catch (error) {
+    console.error(`Error cloning layout with ID ${id}:`, error);
+    
+    // If API request fails, try to clone locally
+    const layout = await fetchLayout(id);
+    if (!layout) return null;
+    
+    const clonedLayout: LayoutConfig = {
+      ...layout,
+      id: undefined, // Remove ID to create a new one
+      name: name,
+      isDefault: false, // Clone is never the default
+    };
+    
+    return saveLayout(clonedLayout);
   }
 }
 
