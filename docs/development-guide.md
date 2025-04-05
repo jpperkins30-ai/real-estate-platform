@@ -245,19 +245,53 @@ Follow the conventional commits format:
 
 ## Testing Guide
 
-The Real Estate Platform includes a comprehensive testing framework to ensure code quality and prevent regressions. This section provides guidance on running tests and writing effective test cases.
+The Real Estate Platform implements a standardized testing approach to ensure code quality and prevent regressions. Before writing or modifying any tests, review the testing standards documentation:
+
+- [TEST-GUIDE.md](../client/TEST-GUIDE.md) - Quick reference guide for developers
+- [TESTING.md](../client/TESTING.md) - Comprehensive testing documentation
+- [test-plan.json](../client/test-plan.json) - Test case catalog with requirements mapping
+
+### Standardized Testing Approach
+
+All tests must follow our standardized approach:
+
+1. **Test Case IDs**: Every test must include a test case ID from the test plan (format: "TC101: should do something")
+2. **File Naming Convention**: Test files must follow the pattern `category_component_name.test.tsx`
+3. **Flattened Structure**: Tests must be in the flattened directory structure at `src/__tests__/`
+4. **Test Plan Validation**: Every test case ID must exist in `test-plan.json`
+
+Our automated testing workflow includes:
+- Pre-commit and pre-push hooks that validate tests
+- Pre-test validation that runs before test execution
+- Test generators to create properly structured tests
+- CI/CD integration to validate tests during pull requests
+
+### Creating New Tests
+
+Use the test generator to create a proper test file structure:
+
+```bash
+# In the client directory
+node create-test.js --component=components/path/to/component --testid=TC101
+```
+
+The generator will:
+1. Create a properly named test file
+2. Set up the correct import structure
+3. Add the test case IDs from the test plan
+4. Validate against test standards
 
 ### Test Structure
 
-The project follows a structured approach to testing:
+The project uses a flattened test directory structure:
 
 ```
 client/src/__tests__/
-├── components/       # Component tests
-├── hooks/            # Custom React hook tests
-├── integration/      # Integration tests
-├── services/         # Service layer tests
-└── setup/            # Test setup utilities
+├── components_*.test.tsx   # Component tests
+├── hooks_*.test.tsx        # Custom React hook tests
+├── integration_*.test.tsx  # Integration tests
+├── services_*.test.tsx     # Service layer tests
+└── setup/                  # Test setup utilities
 ```
 
 ### Running Tests

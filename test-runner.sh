@@ -39,7 +39,7 @@ npx vitest run --reporter=html --config ./vitest.config.ts
 # Check for specific directory test success
 echo ""
 echo "Validating core functionality tests..."
-npx vitest run "src/components/multiframe/__tests__" --config ./vitest.config.ts
+npx vitest run "src/__tests__/components_multiframe" --config ./vitest.config.ts
 CORE_TEST_RESULT=$?
 
 if [ $CORE_TEST_RESULT -ne 0 ]; then

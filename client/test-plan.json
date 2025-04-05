@@ -1,0 +1,460 @@
+{
+  "testCases": [
+    {
+      "id": "TC101",
+      "description": "Verify LayoutSelector renders standard layout options by default",
+      "requirements": ["REQ-UI-001"],
+      "priority": "high"
+    },
+    {
+      "id": "TC102",
+      "description": "Verify LayoutSelector shows advanced layout option when enabled",
+      "requirements": ["REQ-UI-002"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC103",
+      "description": "Verify LayoutSelector marks current layout button as active",
+      "requirements": ["REQ-UI-003"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC104",
+      "description": "Verify LayoutSelector calls onLayoutChange when button is clicked",
+      "requirements": ["REQ-UI-004"],
+      "priority": "high"
+    },
+    {
+      "id": "TC105",
+      "description": "Verify LayoutSelector only renders available layouts",
+      "requirements": ["REQ-UI-006"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC201",
+      "description": "Verify MultiFrameContainer renders with default layout",
+      "requirements": ["REQ-UI-005"],
+      "priority": "high"
+    },
+    {
+      "id": "TC202",
+      "description": "Verify MultiFrameContainer changes layout when selector is used",
+      "requirements": ["REQ-UI-006"],
+      "priority": "high"
+    },
+    {
+      "id": "TC203",
+      "description": "Verify MultiFrameContainer notifies parent when layout changes",
+      "requirements": ["REQ-UI-007"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC204",
+      "description": "Verify MultiFrameContainer initializes with provided panels",
+      "requirements": ["REQ-UI-008"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC301",
+      "description": "Verify panelContentRegistry registers and retrieves panel content",
+      "requirements": ["REQ-REGISTRY-001"],
+      "priority": "high"
+    },
+    {
+      "id": "TC302",
+      "description": "Verify panelContentRegistry returns null for unregistered types",
+      "requirements": ["REQ-REGISTRY-002"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC303",
+      "description": "Verify panelContentRegistry returns list of registered content types",
+      "requirements": ["REQ-REGISTRY-003"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC304",
+      "description": "Verify panelContentRegistry initializes with default components",
+      "requirements": ["REQ-REGISTRY-004"],
+      "priority": "high"
+    },
+    {
+      "id": "TC401",
+      "description": "Verify AdvancedLayout renders panels with correct positions",
+      "requirements": ["REQ-LAYOUT-001"],
+      "priority": "high"
+    },
+    {
+      "id": "TC402",
+      "description": "Verify AdvancedLayout calls onPanelClose when panel is closed",
+      "requirements": ["REQ-LAYOUT-002"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC403",
+      "description": "Verify AdvancedLayout shows add panel button when onPanelAdd is provided",
+      "requirements": ["REQ-LAYOUT-003"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC501",
+      "description": "Verify EnhancedMultiFrameContainer renders with advanced layout by default",
+      "requirements": ["REQ-CONTAINER-001"],
+      "priority": "high"
+    },
+    {
+      "id": "TC502",
+      "description": "Verify EnhancedMultiFrameContainer allows panel position changes",
+      "requirements": ["REQ-CONTAINER-002"],
+      "priority": "high"
+    },
+    {
+      "id": "TC503",
+      "description": "Verify EnhancedMultiFrameContainer handles panel state changes",
+      "requirements": ["REQ-CONTAINER-003"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC504",
+      "description": "Verify EnhancedMultiFrameContainer handles panel closing",
+      "requirements": ["REQ-CONTAINER-004"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC505",
+      "description": "Verify EnhancedMultiFrameContainer handles adding new panels",
+      "requirements": ["REQ-CONTAINER-005"],
+      "priority": "high"
+    },
+    {
+      "id": "TC506",
+      "description": "Verify EnhancedMultiFrameContainer hides layout selector when specified",
+      "requirements": ["REQ-CONTAINER-006"],
+      "priority": "low"
+    },
+    {
+      "id": "TC601",
+      "description": "Verify useDraggable hook initializes correctly",
+      "requirements": ["REQ-HOOK-001"],
+      "priority": "high"
+    },
+    {
+      "id": "TC602",
+      "description": "Verify useDraggable handles drag start event",
+      "requirements": ["REQ-HOOK-002"],
+      "priority": "high"
+    },
+    {
+      "id": "TC603",
+      "description": "Verify useDraggable handles drag move event",
+      "requirements": ["REQ-HOOK-003"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC604",
+      "description": "Verify useDraggable handles drag end event",
+      "requirements": ["REQ-HOOK-004"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC701",
+      "description": "Verify PanelContainer renders with correct props",
+      "requirements": ["REQ-COMP-001"],
+      "priority": "high"
+    },
+    {
+      "id": "TC702",
+      "description": "Verify PanelContainer handles resize events",
+      "requirements": ["REQ-COMP-002"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC703",
+      "description": "Verify PanelContainer handles maximize/minimize",
+      "requirements": ["REQ-COMP-003"],
+      "priority": "high"
+    },
+    {
+      "id": "TC801",
+      "description": "Verify PanelHeader renders title and controls",
+      "requirements": ["REQ-COMP-004"],
+      "priority": "high"
+    },
+    {
+      "id": "TC802",
+      "description": "Verify PanelHeader close button triggers callback",
+      "requirements": ["REQ-COMP-005"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC901",
+      "description": "Verify DualPanelLayout renders with two panels correctly",
+      "requirements": ["REQ-LAYOUT-101"],
+      "priority": "high"
+    },
+    {
+      "id": "TC902",
+      "description": "Verify DualPanelLayout handles panel content changes",
+      "requirements": ["REQ-LAYOUT-102"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC911",
+      "description": "Verify TriPanelLayout renders with three panels correctly",
+      "requirements": ["REQ-LAYOUT-111"],
+      "priority": "high"
+    },
+    {
+      "id": "TC912",
+      "description": "Verify TriPanelLayout arranges panels in the correct positions",
+      "requirements": ["REQ-LAYOUT-112"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC921",
+      "description": "Verify QuadPanelLayout renders with four panels correctly",
+      "requirements": ["REQ-LAYOUT-121"],
+      "priority": "high"
+    },
+    {
+      "id": "TC922",
+      "description": "Verify QuadPanelLayout arranges panels in a grid formation",
+      "requirements": ["REQ-LAYOUT-122"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC931",
+      "description": "Verify SinglePanelLayout renders with one panel correctly",
+      "requirements": ["REQ-LAYOUT-131"],
+      "priority": "high"
+    },
+    {
+      "id": "TC932",
+      "description": "Verify SinglePanelLayout fills available container space",
+      "requirements": ["REQ-LAYOUT-132"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC1001",
+      "description": "Verify FilterPanel renders with filter controls",
+      "requirements": ["REQ-FILTER-001"],
+      "priority": "high"
+    },
+    {
+      "id": "TC1002",
+      "description": "Verify FilterPanel updates when filter values change",
+      "requirements": ["REQ-FILTER-002"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC1101",
+      "description": "Verify CountyPanel renders county information correctly",
+      "requirements": ["REQ-PANEL-001"],
+      "priority": "high"
+    },
+    {
+      "id": "TC1102",
+      "description": "Verify CountyPanel updates when county selection changes",
+      "requirements": ["REQ-PANEL-002"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC1201",
+      "description": "Verify ControllerWizardLauncher initializes correctly",
+      "requirements": ["REQ-WIZARD-001"],
+      "priority": "high"
+    },
+    {
+      "id": "TC1202",
+      "description": "Verify ControllerWizardLauncher launches wizard on trigger",
+      "requirements": ["REQ-WIZARD-002"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC1301",
+      "description": "Verify useFilter hook initializes with default filters",
+      "requirements": ["REQ-HOOK-101"],
+      "priority": "high"
+    },
+    {
+      "id": "TC1302",
+      "description": "Verify useFilter hook updates filter values correctly",
+      "requirements": ["REQ-HOOK-102"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC1401",
+      "description": "Verify usePanelState hook manages panel state correctly",
+      "requirements": ["REQ-HOOK-201"],
+      "priority": "high"
+    },
+    {
+      "id": "TC1402",
+      "description": "Verify usePanelState hook handles panel state transitions",
+      "requirements": ["REQ-HOOK-202"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC1501",
+      "description": "Verify useResizable hook initializes correctly",
+      "requirements": ["REQ-HOOK-301"],
+      "priority": "high"
+    },
+    {
+      "id": "TC1502",
+      "description": "Verify useResizable hook handles resize events properly",
+      "requirements": ["REQ-HOOK-302"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC1503",
+      "description": "Verify useResizable hook respects min/max constraints",
+      "requirements": ["REQ-HOOK-303"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC1601",
+      "description": "Verify useMaximizable hook toggles maximize state",
+      "requirements": ["REQ-HOOK-401"],
+      "priority": "high"
+    },
+    {
+      "id": "TC1602",
+      "description": "Verify useMaximizable hook preserves previous state",
+      "requirements": ["REQ-HOOK-402"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC1701",
+      "description": "Verify FilterContext provides filter state to children",
+      "requirements": ["REQ-CONTEXT-001"],
+      "priority": "high"
+    },
+    {
+      "id": "TC1702",
+      "description": "Verify FilterContext updates propagate to consumers",
+      "requirements": ["REQ-CONTEXT-002"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC1801",
+      "description": "Verify PanelSyncContext shares state between panels",
+      "requirements": ["REQ-CONTEXT-101"],
+      "priority": "high"
+    },
+    {
+      "id": "TC1802",
+      "description": "Verify PanelSyncContext synchronizes updates across panels",
+      "requirements": ["REQ-CONTEXT-102"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC1901",
+      "description": "Verify useAdvancedLayout hook manages layout state",
+      "requirements": ["REQ-HOOK-501"],
+      "priority": "high"
+    },
+    {
+      "id": "TC1902",
+      "description": "Verify useAdvancedLayout hook handles panel positioning",
+      "requirements": ["REQ-HOOK-502"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC2001",
+      "description": "Verify DraggablePanel initializes correctly",
+      "requirements": ["REQ-PANEL-101"],
+      "priority": "high"
+    },
+    {
+      "id": "TC2002",
+      "description": "Verify DraggablePanel can be moved by user interaction",
+      "requirements": ["REQ-PANEL-102"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC2101",
+      "description": "Verify PropertySearchBox renders search input correctly",
+      "requirements": ["REQ-SEARCH-001"],
+      "priority": "high"
+    },
+    {
+      "id": "TC2102",
+      "description": "Verify PropertySearchBox triggers search on user input",
+      "requirements": ["REQ-SEARCH-002"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC2201",
+      "description": "Verify dbConnection service establishes connection correctly",
+      "requirements": ["REQ-DB-001"],
+      "priority": "high"
+    },
+    {
+      "id": "TC2202",
+      "description": "Verify dbConnection service handles errors gracefully",
+      "requirements": ["REQ-DB-002"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC2301",
+      "description": "Verify filterService applies filters correctly",
+      "requirements": ["REQ-SERVICE-001"],
+      "priority": "high"
+    },
+    {
+      "id": "TC2302",
+      "description": "Verify filterService combines multiple filters properly",
+      "requirements": ["REQ-SERVICE-002"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC2401",
+      "description": "Verify panelStateService manages panel states",
+      "requirements": ["REQ-SERVICE-101"],
+      "priority": "high"
+    },
+    {
+      "id": "TC2402",
+      "description": "Verify panelStateService persists state between sessions",
+      "requirements": ["REQ-SERVICE-102"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC2501",
+      "description": "Verify propertySearch service executes searches correctly",
+      "requirements": ["REQ-SEARCH-101"],
+      "priority": "high"
+    },
+    {
+      "id": "TC2502",
+      "description": "Verify propertySearch service returns formatted results",
+      "requirements": ["REQ-SEARCH-102"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC2601",
+      "description": "Verify PanelIntegration works with other components",
+      "requirements": ["REQ-INT-001"],
+      "priority": "high"
+    },
+    {
+      "id": "TC2602",
+      "description": "Verify PanelCommunication between different panels",
+      "requirements": ["REQ-INT-002"],
+      "priority": "high"
+    },
+    {
+      "id": "TC2603",
+      "description": "Verify FilterSystemIntegration across application",
+      "requirements": ["REQ-INT-003"],
+      "priority": "medium"
+    },
+    {
+      "id": "TC2604",
+      "description": "Verify ControllerWizardLauncher integration with panels",
+      "requirements": ["REQ-INT-004"],
+      "priority": "medium"
+    }
+  ]
+} 

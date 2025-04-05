@@ -21,6 +21,7 @@ import controllerRoutes from './routes/controller.routes';
 import collectionRoutes from './routes/collection.routes';
 import exportRoutes from './routes/export.routes';
 import taxLienRoutes from './routes/tax-lien.routes';
+import apiRoutes from './routes/apiRoutes';
 import initGeoData from './utils/initGeoData';
 import { mainRoutes } from './routes/main.routes';
 import { typesRoutes } from './routes/types.routes';
@@ -182,6 +183,7 @@ app.use('/api/tax-liens', taxLienRoutes);
 app.use('/api', mainRoutes);
 app.use('/api/types', typesRoutes);
 app.use('/api/collector-types', collectorTypesRoutes);
+app.use('/api/v1', apiRoutes);
 
 // Test route
 app.get('/api/test', (req, res) => {

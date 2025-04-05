@@ -2,6 +2,17 @@
 📅 **Target Completion**: [YYYY-MM-DD]  
 📄 **Doc Path**: /docs/components/multi-frame/chunk-1-core-layout.md
 
+# Core Container and Layout Component Implementation Guide
+
+> **IMPORTANT NOTE**: Test file paths in this document reference the old nested test structure. The project has moved to a flattened test directory structure where files are located directly in `src/__tests__/` with underscores replacing directory separators. For example:
+> - Old path: `src/__tests__/components/multiframe/layouts/SinglePanelLayout.test.tsx`
+> - New path: `src/__tests__/components_multiframe_layouts_SinglePanelLayout.test.tsx`
+>
+> For more information on the test structure, see the test guide in `src/__tests__/README.md`.
+
+## Overview
+
+The Multi-Frame Layout system consists of a collection of components that work together to create flexible, configurable layouts for displaying various panels of content. This implementation focuses on the core container and layout components which form the foundation of the system.
 
 # 🧩 Chunk 1: Core Container and Layout System (Updated with Vitest)
 
@@ -1350,7 +1361,6 @@ describe('MultiFrameContainer', () => {
     
     expect(screen.getByTestId('quad-layout')).toBeInTheDocument();
     expect(screen.getAllByTestId(/panel-/)).toHaveLength(4);
-  });TheDocument();
   });
   
   it('changes layout when layout selector is clicked', () => {
@@ -1394,4 +1404,6 @@ describe('MultiFrameContainer', () => {
       />
     );
     
-    expect(screen.getByTestId('single-layout')).toBeIn
+    expect(screen.getByTestId('single-layout')).toBeInTheDocument();
+  });
+});

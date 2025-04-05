@@ -24,16 +24,16 @@ cd client
 test_results=0
 
 # Run Custom Hooks Tests
-run_tests "src/__tests__/hooks/" "Custom Hooks Tests" || test_results=1
+run_tests "src/__tests__/hooks_" "Custom Hooks Tests" || test_results=1
 
 # Run Controller Component Tests
-run_tests "src/__tests__/components/controllers/" "Controller Component Tests" || test_results=1
+run_tests "src/__tests__/components_multiframe_controllers_" "Controller Component Tests" || test_results=1
 
 # Run Panel Component Tests
-run_tests "src/__tests__/components/panels/" "Panel Component Tests" || test_results=1
+run_tests "src/__tests__/components_multiframe_panels_" "Panel Component Tests" || test_results=1
 
 # Run Enhanced Container Tests
-run_tests "src/__tests__/components/EnhancedPanelContainer.test.tsx" "Enhanced Container Tests" || test_results=1
+run_tests "src/__tests__/components_multiframe_EnhancedPanelContainer.test.tsx" "Enhanced Container Tests" || test_results=1
 
 # Print final status
 if [ $test_results -eq 0 ]; then

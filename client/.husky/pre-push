@@ -1,0 +1,30 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo -e "\033[36mValidating tests before push...\033[0m"
+
+# Check if test files exist in the commit
+test_files=$(git diff --name-only --cached | grep -E '\.test\.(ts|tsx)$|__tests__/')
+
+if [ -n "$test_files" ]; then
+  echo -e "\033[33mTest files found in commit. Running validation...\033[0m"
+  
+  # Run the validation script
+  cd client && node validate-all-tests.js
+  validation_status=$?
+  
+  if [ $validation_status -ne 0 ]; then
+    echo -e "\033[31mError: Test validation failed!\033[0m"
+    echo -e "\033[31mPlease fix the issues before pushing:\033[0m"
+    echo -e "1. Ensure all tests have valid test case IDs from test-plan.json"
+    echo -e "2. Make sure test files follow the naming convention"
+    echo -e "3. Run 'pre-commit-check.ps1' for detailed information"
+    echo -e "\033[36mSee TEST-GUIDE.md for help\033[0m"
+    exit 1
+  fi
+  
+  echo -e "\033[32mTest validation passed!\033[0m"
+fi
+
+# Continue with the push
+exit 0 

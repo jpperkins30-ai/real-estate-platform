@@ -67,7 +67,8 @@ export const FilterPanel: React.FC<PanelContentProps> = ({
   useEffect(() => {
     if (!isSyncEnabled) return;
     
-    const unsubscribe = subscribe((event) => {
+    // Store unsubscribe function - could be undefined if subscribe fails
+    const unsubscribeFunc = subscribe ? subscribe((event) => {
       if (event.source !== panelId) {
         if (event.type === 'filter' && event.payload?.filters) {
           // Validate and resolve conflicts if necessary
@@ -89,10 +90,13 @@ export const FilterPanel: React.FC<PanelContentProps> = ({
           updateState({ filters: emptyFilters });
         }
       }
-    });
+    }) : undefined;
     
     return () => {
-      unsubscribe();
+      // Only call unsubscribe if it's a function
+      if (typeof unsubscribeFunc === 'function') {
+        unsubscribeFunc();
+      }
     };
   }, [panelId, subscribe, isSyncEnabled, filters, updateState]);
   

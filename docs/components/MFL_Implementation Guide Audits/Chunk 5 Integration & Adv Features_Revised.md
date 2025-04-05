@@ -1,8 +1,10 @@
-# 🧩 Chunk 5: Integration & Advanced Features (Enhanced Version)
+# 🧩 Chunk 5: Integration & Advanced Features (Vitest Implementation)
 
-✅ **Status**: Ready for Implementation  
-📅 **Target Completion**: [YYYY-MM-DD]  
-📄 **Doc Path**: /docs/components/multi-frame/chunk-5-integration-features.md
+> **IMPORTANT NOTE**: Test file paths in this document reference the old nested test structure. The project has moved to a flattened test directory structure where files are located directly in `src/__tests__/` with underscores replacing directory separators. For example:
+> - Old path: `src/__tests__/components/controllers/ControllerWizardLauncher.test.tsx`
+> - New path: `src/__tests__/components_multiframe_controllers_ControllerWizardLauncher.test.tsx`
+>
+> For more information on the test structure, see the test guide in `src/__tests__/README.md`.
 
 ## 🎯 Objective
 

@@ -138,10 +138,10 @@ The multiframe system requires special testing approaches:
 
 ### Special Testing Considerations for MultiFrameContainer
 
-When testing the MultiFrameContainer, be aware of potential infinite re-render issues. See the [Multiframe Testing Guide](../../src/__tests__/components/multiframe/README.md) for detailed information.
+When testing the MultiFrameContainer, be aware of potential infinite re-render issues. See the [Testing Guide with Multiframe Instructions](../../src/__tests__/README.md) for detailed information.
 
 ## Related Documentation
 
 - [Panel Communication](./panel-communication.md)
 - [Testing Guide](../testing.md)
-- [Multiframe Testing Guide](../../src/__tests__/components/multiframe/README.md) 
+- [Testing Guide with Multiframe Instructions](../../src/__tests__/README.md) 

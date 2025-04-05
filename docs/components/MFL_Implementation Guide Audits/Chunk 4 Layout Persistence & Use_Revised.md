@@ -2029,10 +2029,6 @@ vi.mock('../../../../services/layoutService', () => ({
 describe('LayoutSelector', () => {
   const mockLayouts: LayoutConfig[] = [
     {
-      id: 'default
-describe('LayoutSelector', () => {
-  const mockLayouts: LayoutConfig[] = [
-    {
       id: 'default-layout',
       name: 'Default Layout',
       type: 'dual',

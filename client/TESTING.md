@@ -1,192 +1,244 @@
-# Testing Guidelines
+# Testing Documentation and Guidelines
 
-## Test Organization
+## Overview
 
-All tests for the Real Estate Platform client application should be placed in the central test directory:
+This document outlines the testing approach, structure, and best practices for the Real Estate Platform client application. Following these guidelines ensures consistent, maintainable, and effective tests across the codebase.
 
-```
-src/__tests__/
-```
+## Test Structure
 
-We use a flattened test structure, where all test files reside directly in the `src/__tests__/` directory. 
-Test files are named descriptively with test case references to ensure traceability to requirements.
+We use a **flattened test directory structure** with test case IDs in the filenames, which helps with traceability and organization.
 
-## Test File Naming
-
-Test files should follow this naming convention:
-
-1. Test case reference: `TC{ID}_` prefix
-   - Example: `TC123_PanelHeader.test.tsx` for test case #123
-
-2. Component/category: `[Category_]ComponentName.test.tsx`
-   - Examples: `TC101_PanelHeader.test.tsx`, `TC202_multiframe_DraggablePanel.test.tsx`
-
-3. Hooks: `TC{ID}_[Category_]hookName.test.ts`
-   - Examples: `TC301_useResizable.test.ts`, `TC305_panels_usePanelState.test.ts`
-
-4. Services: `TC{ID}_[Category_]serviceName.test.ts`
-   - Examples: `TC401_apiService.test.ts`, `TC405_data_propertyService.test.ts`
-
-The naming convention provides the following benefits:
-- Traceability to test case documentation
-- Easy identification of test purpose
-- Clear categorization by module or functionality
-- Simplified test reporting and requirement mapping
-
-## Running Tests
-
-To run all tests:
+### Directory Structure
 
 ```
-npm test
+client/
+├── src/
+│   ├── components/
+│   ├── services/
+│   ├── hooks/
+│   ├── ...
+│   └── _tests_/              # All tests live here
+│       ├── README.md         # Testing guidelines
+│       ├── TC101_*.test.*    # Component tests with Test Case IDs
+│       ├── TC201_*.test.*    # More component tests
+│       ├── TC2301_*.test.*   # Service tests
+│       └── ...
+├── test-core-layout.ps1      # Script to run core layout tests
+├── test-plan.json            # Test plan with test case IDs
+└── TESTING.md                # This file
 ```
 
-To run tests only in the standardized central test directory:
+### Naming Convention
 
+Test files follow this naming pattern:
 ```
-npm run test:standard
-```
-
-To run tests for a specific test case:
-
-```
-npm test -- TC123
+TC{ID}_{category}_{component_path}.test.{js|ts|tsx}
 ```
 
-To watch tests during development:
+Where:
+- `TC{ID}` is the test case ID from the test plan
+- `category` is the type of module being tested (components, services, hooks, etc.)
+- `component_path` is the path segments of the component joined by underscores
+- File extension matches the source file being tested
 
+Examples:
+- `TC201_components_multiframe_layouts_TriPanelLayout.test.tsx`
+- `TC2201_services_dbConnection.test.ts`
+- `TC601_hooks_useDraggable.test.tsx`
+
+### Test Case IDs
+
+All test files and test descriptions must include a test case ID that references the test plan. This ensures traceability between tests and requirements.
+
+Test case IDs follow this format:
 ```
-npm run test:watch
-```
-
-To generate a coverage report:
-
-```
-npm run test:coverage
-```
-
-## Test Quality Guidelines
-
-1. Each test should be focused on a single behavior or functionality
-2. Use descriptive test names that explain what is being tested
-3. Follow the Arrange-Act-Assert pattern
-4. Mock external dependencies appropriately
-5. Use data-testid attributes for component querying
-6. Avoid testing implementation details, focus on behavior
-7. Keep tests independent from each other
-
-## Test Case Mapping
-
-Test files should reference the test cases they implement. The first line of the test file should include a comment that references the test case description:
-
-```tsx
-// Test Case 123: Verify that PanelHeader correctly displays the title and action buttons
-import { render, screen, fireEvent } from '@testing-library/react';
-import PanelHeader from '../components/multiframe/PanelHeader';
+TC{ID}
 ```
 
-## Component Testing Example
+Where `{ID}` is a numeric identifier that matches an entry in the test plan.
 
-```tsx
-// Test Case 101: Verify MyComponent renders and handles events correctly
-import { render, screen, fireEvent } from '@testing-library/react';
-import MyComponent from '../components/MyComponent';
-
-describe('MyComponent', () => {
-  it('renders the component with default props', () => {
-    render(<MyComponent />);
-    expect(screen.getByTestId('my-component')).toBeInTheDocument();
+Example test with test case ID:
+```typescript
+// In file TC931_components_multiframe_layouts_SinglePanelLayout.test.tsx
+describe('SinglePanelLayout', () => {
+  it('TC931: renders a panel container with the correct props', () => {
+    // test implementation
   });
-
-  it('handles button click correctly', () => {
-    const handleClick = vi.fn();
-    render(<MyComponent onClick={handleClick} />);
-    
-    fireEvent.click(screen.getByRole('button'));
-    expect(handleClick).toHaveBeenCalledTimes(1);
+  
+  it('TC932: shows empty message when no panels are provided', () => {
+    // test implementation
   });
 });
 ```
 
-## Hook Testing Example
+### Test Plan
 
-```tsx
-// Test Case 201: Verify useMyHook state management functionality
-import { renderHook, act } from '@testing-library/react-hooks';
-import useMyHook from '../hooks/useMyHook';
+All tests must reference test case IDs from the `test-plan.json` file. This file contains:
+- Test case IDs
+- Test descriptions
+- Requirements traceability
+- Priority level
 
-describe('useMyHook', () => {
-  it('returns the initial state', () => {
-    const { result } = renderHook(() => useMyHook());
-    expect(result.current.value).toBe(0);
-  });
+Before creating new tests, check the test plan to find an appropriate test case ID. If you need to create tests not covered by the test plan, consult with the tech lead to update the test plan first.
 
-  it('updates state when action is called', () => {
-    const { result } = renderHook(() => useMyHook());
-    
-    act(() => {
-      result.current.increment();
-    });
-    
-    expect(result.current.value).toBe(1);
-  });
+## Test Tools and Setup
+
+### Core Technologies
+
+- **Testing Framework**: Vitest
+- **UI Testing**: React Testing Library
+- **Mocking**: Vitest mocking utilities
+- **Database Testing**: mongodb-memory-server
+
+### Setting Up Tests
+
+1. MongoDB tests are configured in test setup files
+2. Component tests should mock dependencies to focus on isolated behavior
+3. Use `beforeEach`/`afterEach` hooks for setup/teardown logic
+4. Use the test utilities in `src/test/` directory for common testing operations
+
+## Testing Standards
+
+### Coverage Requirements
+
+- **Components**: 80% line coverage minimum
+- **Services**: 90% line coverage minimum
+- **Hooks**: 85% line coverage minimum
+- **Utils**: 95% line coverage minimum
+
+### Test Organization
+
+1. Group related tests using `describe` blocks
+2. Use clear, descriptive test names with the pattern: "TC{ID}: should [expected behavior] when [condition]"
+3. Separate setup, action, and assertion phases in tests
+
+```typescript
+// Good example
+it('TC931: should show empty message when no panels are provided', () => {
+  // Setup
+  render(<SinglePanelLayout panels={[]} />);
+  
+  // Assert
+  expect(screen.getByTestId('empty-single-layout')).toBeInTheDocument();
+  expect(screen.getByText('No panel configured')).toBeInTheDocument();
 });
 ```
 
-## Test Process Enforcement
+### Mocking Best Practices
 
-To ensure consistent test organization and standards, we've implemented several tools:
-
-### Creating New Tests
-
-Always use the test generator script to create new test files:
-
-```bash
-npm run create-test
+1. Always use the correct source path when mocking:
+```typescript
+// CORRECT
+vi.mock('../components/multiframe/PanelContainer', () => ({...}));
 ```
 
-This interactive script will:
-1. Prompt you for test case details
-2. Generate a properly named file in the correct location
-3. Add the required test case documentation
-4. Set up the basic test structure based on the type of test
+2. Only mock what is necessary for the test
+3. Add types to mock functions to avoid TypeScript errors
+4. Reset mocks between tests to avoid interference
+5. Use the test utilities in `src/test/mocks/` directory for common mocking operations
 
-### Test Structure Validation
+## Test Automation Tools
 
-#### Windows Users
+We provide several tools to ensure test quality and consistency:
 
-Before committing your changes, run the pre-commit check to validate your test files:
+### 1. Pre-commit Validation
+
+Run `pre-commit-check.ps1` before committing to verify tests meet standards:
 
 ```powershell
-npm run precommit
+./pre-commit-check.ps1
 ```
 
-This will scan all test files and report any that don't follow the standardized format. The check verifies:
+### 2. Test Generator
 
-1. Files are in the correct location (directly in `src/__tests__/`)
-2. Files have the proper naming format (`TCxxx_description.test.ts`)
-3. Files include the test case description comment on the first line
+Use `create-test.js` to generate properly structured test files:
 
-#### GitHub Integration
+```bash
+node create-test.js --component=components/multiframe/layouts/QuadPanelLayout --testid=TC123
+```
 
-A GitHub Actions workflow will automatically run on pull requests to verify all test files follow the standardized structure. Tests that don't comply will cause the workflow to fail, preventing merges until the issues are resolved.
+### 3. Test Validation
 
-### VS Code Snippets
+The `validate-all-tests.js` script ensures existing tests meet our standards:
 
-We've provided VS Code snippets to help create properly structured tests. In a test file, type:
+```bash
+node validate-all-tests.js
+```
 
-- `tccomp` - For component tests
-- `tchook` - For hook tests
-- `tcutil` - For utility function tests
-- `tcpage` - For page tests
+This checks for:
+- Proper file naming
+- Correct import paths
+- Required assertions
+- Mock usage patterns
+- Test case ID inclusion
+- Test case ID validation against the test plan
 
-These snippets will create the proper test structure with all required elements.
+### 4. CI Integration
 
-## Important Notes
+Our GitHub workflow (`test-validation.yml`) automatically runs tests on pull requests to ensure quality.
 
-- ⚠️ **DO NOT** create tests in component-level `__tests__` directories
-- ⚠️ **DO NOT** create nested test directories in `src/__tests__/`
-- ⚠️ **DO NOT** manually create test files, use `npm run create-test`
-- ✅ **DO** follow the flattened test structure pattern
-- ✅ **DO** include test case references in file names
-- ✅ **DO** add test case description comments to test files 
+## Test Case Management
+
+### Adding New Test Cases
+
+1. First check if an existing test case ID covers your test in the `test-plan.json` file
+2. If not, consult with the tech lead to add a new test case to the test plan
+3. Only after the test plan is updated should you create a new test with that ID
+
+### Test Plan Format
+
+The `test-plan.json` file follows this structure:
+
+```json
+{
+  "testCases": [
+    {
+      "id": "TC101",
+      "description": "Verify SinglePanelLayout renders correctly",
+      "requirements": ["REQ-UI-001"],
+      "priority": "high"
+    },
+    {
+      "id": "TC102",
+      "description": "Verify SinglePanelLayout shows empty state message",
+      "requirements": ["REQ-UI-002"],
+      "priority": "medium"
+    }
+  ]
+}
+```
+
+## Debugging Tests
+
+1. Use the `--debug` flag with Vitest to debug tests in browser:
+```bash
+npx vitest --debug
+```
+
+2. For component tests, use screen.debug() to output DOM:
+```typescript
+render(<MyComponent />);
+screen.debug();
+```
+
+3. Use `it.only()` to run a specific test in isolation
+
+## FAQ and Troubleshooting
+
+### Q: Why use a flattened test structure?
+A: It simplifies test file organization, avoids deep nesting, and makes it easier to find tests.
+
+### Q: How do I mock a component that has many dependencies?
+A: Create a separate mock file in `src/test/mocks/` and import it in your test.
+
+### Q: How do I test asynchronous components?
+A: Use `await` with React Testing Library's `findBy*` queries, or wrap assertions in `waitFor()`.
+
+### Q: What if I need to test something not in the test plan?
+A: Work with the tech lead to update the test plan first, then create your test with the new test case ID.
+
+## Additional Resources
+
+- [Vitest Documentation](https://vitest.dev/guide/)
+- [React Testing Library Cheatsheet](https://testing-library.com/docs/react-testing-library/cheatsheet/)
+- [Jest DOM Custom Matchers](https://github.com/testing-library/jest-dom) 

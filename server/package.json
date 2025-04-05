@@ -12,8 +12,13 @@
     "simple": "node src/simple-server.js",
     "build": "tsc",
     "seed": "ts-node src/scripts/seedDatabase.ts",
-    "test": "jest",
-    "lint": "eslint ."
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "flatten-tests": "powershell -File ./scripts/flatten-test-structure.ps1",
+    "rename-test-dirs": "powershell -File ./scripts/rename-test-directories.ps1",
+    "standardize-test-dir": "powershell -File ./scripts/standardize-test-dir.ps1",
+    "precommit": "cd .. && powershell -File ./scripts/universal-pre-commit-check.ps1 -ProjectType server"
   },
   "dependencies": {
     "@turf/turf": "^6.5.0",
@@ -48,9 +53,13 @@
     "@types/swagger-jsdoc": "^6.0.1",
     "@types/swagger-ui-express": "^4.1.3",
     "@types/xlsx": "^0.0.36",
+    "@vitest/coverage-v8": "^1.3.0",
+    "jsdom": "^26.0.0",
+    "mongodb-memory-server": "^8.12.2",
     "nodemon": "^3.1.9",
     "ts-node-dev": "^2.0.0",
     "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.0.4"
+    "typescript": "^5.0.4",
+    "vitest": "^1.3.0"
   }
 }
