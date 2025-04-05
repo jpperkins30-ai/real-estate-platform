@@ -2,6 +2,7 @@ import React from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
+import { PanelConfig, AdvancedPanelPosition, PanelContentType } from '../types/layout.types';
 
 // Mock version of the providers
 // Create simple mock versions of context providers
@@ -32,6 +33,38 @@ const customRender = (
   ui: React.ReactElement,
   options?: Omit<RenderOptions, 'wrapper'>
 ) => render(ui, { wrapper: AllTheProviders, ...options });
+
+// Helper function to create props for PanelHeader tests
+export const createPanelHeaderProps = (overrides = {}) => ({
+  title: 'Test Panel',
+  isMaximized: false,
+  onAction: vi.fn(),
+  showMaximizeButton: true,
+  showCloseButton: false,
+  className: '',
+  draggable: false,
+  showControls: true,
+  ...overrides
+});
+
+// Helper function to create standardized panel config for tests
+export function createMockPanelConfig(overrides = {}): PanelConfig {
+  return {
+    id: 'panel-1',
+    contentType: 'map' as PanelContentType,
+    title: 'Map Panel',
+    position: { 
+      x: 0, 
+      y: 0, 
+      width: 70, 
+      height: 70 
+    } as AdvancedPanelPosition,
+    maximizable: true,
+    closable: true,
+    visible: true,
+    ...overrides
+  };
+}
 
 // re-export everything
 export * from '@testing-library/react';
@@ -121,6 +154,7 @@ export const createMockPanelState = (overrides = {}) => ({
 export const createMockData = {
   panel: createMockPanel,
   panelState: createMockPanelState,
+  panelConfig: createMockPanelConfig,
   sync: mockPanelSync,
   layout: mockLayoutContext
 };

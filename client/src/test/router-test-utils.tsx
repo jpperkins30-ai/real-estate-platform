@@ -1,6 +1,12 @@
-import React from 'react';
-import { render } from '@testing-library/react';
+import React, { ReactElement } from 'react';
+import { render, RenderOptions } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
+
+// Define types for router testing
+interface RenderWithRouterOptions extends RenderOptions {
+  route?: string;
+  history?: string[];
+}
 
 /**
  * Custom render function that includes Router context for testing components that use router
@@ -9,8 +15,8 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
  * @returns Enhanced render result with history
  */
 export function renderWithRouter(
-  ui: React.ReactElement,
-  { route = '/', history = [route] }: { route?: string; history?: string[] } = {}
+  ui: ReactElement,
+  { route = '/', history = [route], ...renderOptions }: RenderWithRouterOptions = {}
 ) {
   return {
     ...render(
@@ -18,8 +24,12 @@ export function renderWithRouter(
         <Routes>
           <Route path="*" element={ui} />
         </Routes>
-      </MemoryRouter>
+      </MemoryRouter>,
+      renderOptions
     ),
     history
   };
-} 
+}
+
+// Re-export everything from testing-library for convenience
+export * from '@testing-library/react'; 
