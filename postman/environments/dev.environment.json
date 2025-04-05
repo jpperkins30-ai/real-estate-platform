@@ -1,0 +1,64 @@
+{
+  "id": "df91af8b-c4c7-4c28-a5f5-8c655539db34",
+  "name": "Real Estate Platform - Dev",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "apiPath",
+      "value": "/api",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "userEmail",
+      "value": "test@example.com",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "userPassword",
+      "value": "Test@123456",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "userName",
+      "value": "Test User",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "layoutId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    }
+  ],
+  "exporter": {
+    "type": "environment",
+    "format": "json"
+  }
+} 

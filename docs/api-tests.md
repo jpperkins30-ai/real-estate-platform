@@ -2,9 +2,12 @@
 
 This document outlines the testing strategy and test cases for the Real Estate Platform API endpoints.
 
+> **Note**: For a comprehensive implementation of API testing with Postman and Newman, see our [API Testing & Postman Automation](./testing/api-testing-postman-automation.md) documentation.
+
 ## Testing Tools
 
 - **Postman**: Primary tool for manual API testing and collection management
+- **Newman**: Command-line collection runner for Postman collections
 - **Jest**: JavaScript testing framework for automated tests
 - **Supertest**: HTTP assertion library for endpoint testing
 - **MongoDB Memory Server**: For integration tests with isolated database
@@ -14,6 +17,31 @@ This document outlines the testing strategy and test cases for the Real Estate P
 1. Configure test environment in `.env.test` file
 2. Run `npm run test:setup` to prepare the test database
 3. Run tests with `npm test` or `npm run test:api`
+
+## Postman Automation
+
+We have implemented a comprehensive Postman-based API testing framework that includes:
+
+1. **Postman Collections**: Reusable test collections for all API endpoints
+2. **Environment Configurations**: For development, testing, and production environments
+3. **Automated Test Runners**: Using Newman with HTML reporting
+4. **CI/CD Integration**: GitHub Actions workflow for automated testing
+5. **Test Data Generation**: Scripts to create test data for API tests
+
+To run the automated API tests, use:
+
+```bash
+# Run API tests with default settings
+npm run test:api
+
+# Run API tests with test data generation
+npm run test:api:data
+
+# Run API tests with specific environment
+npm run test:api:testing
+```
+
+For more detailed information, refer to the [API Testing & Postman Automation](./testing/api-testing-postman-automation.md) documentation.
 
 ## Authentication Tests
 
@@ -202,10 +230,17 @@ Test automation scripts are located in the `server/tests/api` directory:
 - `export.test.js`: Export functionality tests
 - `users.test.js`: User management tests
 
-Run with:
+For advanced automation with Postman and Newman, use:
 
 ```bash
-npm run test:api
+# Using our consolidated PowerShell script
+.\run.ps1 -RunApiTests
+
+# With different environments
+.\run.ps1 -RunApiTests -ApiEnvironment testing
+
+# Generate test data during the test run
+.\run.ps1 -RunApiTests -GenerateApiTestData
 ```
 
 ## Continuous Integration
@@ -216,8 +251,10 @@ API tests are automatically run in the CI pipeline on:
 2. Scheduled nightly builds
 3. Manual trigger via GitHub Actions
 
+The GitHub Actions workflow configuration can be found in `.github/workflows/api-tests.yml`.
+
 ## Test Data Management
 
 - Test fixtures are in `server/tests/fixtures`
 - Reset test database with `npm run test:reset-db`
-- Generate test data with `npm run test:generate-data` 
+- Generate test data with `npm run test:generate-data` or use the `-GenerateApiTestData` flag with our PowerShell runner script 

@@ -1,0 +1,377 @@
+{
+  "info": {
+    "_postman_id": "e2e_flow_123456",
+    "name": "End-to-End Flow",
+    "description": "End-to-end test flows for the Multi-Frame Layout Component System",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "User Layout Workflow",
+      "item": [
+        {
+          "name": "1. Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "",
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has token\", function () {",
+                  "    pm.expect(response).to.have.property('token');",
+                  "    pm.expect(response.token).to.be.a('string');",
+                  "});",
+                  "",
+                  "// Set environment variables for subsequent requests",
+                  "if (response.token) {",
+                  "    pm.environment.set(\"authToken\", response.token);",
+                  "    pm.environment.set(\"userId\", response.userId);",
+                  "}",
+                  ""
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n\t\"email\": \"{{userEmail}}\",\n\t\"password\": \"{{userPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "2. Create New Layout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "",
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Layout created successfully\", function () {",
+                  "    pm.expect(response).to.have.property('id');",
+                  "    pm.expect(response).to.have.property('name');",
+                  "    pm.expect(response.name).to.eql(\"E2E Test Layout\");",
+                  "});",
+                  "",
+                  "// Set layout ID for subsequent requests",
+                  "pm.environment.set(\"e2eLayoutId\", response.id);",
+                  ""
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n\t\"name\": \"E2E Test Layout\",\n\t\"description\": \"Layout created during E2E test\",\n\t\"type\": \"quad\",\n\t\"panels\": [\n\t\t{\n\t\t\t\"id\": \"map\",\n\t\t\t\"contentType\": \"map\",\n\t\t\t\"title\": \"Map View\",\n\t\t\t\"position\": { \"row\": 0, \"col\": 0 },\n\t\t\t\"size\": { \"width\": 60, \"height\": 60 }\n\t\t},\n\t\t{\n\t\t\t\"id\": \"property\",\n\t\t\t\"contentType\": \"property\",\n\t\t\t\"title\": \"Property Details\",\n\t\t\t\"position\": { \"row\": 0, \"col\": 1 },\n\t\t\t\"size\": { \"width\": 40, \"height\": 60 }\n\t\t},\n\t\t{\n\t\t\t\"id\": \"filter\",\n\t\t\t\"contentType\": \"filter\",\n\t\t\t\"title\": \"Search Filters\",\n\t\t\t\"position\": { \"row\": 1, \"col\": 0 },\n\t\t\t\"size\": { \"width\": 60, \"height\": 40 }\n\t\t},\n\t\t{\n\t\t\t\"id\": \"stats\",\n\t\t\t\"contentType\": \"stats\",\n\t\t\t\"title\": \"Market Statistics\",\n\t\t\t\"position\": { \"row\": 1, \"col\": 1 },\n\t\t\t\"size\": { \"width\": 40, \"height\": 40 }\n\t\t}\n\t]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/layouts",
+              "host": ["{{baseUrl}}"],
+              "path": ["layouts"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "3. Update User Preferences",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "",
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Default layout set correctly\", function () {",
+                  "    pm.expect(response).to.have.property('layout');",
+                  "    pm.expect(response.layout).to.have.property('defaultLayout');",
+                  "    pm.expect(response.layout.defaultLayout).to.eql(pm.environment.get(\"e2eLayoutId\"));",
+                  "});",
+                  "",
+                  "pm.test(\"Theme preferences set correctly\", function () {",
+                  "    pm.expect(response).to.have.property('theme');",
+                  "    pm.expect(response.theme.colorMode).to.eql('dark');",
+                  "});",
+                  ""
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"theme\": {\n    \"colorMode\": \"dark\",\n    \"mapStyle\": \"satellite\",\n    \"accentColor\": \"#4caf50\",\n    \"fontSize\": \"medium\"\n  },\n  \"panel\": {\n    \"defaultContentTypes\": {\n      \"top-left\": \"map\",\n      \"top-right\": \"property\",\n      \"bottom-left\": \"filter\",\n      \"bottom-right\": \"stats\"\n    },\n    \"showPanelHeader\": true,\n    \"enablePanelResizing\": true,\n    \"enablePanelDragging\": true\n  },\n  \"layout\": {\n    \"defaultLayout\": \"{{e2eLayoutId}}\",\n    \"saveLayoutOnExit\": true,\n    \"rememberLastLayout\": true\n  },\n  \"filter\": {\n    \"defaultFilters\": {},\n    \"showFilterPanel\": true,\n    \"applyFiltersAutomatically\": true\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/preferences",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "preferences"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "4. Get Layout By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "",
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Layout has correct ID\", function () {",
+                  "    pm.expect(response).to.have.property('id');",
+                  "    pm.expect(response.id).to.eql(pm.environment.get(\"e2eLayoutId\"));",
+                  "});",
+                  "",
+                  "pm.test(\"Layout has 4 panels\", function () {",
+                  "    pm.expect(response).to.have.property('panels');",
+                  "    pm.expect(response.panels.length).to.eql(4);",
+                  "});",
+                  "",
+                  "pm.test(\"Layout contains map panel\", function () {",
+                  "    const mapPanel = response.panels.find(panel => panel.id === 'map');",
+                  "    pm.expect(mapPanel).to.not.be.undefined;",
+                  "    pm.expect(mapPanel.contentType).to.eql('map');",
+                  "});",
+                  ""
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/layouts/{{e2eLayoutId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["layouts", "{{e2eLayoutId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "5. Get User Preferences",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "",
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Default layout matches the created layout\", function () {",
+                  "    pm.expect(response).to.have.property('layout');",
+                  "    pm.expect(response.layout).to.have.property('defaultLayout');",
+                  "    pm.expect(response.layout.defaultLayout).to.eql(pm.environment.get(\"e2eLayoutId\"));",
+                  "});",
+                  "",
+                  "pm.test(\"User preferences correctly set\", function () {",
+                  "    pm.expect(response.theme.colorMode).to.eql('dark');",
+                  "    pm.expect(response.theme.mapStyle).to.eql('satellite');",
+                  "    pm.expect(response.theme.accentColor).to.eql('#4caf50');",
+                  "    pm.expect(response.panel.showPanelHeader).to.be.true;",
+                  "    pm.expect(response.filter.applyFiltersAutomatically).to.be.true;",
+                  "});",
+                  ""
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/preferences",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "preferences"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "6. Clean Up - Delete Layout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Verify layout was deleted with a GET request",
+                  "const getRequest = {",
+                  "    url: pm.environment.get(\"baseUrl\") + '/layouts/' + pm.environment.get(\"e2eLayoutId\"),",
+                  "    method: 'GET',",
+                  "    header: {",
+                  "        'Authorization': 'Bearer ' + pm.environment.get(\"authToken\")",
+                  "    }",
+                  "};",
+                  "",
+                  "pm.sendRequest(getRequest, function (err, res) {",
+                  "    pm.test(\"Layout is no longer accessible\", function () {",
+                  "        pm.expect(res.code).to.eql(404);",
+                  "    });",
+                  "});",
+                  "",
+                  "// Reset user preferences to default",
+                  "const resetRequest = {",
+                  "    url: pm.environment.get(\"baseUrl\") + '/user/preferences/reset',",
+                  "    method: 'POST',",
+                  "    header: {",
+                  "        'Authorization': 'Bearer ' + pm.environment.get(\"authToken\")",
+                  "    }",
+                  "};",
+                  "",
+                  "pm.sendRequest(resetRequest, function (err, res) {",
+                  "    pm.test(\"User preferences reset successfully\", function () {",
+                  "        pm.expect(res.code).to.eql(200);",
+                  "    });",
+                  "});",
+                  ""
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/layouts/{{e2eLayoutId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["layouts", "{{e2eLayoutId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "7. Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Clear environment variables",
+                  "pm.environment.set(\"authToken\", \"\");",
+                  "pm.environment.set(\"userId\", \"\");",
+                  "pm.environment.set(\"e2eLayoutId\", \"\");",
+                  "console.log(\"Environment variables cleared\");",
+                  ""
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Complete user workflow from login to layout management and logout"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  }
+} 

@@ -1,0 +1,115 @@
+{
+  "info": {
+    "_postman_id": "health_check_123456",
+    "name": "API Health Check",
+    "description": "Health check and diagnostics endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const response = pm.response.json();",
+              "",
+              "pm.test(\"API is up and running\", function () {",
+              "    pm.expect(response).to.have.property('status');",
+              "    pm.expect(response.status).to.eql('ok');",
+              "});",
+              "",
+              "pm.test(\"Response includes version information\", function () {",
+              "    pm.expect(response).to.have.property('version');",
+              "});",
+              "",
+              "pm.test(\"Response includes server time\", function () {",
+              "    pm.expect(response).to.have.property('serverTime');",
+              "    const serverTime = new Date(response.serverTime);",
+              "    pm.expect(serverTime).to.be.an.instanceOf(Date);",
+              "});",
+              ""
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        },
+        "description": "Check if the API is up and running"
+      },
+      "response": []
+    },
+    {
+      "name": "API Status",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const response = pm.response.json();",
+              "",
+              "pm.test(\"Response includes system status\", function () {",
+              "    pm.expect(response).to.have.property('system');",
+              "    pm.expect(response.system).to.have.property('status');",
+              "});",
+              "",
+              "pm.test(\"Response includes database status\", function () {",
+              "    pm.expect(response).to.have.property('database');",
+              "    pm.expect(response.database).to.have.property('status');",
+              "    pm.expect(response.database).to.have.property('connectionPool');",
+              "});",
+              "",
+              "pm.test(\"Response includes memory usage\", function () {",
+              "    pm.expect(response).to.have.property('memory');",
+              "    pm.expect(response.memory).to.have.property('used');",
+              "    pm.expect(response.memory).to.have.property('total');",
+              "});",
+              "",
+              "pm.test(\"Response includes uptime\", function () {",
+              "    pm.expect(response).to.have.property('uptime');",
+              "    pm.expect(response.uptime).to.be.a('number');",
+              "});",
+              ""
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/status",
+          "host": ["{{baseUrl}}"],
+          "path": ["status"]
+        },
+        "description": "Get detailed API system status"
+      },
+      "response": []
+    }
+  ],
+  "auth": {
+    "type": "noauth"
+  }
+} 
