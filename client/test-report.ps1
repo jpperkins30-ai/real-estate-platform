@@ -12,8 +12,10 @@ if (-not $currentDir.Path.EndsWith("client")) {
     }
 }
 
-# Find all test files
-$testFiles = Get-ChildItem -Path "src" -Recurse -Include "*.test.ts", "*.test.tsx" | ForEach-Object { $_.FullName }
+# Find all test files in the central test directory only
+$testFiles = Get-ChildItem -Path "src/__tests__" -Recurse -Include "*.test.ts", "*.test.tsx" | ForEach-Object { $_.FullName }
+
+Write-Host "Found $($testFiles.Count) test files in the central test directory" -ForegroundColor Yellow
 
 # Results tracking
 $passedTests = @()

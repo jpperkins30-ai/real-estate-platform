@@ -1,0 +1,36 @@
+name: Test Structure Validation
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'client/src/__tests__/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'client/src/__tests__/**'
+
+jobs:
+  validate-test-structure:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./client
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: client/package-lock.json
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Validate test structure
+      run: |
+        cd scripts
+        node validate-all-tests.js 
