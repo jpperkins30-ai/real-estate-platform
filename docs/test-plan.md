@@ -422,6 +422,14 @@ This test plan documents the testing approach for the Real Estate Platform's adv
 - **Test Execution**: Render component and check layout selector
 - **Expected Result**: Advanced layout option should be disabled
 
+#### Test ID: COMP-MF-006
+- **Name**: Testing Mode
+- **Setup**: Render with _isTestingMode=true
+- **Configuration**: Mock layout components
+- **Test Overview**: Tests container with infinite re-render prevention, critical for reliable testing
+- **Test Execution**: Render component with test flag
+- **Expected Result**: Component should render without causing infinite loop
+
 ### 5.2 PanelHeader
 
 #### Test ID: COMP-HEAD-001
@@ -664,7 +672,7 @@ This test plan documents the testing approach for the Real Estate Platform's adv
 ## 10. Test Execution Guide
 
 ### 10.1 Development Testing
-- Run individual test files: `npx vitest run src/__tests__/path/to/test.tsx`
+- Run individual test files: `npx vitest run src/_tests_/TC*_path_to_test.tsx`
 - Run all tests: `npm test`
 - Run with coverage: `npm test -- --coverage`
 

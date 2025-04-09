@@ -11,7 +11,7 @@ export default defineConfig({
       './src/test/setup.ts'
     ],
     exclude: ['**/node_modules/**', '**/dist/**'],
-    include: ['./src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    include: ['./src/_tests_/TC*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

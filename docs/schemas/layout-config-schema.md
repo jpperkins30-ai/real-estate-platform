@@ -2,154 +2,79 @@
 
 ## Overview
 
-This schema defines the structure for storing panel layout configurations in MongoDB. The schema supports saving user-specific or global layout configurations that can be loaded later.
+This schema defines the structure for storing panel layout configurations in MongoDB. The schema supports saving user-specific layout configurations that can be loaded later.
 
 ## Schema Definition
 
 ```javascript
-const LayoutConfigSchema = new mongoose.Schema({
-  // Unique identifier for the layout configuration
-  layoutId: {
-    type: String,
-    required: true,
-    unique: true,
-    index: true
-  },
-  
-  // User ID if this is a user-specific layout
-  userId: {
-    type: String,
-    index: true,
-    sparse: true  // Index is sparse because not all layouts are user-specific
-  },
-  
-  // Is this a global layout template?
-  isGlobal: {
-    type: Boolean,
-    default: false
-  },
-  
-  // Display name for the layout
-  name: {
-    type: String,
-    required: true
-  },
-  
-  // Description of the layout
-  description: {
-    type: String
-  },
-  
-  // Layout type
-  layoutType: {
-    type: String,
-    enum: ['single', 'dual', 'tri', 'quad', 'custom'],
-    required: true
-  },
-  
-  // Panel configurations
-  panels: {
-    type: Map,
-    of: {
-      // Panel ID
-      id: {
-        type: String,
-        required: true
-      },
-      
-      // Content type
-      contentType: {
-        type: String,
-        required: true
-      },
-      
-      // Panel title
-      title: {
-        type: String,
-        required: true
-      },
-      
-      // Panel position
-      position: {
-        row: {
-          type: Number,
-          default: 0
-        },
-        col: {
-          type: Number,
-          default: 0
-        }
-      },
-      
-      // Panel size
-      size: {
-        width: {
-          type: Number,
-          default: 1
-        },
-        height: {
-          type: Number,
-          default: 1
-        }
-      },
-      
-      // Panel state (stored as JSON)
-      state: {
-        type: mongoose.Schema.Types.Mixed
-      },
-      
-      // Panel visibility
-      visible: {
-        type: Boolean,
-        default: true
-      },
-      
-      // Panel is minimized
-      minimized: {
-        type: Boolean,
-        default: false
-      },
-      
-      // Panel is maximized
-      maximized: {
-        type: Boolean,
-        default: false
-      }
-    }
-  },
-  
-  // Layout tags for filtering
-  tags: {
-    type: [String],
-    default: []
-  },
-  
-  // Custom configuration (stored as JSON)
-  customConfig: {
-    type: mongoose.Schema.Types.Mixed
-  },
-  
-  // Timestamps
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  
-  updatedAt: {
-    type: Date,
-    default: Date.now
+// Setup MongoDB schema for layouts
+const setupLayoutSchema = () => {
+  // Only create schema if it doesn't already exist
+  if (mongoose.models.Layout) {
+    return mongoose.models.Layout;
   }
-}, {
-  timestamps: true  // Automatically manage createdAt and updatedAt
-});
-
-// Indexes
-LayoutConfigSchema.index({ userId: 1, name: 1 }, { unique: true, sparse: true });  // Each user can have uniquely named layouts
-LayoutConfigSchema.index({ isGlobal: 1, name: 1 }, { unique: true, sparse: true });  // Global layouts must have unique names
-LayoutConfigSchema.index({ tags: 1 });  // Index tags for filtering
-
-// Create the model
-const LayoutConfig = mongoose.model('LayoutConfig', LayoutConfigSchema);
+  
+  const PanelPositionSchema = new mongoose.Schema({
+    // For standard layouts
+    row: { type: Number },
+    col: { type: Number },
+    // For advanced layouts
+    x: { type: Number },
+    y: { type: Number },
+    width: { type: Number },
+    height: { type: Number }
+  }, { _id: false });
+  
+  const PanelSizeSchema = new mongoose.Schema({
+    width: { type: Number },
+    height: { type: Number }
+  }, { _id: false });
+  
+  const PanelSchema = new mongoose.Schema({
+    id: { type: String, required: true },
+    contentType: { 
+      type: String, 
+      enum: ['map', 'state', 'county', 'property', 'filter', 'stats', 'chart'],
+      required: true 
+    },
+    title: { type: String, required: true },
+    position: PanelPositionSchema,
+    size: PanelSizeSchema,
+    state: { type: mongoose.Schema.Types.Mixed },
+    visible: { type: Boolean, default: true },
+    closable: { type: Boolean, default: false },
+    maximizable: { type: Boolean, default: true }
+  }, { _id: false });
+  
+  const layoutSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    description: { type: String },
+    type: { 
+      type: String, 
+      enum: ['single', 'dual', 'tri', 'quad', 'advanced'],
+      required: true 
+    },
+    panels: [PanelSchema],
+    isDefault: { type: Boolean, default: false },
+    isPublic: { type: Boolean, default: false },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now }
+  });
+  
+  // Middleware to update the updatedAt field on save
+  layoutSchema.pre('save', function(next) {
+    this.updatedAt = new Date();
+    next();
+  });
+  
+  // Create indexes for more efficient queries
+  layoutSchema.index({ userId: 1 });
+  layoutSchema.index({ isPublic: 1 });
+  layoutSchema.index({ type: 1 });
+  
+  return mongoose.model('Layout', layoutSchema);
+};
 ```
 
 ## Example Document
@@ -157,64 +82,59 @@ const LayoutConfig = mongoose.model('LayoutConfig', LayoutConfigSchema);
 ```javascript
 {
   "_id": ObjectId("5f7b5d3e9d3e6a2b7c8b4567"),
-  "layoutId": "user_123_county_analysis",
-  "userId": "user_123",
-  "isGlobal": false,
   "name": "County Analysis Layout",
   "description": "Layout for analyzing county data with map, stats, and property panels",
-  "layoutType": "tri",
-  "panels": {
-    "map-panel": {
+  "type": "tri",
+  "userId": ObjectId("5f7a4d2c8b9d1a3e5c7b4568"),
+  "panels": [
+    {
       "id": "map-panel",
       "contentType": "map",
       "title": "County Map",
       "position": { "row": 0, "col": 0 },
-      "size": { "width": 2, "height": 1 },
+      "size": { "width": 50, "height": 50 },
       "state": {
         "center": [37.7749, -122.4194],
         "zoom": 6,
         "layers": ["counties", "properties"]
       },
       "visible": true,
-      "minimized": false,
-      "maximized": false
+      "closable": false,
+      "maximizable": true
     },
-    "county-panel": {
+    {
       "id": "county-panel",
       "contentType": "county",
       "title": "County Details",
-      "position": { "row": 0, "col": 2 },
-      "size": { "width": 1, "height": 1 },
+      "position": { "row": 0, "col": 1 },
+      "size": { "width": 50, "height": 50 },
       "state": {
         "selectedCounty": "06075"
       },
       "visible": true,
-      "minimized": false,
-      "maximized": false
+      "closable": false,
+      "maximizable": true
     },
-    "stats-panel": {
+    {
       "id": "stats-panel",
       "contentType": "stats",
       "title": "County Statistics",
       "position": { "row": 1, "col": 0 },
-      "size": { "width": 3, "height": 1 },
+      "size": { "width": 100, "height": 50 },
       "state": {
         "metrics": ["population", "properties", "land_value"],
         "chartType": "bar"
       },
       "visible": true,
-      "minimized": false,
-      "maximized": false
+      "closable": false,
+      "maximizable": true
     }
-  },
-  "tags": ["analysis", "counties", "california"],
-  "customConfig": {
-    "theme": "light",
-    "refreshInterval": 300000
-  },
+  ],
+  "isDefault": false,
+  "isPublic": true,
   "createdAt": ISODate("2023-10-15T14:22:30.123Z"),
   "updatedAt": ISODate("2023-11-20T09:45:12.456Z")
-} 
+}
 ```
 
 ## API Usage Examples
@@ -222,39 +142,37 @@ const LayoutConfig = mongoose.model('LayoutConfig', LayoutConfigSchema);
 ### Saving a Layout Configuration
 
 ```javascript
-const saveLayoutConfig = async (userId, name, layoutType, panels, options = {}) => {
-  const layoutId = `user_${userId}_${name.toLowerCase().replace(/\s+/g, '_')}`;
-  
-  const layoutConfig = new LayoutConfig({
-    layoutId,
-    userId,
+const saveLayout = async (name, layoutType, panels, options = {}) => {
+  const layout = new Layout({
     name,
-    layoutType,
+    type: layoutType,
     panels,
     description: options.description || '',
-    tags: options.tags || [],
-    customConfig: options.customConfig || {}
+    isDefault: options.isDefault || false,
+    isPublic: options.isPublic || false,
+    userId: options.userId
   });
   
-  await layoutConfig.save();
-  return layoutId;
+  await layout.save();
+  return layout._id;
 };
 ```
 
 ### Loading a Layout Configuration
 
 ```javascript
-const loadLayoutConfig = async (layoutId) => {
-  const layoutConfig = await LayoutConfig.findOne({ layoutId });
+const loadLayout = async (layoutId) => {
+  const layout = await Layout.findById(layoutId);
   
-  if (!layoutConfig) {
+  if (!layout) {
     throw new Error(`Layout configuration not found: ${layoutId}`);
   }
   
   return {
-    layoutType: layoutConfig.layoutType,
-    panels: layoutConfig.panels.toObject(),
-    customConfig: layoutConfig.customConfig
+    type: layout.type,
+    panels: layout.panels,
+    name: layout.name,
+    description: layout.description
   };
 };
 ```
@@ -263,27 +181,17 @@ const loadLayoutConfig = async (layoutId) => {
 
 ```javascript
 const getUserLayouts = async (userId) => {
-  return await LayoutConfig.find({ userId })
-    .select('layoutId name description layoutType tags updatedAt')
+  return await Layout.find({ userId })
+    .select('_id name description type panels createdAt updatedAt')
     .sort({ updatedAt: -1 });
 };
 ```
 
-### Finding Layouts by Tags
+### Finding Public Layouts
 
 ```javascript
-const getLayoutsByTags = async (tags, options = {}) => {
-  const query = { tags: { $all: tags } };
-  
-  if (options.userId) {
-    query.userId = options.userId;
-  }
-  
-  if (options.isGlobal !== undefined) {
-    query.isGlobal = options.isGlobal;
-  }
-  
-  return await LayoutConfig.find(query)
-    .select('layoutId name description layoutType tags updatedAt userId isGlobal')
+const getPublicLayouts = async () => {
+  return await Layout.find({ isPublic: true })
+    .select('_id name description type createdAt updatedAt')
     .sort({ updatedAt: -1 });
 };

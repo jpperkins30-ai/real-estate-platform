@@ -800,4 +800,256 @@ graph TB
         Map --> GeoData[GeoJSON Handler]
         Map --> Updates[Real-time Updates]
     end
-``` 
+```
+
+## Data Models
+
+### Core Data Models
+
+The platform uses a set of core data models that implement a consistent approach to data modeling, with particular focus on MongoDB schema design.
+
+#### Geographic Data Hierarchy
+
+```mermaid
+graph TD
+    USMap[US Map]
+    State1[State]
+    State2[State]
+    County1[County]
+    County2[County]
+    County3[County]
+    Prop1[Property]
+    Prop2[Property]
+    Prop3[Property]
+    Prop4[Property]
+    
+    USMap --> State1
+    USMap --> State2
+    State1 --> County1
+    State1 --> County2
+    State2 --> County3
+    County1 --> Prop1
+    County1 --> Prop2
+    County2 --> Prop3
+    County3 --> Prop4
+```
+
+#### Consolidated Schema Approach
+
+All geographic entity models (State, County, Property) follow a consolidated schema approach with these consistent patterns:
+
+1. **Proper Reference Types**
+   - All MongoDB references use `mongoose.Types.ObjectId` for proper typing
+   - References include the correct `ref` parameter for proper population
+
+2. **Nested Statistics Structure**
+   - All models use a nested `stats` object to organize metrics and statistical data
+   - The `stats` object includes a `lastUpdated` timestamp that is automatically maintained
+   - Statistics fields use consistent naming across all models
+
+3. **Middleware for Timestamp Updates**
+   - All models implement middleware to update `stats.lastUpdated` when statistics change
+   - All models use the `timestamps: true` option for automatic `createdAt`/`updatedAt` fields
+
+4. **Strategic Indexing**
+   - Geospatial indexes using `2dsphere` for location-based queries
+   - Compound indexes for common query patterns
+   - Single-field indexes for frequently searched fields
+   - Indexes on common statistical fields for analytics
+
+This consolidated approach ensures data consistency, improves query performance, and simplifies development across the entire platform.
+
+#### Sample Model Structure
+
+```typescript
+// County Model Example
+interface ICounty extends Document {
+  stateId: mongoose.Types.ObjectId;  // Reference to State
+  name: string;                      // County name
+  // ... other fields ...
+  
+  stats: {
+    medianHomeValue: number;         // Statistical data in nested structure
+    medianIncome: number;
+    // ... other statistics ...
+    lastUpdated: Date;               // Auto-updated timestamp
+  };
+}
+```
+
+### Model Relationships
+
+```mermaid
+graph LR
+    USMap[USMap] --> State[State]
+    State --> County[County]
+    County --> Property[Property]
+    
+    User --> LayoutConfig[Layout Config]
+    User --> UserPreferences[User Preferences]
+    User --> SavedSearches[Saved Searches]
+```
+
+## Testing
+
+### Unit Testing
+
+Unit tests are written using Vitest and React Testing Library. Tests are organized by component and service, with a focus on isolating units of functionality.
+
+```mermaid
+graph LR
+    A[Unit Tests] --> B[Component Tests]
+    A --> C[Service Tests]
+    A --> D[Utility Tests]
+    A --> E[Hook Tests]
+```
+
+### Integration Testing
+
+Integration tests verify that components work together as expected. These tests focus on component interactions, API integrations, and end-to-end flows.
+
+```mermaid
+graph LR
+    A[Integration Tests] --> B[Component Integration]
+    A --> C[API Integration]
+    A --> D[Database Integration]
+```
+
+### Test Path Structure
+
+All tests follow a standardized path structure to ensure consistency and traceability:
+
+1. **Directory Structure**: All tests are placed in the `src/_tests_/` directory (using single underscores) with a flattened hierarchy
+2. **Test ID System**: Each test file is prefixed with a unique Test Case ID (TC ID)
+3. **Naming Convention**: `TC{ID}_{component|service|hook}_{name}.test.{js|jsx|ts|tsx}`
+
+#### Example Test Structure
+
+```
+src/_tests_/
+├── TC101_components_multiframe_controls_LayoutSelector.test.tsx
+├── TC201_components_multiframe_MultiFrameContainer.test.tsx
+├── TC202_components_multiframe_EnhancedMultiFrameContainer.test.tsx
+├── TC301_components_multiframe_PanelContainer.test.tsx
+├── TC302_components_multiframe_PanelHeader.test.tsx
+├── TC401_components_multiframe_layouts_SinglePanelLayout.test.tsx
+├── TC402_components_multiframe_layouts_DualPanelLayout.test.tsx
+├── TC403_components_multiframe_layouts_TriPanelLayout.test.tsx
+├── TC404_components_multiframe_layouts_QuadPanelLayout.test.tsx
+├── TC405_components_multiframe_layouts_AdvancedLayout.test.tsx
+├── TC501_services_panelContentRegistry.test.tsx
+├── TC601_contexts_MultiFrameContext.test.tsx
+└── TC701_utils_panelUtils.test.tsx
+```
+
+#### Test Case ID Format
+
+Test IDs follow a numbering system for organization:
+
+- **100-199**: Core controls and UI components
+- **200-299**: Container components
+- **300-399**: Layout components
+- **400-499**: Panel components
+- **500-599**: Services
+- **600-699**: Context providers
+- **700-799**: Utilities and helpers
+- **800-899**: Hooks
+- **900-999**: Integration tests
+
+#### Test Description Format
+
+Each test includes the TC ID in the test description for traceability:
+
+```typescript
+describe('MultiFrameContainer [TC201]', () => {
+  it('TC201-1: should render with the specified initial layout', () => {
+    // Test implementation
+  });
+  
+  it('TC201-2: should switch layouts when the layout selector is used', () => {
+    // Test implementation
+  });
+});
+```
+
+## Continuous Integration
+
+The platform implements a CI/CD pipeline using Docker and Kubernetes for automated testing and deployment. The pipeline includes:
+
+1. **Code Push**: Automated code push to the repository
+2. **Tests**: Automated unit and integration tests
+3. **Build**: Container image creation
+4. **Deploy**: Deployment to Kubernetes cluster
+
+This ensures continuous integration and deployment, allowing for rapid iterations and high-quality releases. 
+
+## API Standards
+
+### Endpoint Naming
+
+API endpoints follow RESTful conventions and use plural nouns to represent resources:
+
+- `/api/states` - List or create states
+- `/api/states/:id` - Get, update, or delete a specific state
+- `/api/counties` - List or create counties
+- `/api/counties/:id` - Get, update, or delete a specific county
+
+### Response Format
+
+API responses follow a consistent format:
+
+```json
+{
+  "status": "success",
+  "data": {},
+  "message": ""
+}
+```
+
+- `status`: "success" or "error"
+- `data`: The response data (if applicable)
+- `message`: A human-readable message (especially for errors)
+
+### Error Handling
+
+Errors are returned with appropriate HTTP status codes and a consistent format:
+
+```json
+{
+  "status": "error",
+  "message": "Resource not found",
+  "code": "NOT_FOUND",
+  "details": { ... }
+}
+```
+
+### Field Naming Standards
+
+All API fields follow clear naming conventions:
+
+1. **Boolean Flags**: Boolean flags are prefixed with `is` or `has` to indicate their purpose clearly:
+   - `isDefault`: Indicates whether a layout is the default layout for a user (replacing older `isGlobal` field)
+   - `isPublic`: Indicates whether a layout is publicly visible to other users (replacing older `isGlobal` field)
+   - `isActive`: Indicates whether a resource is currently active
+
+2. **Field Naming Migration**: When field names change, the API temporarily supports both names during a transition period:
+   - Example: Supporting both `isGlobal` (legacy) and `isDefault`/`isPublic` (new) for backward compatibility
+   - Proper API versioning should be used for more significant changes
+
+3. **ID References**: ID references to other resources use the format `{resourceType}Id`:
+   - `stateId`: Reference to a State
+   - `countyId`: Reference to a County
+   - `propertyId`: Reference to a Property
+
+### API Versioning
+
+For significant API changes, version numbers should be included in the URL path:
+
+```
+/api/v1/layouts
+/api/v2/layouts
+```
+
+This allows for backward compatibility while introducing new features or breaking changes.
+
+## Security 

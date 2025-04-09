@@ -75,35 +75,22 @@ The County collection contains documents representing counties, each linked to a
 {
   _id: ObjectId,           // MongoDB ID
   name: String,            // County name (e.g., "Montgomery")
-  type: String,            // "county"
   stateId: ObjectId,       // Reference to parent State document
-  geometry: {              // GeoJSON representation of county boundaries
+  fips: String,            // Federal Information Processing Standard code
+  boundaries: {            // GeoJSON representation of county boundaries
     type: String,          // "MultiPolygon"
     coordinates: Array     // Nested array of coordinates
   },
-  metadata: {
-    totalProperties: Number,  // Number of properties in this county
-    statistics: {
-      totalTaxLiens: Number,  // Total tax liens in this county
-      totalValue: Number,     // Total property value in this county
-      averagePropertyValue: Number, // Average property value
-      totalPropertiesWithLiens: Number, // Properties with tax liens
-      lastUpdated: Date       // Last statistics update timestamp
-    },
-    searchConfig: {
-      lookupMethod: String,   // Method used for property lookup (e.g., "web", "api")
-      searchUrl: String,      // URL for property searches
-      lienUrl: String,        // URL for tax lien information
-      enabled: Boolean,       // Whether search is enabled for this county
-      lastRun: Date,          // Last search run timestamp
-      nextScheduledRun: Date, // Next scheduled search timestamp
-      selectors: {            // CSS selectors for web scraping
-        ownerName: String,    // Selector for owner name field
-        propertyAddress: String, // Selector for property address field
-        marketValue: String,  // Selector for market value field
-        taxStatus: String     // Selector for tax status field
-      }
-    }
+  population: Number,      // County population (default: 0)
+  propertyCount: Number,   // Number of properties in this county (default: 0)
+  stats: {                 // Statistics about the county
+    medianHomeValue: Number,      // Median home value in USD
+    medianIncome: Number,         // Median household income
+    unemploymentRate: Number,     // Unemployment rate percentage
+    avgDaysOnMarket: Number,      // Average days on market for listings
+    listingCount: Number,         // Number of active listings
+    priceChangeYoY: Number,       // Year-over-year price change percentage
+    lastUpdated: Date             // Last statistics update timestamp
   },
   createdAt: Date,         // Document creation timestamp
   updatedAt: Date          // Document last update timestamp

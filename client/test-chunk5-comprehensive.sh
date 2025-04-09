@@ -1,15 +1,16 @@
 #!/bin/bash
-# client/test-chunk5-comprehensive.sh
+# Run Chunk 5 tests with comprehensive coverage
 
-cd client
+echo "Running hook tests..."
+# Run all hook tests
+npx vitest run "src/_tests_/TC*_hooks_*" --config ./vitest.config.ts
 
-echo "Running All Custom Hooks Tests..."
-npx vitest run src/__tests__/hooks/ --config ./vitest.config.ts
+echo "Running component tests..."
+# Run all component tests
+npx vitest run "src/_tests_/TC*_components_*" --config ./vitest.config.ts
 
-echo "Running All Components Tests..."
-npx vitest run src/__tests__/components/ --config ./vitest.config.ts
+echo "Running integration tests..."
+# Run all integration tests
+npx vitest run "src/_tests_/TC*_integration_*" --config ./vitest.config.ts
 
-echo "Running Integration Tests..."
-npx vitest run src/__tests__/integration/ --config ./vitest.config.ts
-
-echo "All tests completed! Check results above." 
+echo "All Chunk 5 tests completed!" 

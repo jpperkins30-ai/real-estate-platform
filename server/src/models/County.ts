@@ -1,17 +1,29 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface ICounty extends Document {
-  name: string;
-  stateId: mongoose.Types.ObjectId;
-  fips: string;
-  boundaries?: any; // GeoJSON object
-  population?: number;
-  medianIncome?: number;
-  medianHomeValue?: number;
-  unemploymentRate?: number;
-  propertyCount?: number;
-  createdAt: Date;
-  updatedAt: Date;
+  name: string;                      // County name (required)
+  stateId: mongoose.Types.ObjectId;  // Reference to State, using proper ObjectId type
+  fips: string;                      // Federal Information Processing Standard code (required)
+  boundaries: {                      // GeoJSON representation of county boundaries
+    type: string;                    // "MultiPolygon"
+    coordinates: any[];              // Nested array of coordinates
+  };
+  population: number;                // County population
+  propertyCount: number;             // Number of properties in county
+  
+  // Consolidated statistics in a nested object
+  stats: {
+    medianHomeValue: number;         // Median home value in USD
+    medianIncome: number;            // Median household income
+    unemploymentRate: number;        // Unemployment rate percentage
+    avgDaysOnMarket: number;         // Average days on market for listings
+    listingCount: number;            // Number of active listings
+    priceChangeYoY: number;          // Year-over-year price change percentage
+    lastUpdated: Date;               // Last statistics update timestamp
+  };
+  
+  createdAt: Date;                   // Document creation timestamp
+  updatedAt: Date;                   // Document last update timestamp
 }
 
 const CountySchema = new Schema({
@@ -33,22 +45,17 @@ const CountySchema = new Schema({
     index: true
   },
   boundaries: {
-    type: Schema.Types.Mixed,
-    default: null
+    type: {
+      type: String,
+      enum: ['MultiPolygon'],
+      default: 'MultiPolygon'
+    },
+    coordinates: {
+      type: [[[Number]]], // Array of arrays of arrays of numbers
+      default: [[[[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]]]]
+    }
   },
   population: {
-    type: Number,
-    default: 0
-  },
-  medianIncome: {
-    type: Number,
-    default: 0
-  },
-  medianHomeValue: {
-    type: Number,
-    default: 0
-  },
-  unemploymentRate: {
     type: Number,
     default: 0
   },
@@ -56,23 +63,57 @@ const CountySchema = new Schema({
     type: Number,
     default: 0
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
+  stats: {
+    medianHomeValue: {
+      type: Number,
+      default: 0
+    },
+    medianIncome: {
+      type: Number,
+      default: 0
+    },
+    unemploymentRate: {
+      type: Number,
+      default: 0
+    },
+    avgDaysOnMarket: {
+      type: Number,
+      default: 0
+    },
+    listingCount: {
+      type: Number,
+      default: 0
+    },
+    priceChangeYoY: {
+      type: Number,
+      default: 0
+    },
+    lastUpdated: {
+      type: Date,
+      default: Date.now
+    }
   }
+}, {
+  timestamps: true // Automatically create createdAt and updatedAt fields
 });
 
-// Middleware to update timestamps
+// Middleware to update nested stats.lastUpdated timestamp when any stat field changes
 CountySchema.pre('save', function(next) {
-  this.updatedAt = new Date();
+  const county = this as any;
+  if (county.isModified('stats')) {
+    county.stats.lastUpdated = new Date();
+  }
   next();
 });
 
-// Create a geospatial index on boundaries
-CountySchema.index({ boundaries: '2dsphere' });
+// Create a compound index for efficient lookups and to prevent duplicates
+CountySchema.index({ stateId: 1, name: 1 }, { unique: true });
+
+// Create a geospatial index on boundaries for location-based queries
+CountySchema.index({ "boundaries": "2dsphere" });
+
+// Create index on commonly searched statistics fields
+CountySchema.index({ "stats.medianHomeValue": 1 });
+CountySchema.index({ "stats.lastUpdated": 1 });
 
 export const County = mongoose.model<ICounty>('County', CountySchema); 

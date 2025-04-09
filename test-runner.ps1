@@ -45,7 +45,7 @@ npx vitest run --reporter=html --config ./vitest.config.ts
 # Check for specific directory test success
 Write-Host ""
 Write-Host "Validating core functionality tests..." -ForegroundColor Yellow
-npx vitest run "src/__tests__/components_multiframe" --config ./vitest.config.ts
+npx vitest run "src/_tests_/components_multiframe" --config ./vitest.config.ts
 $CORE_TEST_RESULT = $LASTEXITCODE
 if ($CORE_TEST_RESULT -ne 0) {
     Write-Host "❌ Core functionality tests failed. Please fix before committing." -ForegroundColor Red

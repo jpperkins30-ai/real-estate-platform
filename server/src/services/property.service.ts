@@ -39,7 +39,7 @@ export class PropertyService {
     
     try {
       // Validate that the parent county exists
-      const county = await County.findById(propertyData.parentId);
+      const county = await County.findById(propertyData.countyId);
       if (!county) {
         throw new Error('Parent county not found');
       }
@@ -50,10 +50,10 @@ export class PropertyService {
       
       // Update the parent county document to include this property
       await County.findByIdAndUpdate(
-        propertyData.parentId,
+        propertyData.countyId,
         { 
           $push: { properties: property._id },
-          $inc: { 'metadata.totalProperties': 1 }
+          $inc: { propertyCount: 1 }
         },
         { session }
       );
@@ -64,22 +64,22 @@ export class PropertyService {
       
       if (taxLienStatus === 'Active') {
         await County.findByIdAndUpdate(
-          propertyData.parentId,
+          propertyData.countyId,
           { 
             $inc: { 
-              'metadata.statistics.totalTaxLiens': 1,
-              'metadata.statistics.totalValue': assessedValue,
-              'metadata.statistics.totalPropertiesWithLiens': 1
+              'stats.totalTaxLiens': 1,
+              'stats.totalValue': assessedValue,
+              'stats.totalPropertiesWithLiens': 1
             }
           },
           { session }
         );
       } else {
         await County.findByIdAndUpdate(
-          propertyData.parentId,
+          propertyData.countyId,
           { 
             $inc: { 
-              'metadata.statistics.totalValue': assessedValue
+              'stats.totalValue': assessedValue
             }
           },
           { session }
@@ -87,14 +87,14 @@ export class PropertyService {
       }
       
       // Also update the state statistics
-      const state = await State.findById(county.parentId);
+      const state = await State.findById(county.stateId);
       if (state) {
         await State.findByIdAndUpdate(
-          county.parentId,
+          county.stateId,
           { 
             $inc: { 
-              'metadata.totalProperties': 1,
-              'metadata.statistics.totalValue': assessedValue
+              totalProperties: 1,
+              'stats.totalValue': assessedValue
             }
           },
           { session }
@@ -102,11 +102,11 @@ export class PropertyService {
         
         if (taxLienStatus === 'Active') {
           await State.findByIdAndUpdate(
-            county.parentId,
+            county.stateId,
             { 
               $inc: { 
-                'metadata.statistics.totalTaxLiens': 1,
-                'metadata.statistics.totalPropertiesWithLiens': 1
+                'stats.totalTaxLiens': 1,
+                'stats.totalPropertiesWithLiens': 1
               }
             },
             { session }
@@ -128,9 +128,9 @@ export class PropertyService {
    * Update a property
    */
   async updateProperty(id: string, propertyData: Partial<PropertyObject>): Promise<IProperty | null> {
-    // If updating the parentId, a more complex update would be needed to maintain the hierarchy
-    if (propertyData.parentId) {
-      throw new Error('Cannot update parentId directly. Use moveProperty method instead.');
+    // If updating the countyId, a more complex update would be needed to maintain the hierarchy
+    if (propertyData.countyId) {
+      throw new Error('Cannot update countyId directly. Use moveProperty method instead.');
     }
     
     return Property.findByIdAndUpdate(
@@ -156,15 +156,15 @@ export class PropertyService {
       }
       
       // Get the parent county
-      const county = await County.findById(property.parentId);
+      const county = await County.findById(property.countyId);
       
       if (county) {
         // Update the parent county to remove this property
         await County.findByIdAndUpdate(
-          property.parentId,
+          property.countyId,
           { 
             $pull: { properties: property._id },
-            $inc: { 'metadata.totalProperties': -1 }
+            $inc: { propertyCount: -1 }
           },
           { session }
         );
@@ -175,22 +175,22 @@ export class PropertyService {
         
         if (taxLienStatus === 'Active') {
           await County.findByIdAndUpdate(
-            property.parentId,
+            property.countyId,
             { 
               $inc: { 
-                'metadata.statistics.totalTaxLiens': -1,
-                'metadata.statistics.totalValue': -assessedValue,
-                'metadata.statistics.totalPropertiesWithLiens': -1
+                'stats.totalTaxLiens': -1,
+                'stats.totalValue': -assessedValue,
+                'stats.totalPropertiesWithLiens': -1
               }
             },
             { session }
           );
         } else {
           await County.findByIdAndUpdate(
-            property.parentId,
+            property.countyId,
             { 
               $inc: { 
-                'metadata.statistics.totalValue': -assessedValue
+                'stats.totalValue': -assessedValue
               }
             },
             { session }
@@ -198,13 +198,13 @@ export class PropertyService {
         }
         
         // Also update the state statistics
-        if (county.parentId) {
+        if (county.stateId) {
           await State.findByIdAndUpdate(
-            county.parentId,
+            county.stateId,
             { 
               $inc: { 
-                'metadata.totalProperties': -1,
-                'metadata.statistics.totalValue': -assessedValue
+                totalProperties: -1,
+                'stats.totalValue': -assessedValue
               }
             },
             { session }
@@ -212,11 +212,11 @@ export class PropertyService {
           
           if (taxLienStatus === 'Active') {
             await State.findByIdAndUpdate(
-              county.parentId,
+              county.stateId,
               { 
                 $inc: { 
-                  'metadata.statistics.totalTaxLiens': -1,
-                  'metadata.statistics.totalPropertiesWithLiens': -1
+                  'stats.totalTaxLiens': -1,
+                  'stats.totalPropertiesWithLiens': -1
                 }
               },
               { session }
@@ -266,14 +266,14 @@ export class PropertyService {
    */
   async getPropertiesByCountyAndState(countyId: string, stateId: string): Promise<IProperty[]> {
     // First verify that the county belongs to the state
-    const county = await County.findOne({ _id: countyId, parentId: stateId });
+    const county = await County.findOne({ _id: countyId, stateId: stateId });
     
     if (!county) {
       throw new Error('County not found in the specified state');
     }
     
     // Then get all properties for this county
-    return Property.find({ parentId: countyId }).exec();
+    return Property.find({ countyId: countyId }).exec();
   }
   
   /**
@@ -292,7 +292,7 @@ export class PropertyService {
       }
       
       // Get the old and new counties
-      const oldCountyId = property.parentId;
+      const oldCountyId = property.countyId;
       const [oldCounty, newCounty] = await Promise.all([
         County.findById(oldCountyId),
         County.findById(newCountyId)
@@ -303,7 +303,13 @@ export class PropertyService {
       }
       
       // Update property with new county
-      property.parentId = newCountyId;
+      property.countyId = newCountyId;
+      
+      // Update property state reference if the counties belong to different states
+      if (oldCounty.stateId.toString() !== newCounty.stateId.toString()) {
+        property.stateId = newCounty.stateId;
+      }
+      
       await property.save({ session });
       
       // Update old county to remove property
@@ -311,7 +317,7 @@ export class PropertyService {
         oldCountyId,
         { 
           $pull: { properties: property._id },
-          $inc: { 'metadata.totalProperties': -1 }
+          $inc: { propertyCount: -1 }
         },
         { session }
       );
@@ -321,24 +327,24 @@ export class PropertyService {
         newCountyId,
         { 
           $push: { properties: property._id },
-          $inc: { 'metadata.totalProperties': 1 }
+          $inc: { propertyCount: 1 }
         },
         { session }
       );
       
       // Update state statistics if the counties belong to different states
-      if (oldCounty.parentId.toString() !== newCounty.parentId.toString()) {
+      if (oldCounty.stateId.toString() !== newCounty.stateId.toString()) {
         // Decrement old state
         await State.findByIdAndUpdate(
-          oldCounty.parentId,
-          { $inc: { 'metadata.totalProperties': -1 } },
+          oldCounty.stateId,
+          { $inc: { totalProperties: -1 } },
           { session }
         );
         
         // Increment new state
         await State.findByIdAndUpdate(
-          newCounty.parentId,
-          { $inc: { 'metadata.totalProperties': 1 } },
+          newCounty.stateId,
+          { $inc: { totalProperties: 1 } },
           { session }
         );
       }
@@ -354,36 +360,46 @@ export class PropertyService {
   }
 
   /**
-   * Get tax status for a property
+   * Get property statistics
    */
-  async getPropertyTaxStatus(id: string): Promise<PropertyTaxStatus> {
+  async getPropertyStats(id: string): Promise<any> {
     const property = await Property.findById(id)
-      .select('taxStatus')
+      .select('stats')
       .exec();
 
     if (!property) {
       throw new Error('Property not found');
     }
 
-    return property.taxStatus;
+    return property.stats;
   }
 
   /**
-   * Update tax status for a property
+   * Update property statistics
    */
-  async updatePropertyTaxStatus(id: string, taxStatus: Partial<PropertyTaxStatus>): Promise<IProperty> {
+  async updatePropertyStats(id: string, statsUpdate: any): Promise<IProperty> {
     const property = await Property.findById(id);
     
     if (!property) {
       throw new Error('Property not found');
     }
 
-    property.taxStatus = {
-      ...property.taxStatus,
-      ...taxStatus,
-      lastUpdated: new Date()
-    };
+    // Create update object for nested stats fields
+    const updateData: any = {};
+    
+    // Update specific stats fields
+    Object.keys(statsUpdate).forEach(key => {
+      updateData[`stats.${key}`] = statsUpdate[key];
+    });
+    
+    // Update last updated timestamp
+    updateData['stats.lastUpdated'] = new Date();
 
-    return property.save();
+    // Apply updates
+    return Property.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true }
+    ).exec();
   }
 } 

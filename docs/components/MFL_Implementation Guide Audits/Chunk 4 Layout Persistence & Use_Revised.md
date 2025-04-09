@@ -1292,7 +1292,7 @@ beforeEach(() => {
 
 ##### 3. Layout Service Tests
 
-📄 **client/src/__tests__/services/layoutService.test.ts**
+📄 **client/src/_tests_/TC2301_services_layoutService.test.ts**
 ```typescript
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { saveLayoutToStorage, loadLayoutsFromStorage } from '../../services/layoutService';
@@ -1420,7 +1420,7 @@ describe('layoutService', () => {
 
 ##### 4. User Preferences Service Tests
 
-📄 **client/src/__tests__/services/preferencesService.test.ts**
+📄 **client/src/_tests_/TC2201_services_preferencesService.test.ts**
 ```typescript
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import axios from 'axios';
@@ -1796,7 +1796,7 @@ describe('preferencesService', () => {
 
 ##### 5. Layout Manager Component Tests
 
-📄 **client/src/__tests__/components/multiframe/preferences/LayoutManager.test.tsx**
+📄 **client/src/_tests_/TC3101_components_multiframe_preferences_LayoutManager.test.tsx**
 ```typescript
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
@@ -2012,12 +2012,12 @@ describe('LayoutManager', () => {
 
 ##### 6. Layout Selector Component Tests
 
-📄 **client/src/__tests__/components/multiframe/preferences/LayoutSelector.test.tsx**
+📄 **client/src/_tests_/TC101_components_multiframe_controls_LayoutSelector.test.tsx**
 ```typescript
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { LayoutSelector } from '../../../../components/multiframe/preferences/LayoutSelector';
+import { LayoutSelector } from '../../../../components/multiframe/controls/LayoutSelector';
 import { fetchLayouts } from '../../../../services/layoutService';
 import { LayoutConfig } from '../../../../types/layout.types';
 
@@ -2155,7 +2155,7 @@ describe('LayoutSelector', () => {
 
 ##### 7. MultiFrameContainer Layout Tests
 
-📄 **client/src/__tests__/components/MultiFrameContainer.layout.test.tsx**
+📄 **client/src/_tests_/TC201_components_MultiFrameContainer.layout.test.tsx**
 ```typescript
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
@@ -2294,17 +2294,17 @@ cd client
 echo "Running Layout Persistence Tests..."
 
 # Run specific layout persistence tests
-npx vitest run src/__tests__/services/layoutService.test.ts src/__tests__/services/preferencesService.test.ts --config ./vitest.config.ts --no-coverage
+npx vitest run src/_tests_/TC2301_services_layoutService.test.ts src/_tests_/TC2201_services_preferencesService.test.ts --config ./vitest.config.ts --no-coverage
 
 echo "Running Layout Component Tests..."
 
 # Run UI component tests for layout management
-npx vitest run src/__tests__/components/multiframe/preferences/ --config ./vitest.config.ts --no-coverage
+npx vitest run "src/_tests_/TC*_components_multiframe_preferences_*" --config ./vitest.config.ts --no-coverage
 
 echo "Running MultiFrameContainer Layout Tests..."
 
 # Run container tests with layout integration
-npx vitest run src/__tests__/components/MultiFrameContainer.layout.test.tsx --config ./vitest.config.ts --no-coverage
+npx vitest run src/_tests_/TC201_components_MultiFrameContainer.layout.test.tsx --config ./vitest.config.ts --no-coverage
 
 echo "All layout persistence tests completed!"
 ```

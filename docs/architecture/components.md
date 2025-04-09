@@ -126,6 +126,60 @@ interface PanelProps {
 }
 ```
 
+## Component Inheritance and Composition
+
+The MultiFrame system follows a specific inheritance and composition pattern:
+
+### Component Hierarchy
+
+1. **Base Components:**
+   - `MultiFrameContainer`: Root container component
+   - `PanelContainer`: Base panel wrapper
+
+2. **Specialized Components:**
+   - `EnhancedMultiFrameContainer`: Extends functionality of MultiFrameContainer
+   - Layout components (SinglePanelLayout, DualPanelLayout, etc.): Composed by MultiFrameContainer
+
+3. **Composition Relationships:**
+   - MultiFrameContainer → Layout Components → PanelContainer → Panel Content
+   - Each level has clear responsibilities and interfaces
+
+### Responsibility Distribution
+
+- **MultiFrameContainer**: Layout type management, panel configuration
+- **EnhancedMultiFrameContainer**: Extends MultiFrameContainer with additional features for advanced layouts
+- **Layout Components**: Panel arrangement and positioning
+- **PanelContainer**: Individual panel rendering, state management
+- **Panel Content**: Domain-specific functionality
+
+### Inheritance Example
+
+```mermaid
+graph TD
+    MFC[MultiFrameContainer]
+    EMFC[EnhancedMultiFrameContainer]
+    SL[SinglePanelLayout]
+    DL[DualPanelLayout]
+    TL[TriPanelLayout]
+    QL[QuadPanelLayout]
+    AL[AdvancedLayout]
+    PC[PanelContainer]
+    
+    MFC --> SL
+    MFC --> DL
+    MFC --> TL
+    MFC --> QL
+    MFC --> AL
+    
+    EMFC -.extends.-> MFC
+    
+    SL --> PC
+    DL --> PC
+    TL --> PC
+    QL --> PC
+    AL --> PC
+```
+
 ## Testing Considerations
 
 The multiframe system requires special testing approaches:

@@ -86,11 +86,29 @@ export const getCountyStats = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { timeframe = '1y' } = req.query;
     
-    // Check if county exists
-    const county = await County.findById(id);
+    // Check if county exists and get its stats
+    const county = await County.findById(id).select('stats population propertyCount');
     
     if (!county) {
       return res.status(404).json({ message: 'County not found' });
+    }
+    
+    // If we just want the stored stats without calculating from properties
+    if (req.query.useStoredStats === 'true') {
+      // Create a plain object with the stats properties
+      const statsResponse = {
+        medianHomeValue: county.stats.medianHomeValue,
+        medianIncome: county.stats.medianIncome,
+        unemploymentRate: county.stats.unemploymentRate,
+        avgDaysOnMarket: county.stats.avgDaysOnMarket,
+        listingCount: county.stats.listingCount,
+        priceChangeYoY: county.stats.priceChangeYoY,
+        lastUpdated: county.stats.lastUpdated,
+        population: county.population,
+        propertyCount: county.propertyCount
+      };
+      
+      return res.status(200).json(statsResponse);
     }
     
     // Calculate date range based on timeframe
@@ -131,24 +149,21 @@ export const getCountyStats = async (req: Request, res: Response) => {
     // Calculate statistics
     const stats = {
       propertyCount: properties.length,
-      avgPrice: 0,
-      medianPrice: 0,
-      priceChange: 0,
-      salesVolume: 0,
-      daysOnMarket: 0,
-      inventoryCount: 0,
-      monthsOfInventory: 0
+      medianHomeValue: county.stats.medianHomeValue || 0,
+      medianIncome: county.stats.medianIncome || 0,
+      unemploymentRate: county.stats.unemploymentRate || 0,
+      avgDaysOnMarket: county.stats.avgDaysOnMarket || 0,
+      listingCount: properties.filter(p => p.status === 'active').length,
+      priceChangeYoY: county.stats.priceChangeYoY || 0,
+      population: county.population || 0,
+      lastUpdated: new Date()
     };
     
     if (properties.length > 0) {
-      // Calculate avg price
-      const totalPrice = properties.reduce((sum, prop) => sum + prop.price, 0);
-      stats.avgPrice = Math.round(totalPrice / properties.length);
-      
-      // Calculate median price
+      // Calculate median home value if we have enough properties
       const sortedPrices = properties.map(p => p.price).sort((a, b) => a - b);
       const midIndex = Math.floor(sortedPrices.length / 2);
-      stats.medianPrice = sortedPrices.length % 2 === 0
+      stats.medianHomeValue = sortedPrices.length % 2 === 0
         ? Math.round((sortedPrices[midIndex - 1] + sortedPrices[midIndex]) / 2)
         : sortedPrices[midIndex];
       
@@ -159,35 +174,98 @@ export const getCountyStats = async (req: Request, res: Response) => {
         const days = Math.round((soldDate.getTime() - listDate.getTime()) / (1000 * 60 * 60 * 24));
         return sum + days;
       }, 0);
-      stats.daysOnMarket = Math.round(totalDays / properties.length);
-      
-      // Calculate price change (simplified for this example)
-      // In a real implementation, you would compare to previous period
-      stats.priceChange = 5.2; // Example value
-      
-      // Calculate sales volume
-      const soldProperties = properties.filter(p => p.status === 'sold');
-      stats.salesVolume = soldProperties.reduce((sum, prop) => sum + prop.price, 0);
-      
-      // Calculate inventory count
-      stats.inventoryCount = properties.filter(p => p.status === 'active').length;
-      
-      // Calculate months of inventory
-      const monthlySales = soldProperties.length / (timeframe === '1m' ? 1 : 
-                          timeframe === '3m' ? 3 : 
-                          timeframe === '6m' ? 6 : 
-                          timeframe === '1y' ? 12 : 
-                          timeframe === '3y' ? 36 : 
-                          timeframe === '5y' ? 60 : 12);
-      
-      stats.monthsOfInventory = monthlySales > 0 
-        ? parseFloat((stats.inventoryCount / monthlySales).toFixed(1)) 
-        : 0;
+      stats.avgDaysOnMarket = Math.round(totalDays / properties.length);
+    }
+    
+    // Save the updated stats to the county model
+    if (req.query.updateCounty === 'true') {
+      try {
+        // Only update the stats that we calculated
+        await County.findByIdAndUpdate(id, {
+          $set: {
+            'stats.medianHomeValue': stats.medianHomeValue,
+            'stats.avgDaysOnMarket': stats.avgDaysOnMarket,
+            'stats.listingCount': stats.listingCount,
+            'stats.lastUpdated': stats.lastUpdated
+          }
+        });
+      } catch (updateError) {
+        console.error(`Error updating county stats: ${updateError}`);
+      }
     }
     
     res.status(200).json(stats);
   } catch (error) {
     console.error(`Error fetching stats for county ${req.params.id}:`, error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+/**
+ * Update county statistics
+ */
+export const updateCountyStats = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const statsUpdate = req.body;
+    
+    // Validate input
+    if (!statsUpdate || typeof statsUpdate !== 'object') {
+      return res.status(400).json({ message: 'Invalid statistics data' });
+    }
+
+    // Find the county
+    const county = await County.findById(id);
+    
+    if (!county) {
+      return res.status(404).json({ message: 'County not found' });
+    }
+    
+    // Update only valid stats fields
+    const validFields = [
+      'medianHomeValue', 
+      'medianIncome', 
+      'unemploymentRate', 
+      'avgDaysOnMarket', 
+      'listingCount', 
+      'priceChangeYoY'
+    ];
+    
+    const updateData: any = {};
+    
+    validFields.forEach(field => {
+      if (field in statsUpdate) {
+        updateData[`stats.${field}`] = statsUpdate[field];
+      }
+    });
+    
+    // Add lastUpdated timestamp
+    updateData['stats.lastUpdated'] = new Date();
+    
+    // Also update population and propertyCount if provided
+    if ('population' in statsUpdate) {
+      updateData.population = statsUpdate.population;
+    }
+    
+    if ('propertyCount' in statsUpdate) {
+      updateData.propertyCount = statsUpdate.propertyCount;
+    }
+    
+    // Update the county
+    const updatedCounty = await County.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
+    
+    res.status(200).json({
+      message: 'Statistics updated successfully',
+      stats: updatedCounty?.stats,
+      population: updatedCounty?.population,
+      propertyCount: updatedCounty?.propertyCount
+    });
+  } catch (error) {
+    console.error(`Error updating stats for county ${req.params.id}:`, error);
     res.status(500).json({ message: 'Server error' });
   }
 };

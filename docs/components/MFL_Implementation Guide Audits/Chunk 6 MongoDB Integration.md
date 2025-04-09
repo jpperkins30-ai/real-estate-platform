@@ -40,104 +40,99 @@ npm install mongoose express express-validator jsonwebtoken
 ```typescript
 import mongoose, { Document, Schema } from 'mongoose';
 
-export interface PanelPosition {
-  row: number;
-  col: number;
-}
-
-export interface PanelSize {
-  width: number;
-  height: number;
-}
-
-export interface PanelConfig {
-  id: string;
-  contentType: string;
-  title: string;
-  position?: PanelPosition;
-  size?: PanelSize;
-  state?: any;
-  visible?: boolean;
-}
-
-export interface ILayoutConfig extends Document {
-  userId: mongoose.Types.ObjectId;
-  name: string;
-  description?: string;
-  isDefault: boolean;
-  isPublic: boolean;
-  layoutType: 'single' | 'dual' | 'tri' | 'quad';
-  panels: PanelConfig[];
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-const LayoutConfigSchema = new Schema({
-  userId: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  name: {
-    type: String,
-    required: true
-  },
-  description: String,
-  isDefault: {
-    type: Boolean,
-    default: false
-  },
-  isPublic: {
-    type: Boolean,
-    default: false
-  },
-  layoutType: {
-    type: String,
-    enum: ['single', 'dual', 'tri', 'quad'],
-    required: true
-  },
-  panels: [{
-    id: {
-      type: String,
-      required: true
-    },
-    contentType: {
-      type: String,
-      required: true
-    },
-    title: String,
-    position: {
-      row: Number,
-      col: Number
-    },
-    size: {
-      width: Number,
-      height: Number
-    },
-    state: Schema.Types.Mixed,
-    visible: {
-      type: Boolean,
-      default: true
-    }
-  }],
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
+// Define layout schema setup function
+export const setupLayoutSchema = () => {
+  // Only create schema if it doesn't already exist
+  if (mongoose.models.Layout) {
+    return mongoose.models.Layout;
   }
-});
+  
+  const PanelPositionSchema = new mongoose.Schema({
+    // For standard layouts
+    row: { type: Number },
+    col: { type: Number },
+    // For advanced layouts
+    x: { type: Number },
+    y: { type: Number },
+    width: { type: Number },
+    height: { type: Number }
+  }, { _id: false });
+  
+  const PanelSizeSchema = new mongoose.Schema({
+    width: { type: Number },
+    height: { type: Number }
+  }, { _id: false });
+  
+  const PanelSchema = new mongoose.Schema({
+    id: { type: String, required: true },
+    contentType: { 
+      type: String, 
+      enum: ['map', 'state', 'county', 'property', 'filter', 'stats', 'chart'],
+      required: true 
+    },
+    title: { type: String, required: true },
+    position: PanelPositionSchema,
+    size: PanelSizeSchema,
+    state: { type: mongoose.Schema.Types.Mixed },
+    visible: { type: Boolean, default: true },
+    closable: { type: Boolean, default: false },
+    maximizable: { type: Boolean, default: true }
+  }, { _id: false });
+  
+  const layoutSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    description: { type: String },
+    type: { 
+      type: String, 
+      enum: ['single', 'dual', 'tri', 'quad', 'advanced'],
+      required: true 
+    },
+    panels: [PanelSchema],
+    isDefault: { type: Boolean, default: false },
+    isPublic: { type: Boolean, default: false },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now }
+  });
+  
+  // Middleware to update the updatedAt field on save
+  layoutSchema.pre('save', function(next) {
+    this.updatedAt = new Date();
+    next();
+  });
+  
+  // Create indexes for more efficient queries
+  layoutSchema.index({ userId: 1 });
+  layoutSchema.index({ isPublic: 1 });
+  layoutSchema.index({ type: 1 });
+  
+  return mongoose.model('Layout', layoutSchema);
+};
 
-// Middleware to update timestamps
-LayoutConfigSchema.pre('save', function(next) {
-  this.updatedAt = new Date();
-  next();
+// Example Test Code
+/*
+// Test schema validation
+const layout = new LayoutModel({
+  name: 'Test Layout',
+  type: 'quad',
+  panels: [
+    {
+      id: 'panel-1',
+      contentType: 'map',
+      title: 'Map Panel',
+      position: { row: 0, col: 0 },
+      size: { width: 50, height: 50 }
+    },
+    {
+      id: 'panel-2',
+      contentType: 'property',
+      title: 'Property Panel',
+      position: { row: 0, col: 1 },
+      size: { width: 50, height: 50 }
+    }
+  ]
 });
-
-export const LayoutConfig = mongoose.model<ILayoutConfig>('LayoutConfig', LayoutConfigSchema);
-```
+*/
 
 📄 **server/src/models/UserPreferences.ts**
 ```typescript
@@ -230,37 +225,45 @@ export const UserPreferences = mongoose.model<IUserPreferences>('UserPreferences
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface ICounty extends Document {
-  stateId: string;
-  name: string;
-  fips: string;
-  boundaries: any; // GeoJSON
-  population: number;
-  propertyCount: number;
+  stateId: mongoose.Types.ObjectId;  // Reference to State, using proper ObjectId type
+  name: string;                      // County name (required)
+  fips: string;                      // Federal Information Processing Standard code (required)
+  boundaries: any;                   // GeoJSON representation of county boundaries (required)
+  population: number;                // County population
+  propertyCount: number;             // Number of properties in county
+  
+  // Consolidated statistics
   stats: {
-    medianHomePrice: number;
-    avgDaysOnMarket: number;
-    listingCount: number;
-    priceChangeYoY: number;
-    lastUpdated: Date;
+    medianHomeValue: number;         // Median home value in USD
+    medianIncome: number;            // Median household income
+    unemploymentRate: number;        // Unemployment rate percentage
+    avgDaysOnMarket: number;         // Average days on market for listings
+    listingCount: number;            // Number of active listings
+    priceChangeYoY: number;          // Year-over-year price change percentage
+    lastUpdated: Date;               // Last statistics update timestamp
   };
-  createdAt: Date;
-  updatedAt: Date;
+  
+  createdAt: Date;                   // Document creation timestamp
+  updatedAt: Date;                   // Document last update timestamp
 }
 
 const CountySchema = new Schema({
   stateId: {
-    type: String,
+    type: Schema.Types.ObjectId,
+    ref: 'State',
     required: true,
     index: true
   },
   name: {
     type: String,
-    required: true
+    required: true,
+    index: true
   },
   fips: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
+    index: true
   },
   boundaries: {
     type: Schema.Types.Mixed,
@@ -275,10 +278,30 @@ const CountySchema = new Schema({
     default: 0
   },
   stats: {
-    medianHomePrice: Number,
-    avgDaysOnMarket: Number,
-    listingCount: Number,
-    priceChangeYoY: Number,
+    medianHomeValue: {
+      type: Number,
+      default: 0
+    },
+    medianIncome: {
+      type: Number,
+      default: 0
+    },
+    unemploymentRate: {
+      type: Number,
+      default: 0
+    },
+    avgDaysOnMarket: {
+      type: Number,
+      default: 0
+    },
+    listingCount: {
+      type: Number,
+      default: 0
+    },
+    priceChangeYoY: {
+      type: Number,
+      default: 0
+    },
     lastUpdated: {
       type: Date,
       default: Date.now
@@ -297,10 +320,19 @@ const CountySchema = new Schema({
 // Middleware to update timestamps
 CountySchema.pre('save', function(next) {
   this.updatedAt = new Date();
+  
+  // If stats are being updated, also update the lastUpdated timestamp
+  if (this.isModified('stats')) {
+    this.stats.lastUpdated = new Date();
+  }
+  
   next();
 });
 
-// Indexes for optimization
+// Create a geospatial index on boundaries for optimized geo queries
+CountySchema.index({ boundaries: '2dsphere' });
+
+// Create compound index for state+name for faster lookups
 CountySchema.index({ stateId: 1, name: 1 });
 
 export const County = mongoose.model<ICounty>('County', CountySchema);
@@ -397,13 +429,9 @@ export const getLayout = async (req: Request, res: Response) => {
   } catch (error) {
     console.error(`Error fetching layout ${req.params.id}:`, error);
     res.status(500).json({ message: 'Server error' });
+  }
+};
 
-I'll continue with the implementation of Chunk 6, focusing on completing the API controllers and routes with proper attention to county-level functionality.
-
-#### 3. Create API Controllers (continued)
-
-📄 **server/src/controllers/layoutController.ts** (continued)
-```typescript
 /**
  * Create a new layout
  */
@@ -547,7 +575,7 @@ export const getCountiesByState = async (req: Request, res: Response) => {
     const { stateId } = req.params;
     
     const counties = await County.find({ stateId })
-      .select('name fips population propertyCount')
+      .select('name fips population propertyCount stats.medianHomeValue')
       .sort({ name: 1 });
     
     res.status(200).json(counties);
@@ -604,19 +632,111 @@ export const getCountyBoundaries = async (req: Request, res: Response) => {
 export const getCountyStats = async (req: Request, res: Response) => {
   try {
     const { countyId } = req.params;
+    const { timeframe = '1y' } = req.query;
     
-    const county = await County.findOne({ _id: countyId })
+    // Get the county with stats
+    const county = await County.findById(countyId)
       .select('stats population propertyCount');
     
     if (!county) {
       return res.status(404).json({ message: 'County not found' });
     }
     
-    res.status(200).json({
-      ...county.stats.toObject(),
+    // Option to return the stored stats directly 
+    if (req.query.useStoredStats === 'true') {
+      // Return stats with additional population and property count fields
+      const statsResponse = {
+        medianHomeValue: county.stats.medianHomeValue,
+        medianIncome: county.stats.medianIncome,
+        unemploymentRate: county.stats.unemploymentRate,
+        avgDaysOnMarket: county.stats.avgDaysOnMarket,
+        listingCount: county.stats.listingCount,
+        priceChangeYoY: county.stats.priceChangeYoY,
+        lastUpdated: county.stats.lastUpdated,
+        population: county.population,
+        propertyCount: county.propertyCount
+      };
+      
+      return res.status(200).json(statsResponse);
+    }
+    
+    // Calculate date range based on timeframe
+    const now = new Date();
+    let startDate = new Date();
+    
+    // Set time range based on query parameter
+    switch (timeframe) {
+      case '1m': startDate.setMonth(startDate.getMonth() - 1); break;
+      case '3m': startDate.setMonth(startDate.getMonth() - 3); break;
+      case '6m': startDate.setMonth(startDate.getMonth() - 6); break;
+      case '1y': startDate.setFullYear(startDate.getFullYear() - 1); break;
+      case 'all': startDate = new Date(0); break;
+      default: startDate.setFullYear(startDate.getFullYear() - 1);
+    }
+    
+    // Calculate up-to-date statistics from property data
+    const propertyData = await Property.find({
+      countyId, 
+      createdAt: { $gte: startDate }
+    }).select('price status listDate soldDate stats.daysOnMarket');
+    
+    // Update stats with fresh data for specified time period
+    const stats = {
+      medianHomeValue: county.stats.medianHomeValue,
+      medianIncome: county.stats.medianIncome,
+      unemploymentRate: county.stats.unemploymentRate,
+      avgDaysOnMarket: 0,
+      listingCount: propertyData.filter(p => p.status === 'active').length,
+      priceChangeYoY: county.stats.priceChangeYoY,
+      lastUpdated: new Date(),
       population: county.population,
       propertyCount: county.propertyCount
-    });
+    };
+    
+    // Calculate metrics from property data
+    if (propertyData.length > 0) {
+      // Calculate median home value from actual properties
+      const sortedPrices = propertyData
+        .filter(p => p.price > 0)
+        .map(p => p.price)
+        .sort((a, b) => a - b);
+        
+      if (sortedPrices.length > 0) {
+        const midIndex = Math.floor(sortedPrices.length / 2);
+        stats.medianHomeValue = sortedPrices.length % 2 === 0
+          ? Math.round((sortedPrices[midIndex - 1] + sortedPrices[midIndex]) / 2)
+          : sortedPrices[midIndex];
+      }
+      
+      // Calculate average days on market
+      let totalDays = 0;
+      let propertiesWithDom = 0;
+      
+      propertyData.forEach(p => {
+        if (p.stats?.daysOnMarket > 0) {
+          totalDays += p.stats.daysOnMarket;
+          propertiesWithDom++;
+        }
+      });
+      
+      if (propertiesWithDom > 0) {
+        stats.avgDaysOnMarket = Math.round(totalDays / propertiesWithDom);
+      }
+    }
+    
+    // Option to update county with new calculated stats
+    if (req.query.updateStats === 'true') {
+      await County.findByIdAndUpdate(countyId, {
+        $set: {
+          'stats.medianHomeValue': stats.medianHomeValue,
+          'stats.avgDaysOnMarket': stats.avgDaysOnMarket,
+          'stats.listingCount': stats.listingCount,
+          'stats.lastUpdated': stats.lastUpdated
+        }
+      });
+    }
+    
+    res.status(200).json(stats);
   } catch (error) {
     console.error(`Error fetching county stats ${req.params.countyId}:`, error);
     res.status(500).json({ message: 'Server error' });
@@ -624,32 +744,106 @@ export const getCountyStats = async (req: Request, res: Response) => {
 };
 
 /**
- * Get county controller status
+ * Update county statistics
  */
-export const getCountyControllerStatus = async (req: Request, res: Response) => {
+export const updateCountyStats = async (req: Request, res: Response) => {
   try {
     const { countyId } = req.params;
+    const statsUpdate = req.body;
     
-    // This would connect to your controller system
-    // For now, returning mock data
-    const hasController = Math.random() > 0.5;
+    // Validate input
+    if (!statsUpdate || typeof statsUpdate !== 'object') {
+      return res.status(400).json({ message: 'Invalid statistics data' });
+    }
+
+    // Find the county
+    const county = await County.findById(countyId);
     
-    let status = null;
-    let lastRun = null;
-    
-    if (hasController) {
-      const statuses = ['active', 'inactive', 'error'];
-      status = statuses[Math.floor(Math.random() * statuses.length)];
-      lastRun = new Date(Date.now() - Math.random() * 86400000 * 30).toISOString();
+    if (!county) {
+      return res.status(404).json({ message: 'County not found' });
     }
     
+    // Update only valid stats fields
+    const validFields = [
+      'medianHomeValue', 
+      'medianIncome', 
+      'unemploymentRate', 
+      'avgDaysOnMarket', 
+      'listingCount', 
+      'priceChangeYoY'
+    ];
+    
+    const updateData: any = {};
+    
+    validFields.forEach(field => {
+      if (field in statsUpdate) {
+        updateData[`stats.${field}`] = statsUpdate[field];
+      }
+    });
+    
+    // Add lastUpdated timestamp
+    updateData['stats.lastUpdated'] = new Date();
+    
+    // Also update population and propertyCount if provided
+    if ('population' in statsUpdate) {
+      updateData.population = statsUpdate.population;
+    }
+    
+    if ('propertyCount' in statsUpdate) {
+      updateData.propertyCount = statsUpdate.propertyCount;
+    }
+    
+    // Update the county
+    const updatedCounty = await County.findByIdAndUpdate(
+      countyId,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
+    
     res.status(200).json({
-      hasController,
-      status,
-      lastRun
+      message: 'Statistics updated successfully',
+      stats: updatedCounty?.stats,
+      population: updatedCounty?.population,
+      propertyCount: updatedCounty?.propertyCount
     });
   } catch (error) {
-    console.error(`Error fetching county controller status ${req.params.countyId}:`, error);
+    console.error(`Error updating stats for county ${req.params.countyId}:`, error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+/**
+ * Search counties by name or FIPS code
+ */
+export const searchCounties = async (req: Request, res: Response) => {
+  try {
+    const { query, stateId } = req.query;
+    
+    if (!query) {
+      return res.status(400).json({ message: 'Search query is required' });
+    }
+    
+    // Build search conditions
+    const searchConditions: any = {
+      $or: [
+        { name: { $regex: query, $options: 'i' } },
+        { fips: { $regex: query, $options: 'i' } }
+      ]
+    };
+    
+    // Add stateId filter if provided
+    if (stateId) {
+      searchConditions.stateId = stateId;
+    }
+    
+    const counties = await County.find(searchConditions)
+      .select('name fips stateId population stats.medianHomeValue')
+      .limit(20)
+      .sort({ name: 1 });
+    
+    res.status(200).json(counties);
+  } catch (error) {
+    console.error('Error searching counties:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

@@ -4,35 +4,44 @@
  */
 
 import mongoose, { Schema, Document } from 'mongoose';
-import { geometrySchema, stateMetadataSchema, controllerSchema } from './geo-schemas';
+import { geometrySchema, controllerSchema } from './geo-schemas';
 
 // Interface for State document
 export interface IState extends Document {
-  id: string; // Custom ID field (lowercase state abbreviation)
-  name: string;
-  abbreviation: string;
-  type: string;
-  parentId: mongoose.Types.ObjectId | string;
-  geometry: {
-    type: string;
-    coordinates: any[];
+  id: string;                        // Custom ID field (lowercase state abbreviation)
+  name: string;                      // State name (required)
+  abbreviation: string;              // State abbreviation (required)
+  type: string;                      // Entity type (default: 'state')
+  parentId: mongoose.Types.ObjectId; // Reference to USMap
+  geometry: {                        // GeoJSON representation of state boundaries
+    type: string;                    // "MultiPolygon"
+    coordinates: any[];              // Nested array of coordinates
   };
-  metadata: {
-    regionalInfo?: {
-      region?: string;
-      subregion?: string;
-    };
-    totalCounties: number;
-    totalProperties: number;
-    statistics: {
-      totalTaxLiens: number;
-      totalValue: number;
-      lastUpdated?: Date;
-    };
-    createdAt?: Date;
-    updatedAt?: Date;
-    lastModifiedBy?: string;
+  totalCounties: number;             // Number of counties in this state
+  totalProperties: number;           // Number of properties in this state
+  
+  // Consolidated statistics in a nested object
+  stats: {
+    medianHomeValue: number;         // Median home value in USD
+    medianIncome: number;            // Median household income
+    unemploymentRate: number;        // Unemployment rate percentage
+    totalTaxLiens: number;           // Total tax liens in this state
+    totalValue: number;              // Total property value in USD
+    averagePropertyValue: number;    // Average property value in USD
+    lastUpdated: Date;               // Last statistics update timestamp
   };
+  
+  // Geographic information
+  regionalInfo: {
+    region: string;                  // Geographic region (e.g., "Northeast")
+    subregion: string;               // Geographic subregion (e.g., "Mid-Atlantic")
+  };
+  
+  // Related documents
+  counties: mongoose.Types.ObjectId[];  // References to County documents
+  properties: mongoose.Types.ObjectId[]; // References to Property documents
+  
+  // Controller configuration
   controllers?: Array<{
     controllerId: mongoose.Types.ObjectId;
     controllerType: string;
@@ -41,10 +50,10 @@ export interface IState extends Document {
     nextScheduledRun?: Date;
     configuration?: any;
   }>;
-  counties?: mongoose.Types.ObjectId[];
-  properties?: mongoose.Types.ObjectId[];
-  createdAt: Date;
-  updatedAt: Date;
+  
+  // Document timestamps
+  createdAt: Date;                   // Document creation timestamp
+  updatedAt: Date;                   // Document last update timestamp
 }
 
 // State Schema
@@ -57,11 +66,23 @@ const StateSchema = new Schema<IState>({
     lowercase: true,
     trim: true
   },
-  name: { type: String, required: true },
-  abbreviation: { type: String, required: true, uppercase: true, trim: true, index: true },
-  type: { type: String, default: 'state' },
+  name: { 
+    type: String, 
+    required: true 
+  },
+  abbreviation: { 
+    type: String, 
+    required: true, 
+    uppercase: true, 
+    trim: true, 
+    index: true 
+  },
+  type: { 
+    type: String, 
+    default: 'state' 
+  },
   parentId: { 
-    type: Schema.Types.Mixed, // Can be string or ObjectId
+    type: Schema.Types.ObjectId, 
     required: true, 
     ref: 'USMap'
   },
@@ -73,13 +94,63 @@ const StateSchema = new Schema<IState>({
       coordinates: [[[[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]]]]
     })
   },
-  metadata: { 
-    type: stateMetadataSchema,
-    default: () => ({})
+  totalCounties: {
+    type: Number,
+    default: 0
+  },
+  totalProperties: {
+    type: Number,
+    default: 0
+  },
+  stats: {
+    medianHomeValue: {
+      type: Number,
+      default: 0
+    },
+    medianIncome: {
+      type: Number,
+      default: 0
+    },
+    unemploymentRate: {
+      type: Number,
+      default: 0
+    },
+    totalTaxLiens: {
+      type: Number,
+      default: 0
+    },
+    totalValue: {
+      type: Number,
+      default: 0
+    },
+    averagePropertyValue: {
+      type: Number,
+      default: 0
+    },
+    lastUpdated: {
+      type: Date,
+      default: Date.now
+    }
+  },
+  regionalInfo: {
+    region: { 
+      type: String,
+      default: ''
+    },
+    subregion: { 
+      type: String,
+      default: ''
+    }
   },
   controllers: [controllerSchema],
-  counties: [{ type: Schema.Types.ObjectId, ref: 'County' }],
-  properties: [{ type: Schema.Types.ObjectId, ref: 'Property' }]
+  counties: [{ 
+    type: Schema.Types.ObjectId, 
+    ref: 'County' 
+  }],
+  properties: [{ 
+    type: Schema.Types.ObjectId, 
+    ref: 'Property' 
+  }]
 }, {
   timestamps: true
 });
@@ -87,7 +158,9 @@ const StateSchema = new Schema<IState>({
 // Create indexes for common search fields
 StateSchema.index({ name: 1 }, { unique: true });
 StateSchema.index({ abbreviation: 1 }, { unique: true });
-StateSchema.index({ 'metadata.totalProperties': 1 });
+StateSchema.index({ totalProperties: 1 });
+StateSchema.index({ 'stats.medianHomeValue': 1 });
+StateSchema.index({ 'stats.lastUpdated': 1 });
 
 // Create a 2dsphere index for geospatial queries
 StateSchema.index({ "geometry": "2dsphere" });
@@ -95,22 +168,21 @@ StateSchema.index({ "geometry": "2dsphere" });
 // Create a compound index for efficient lookups
 StateSchema.index({ name: 1, abbreviation: 1 }, { unique: true });
 
-// Generate slug-based ID from abbreviation if not provided
+// Middleware to update nested stats.lastUpdated timestamp when any stat field changes
 StateSchema.pre('save', function(next) {
-  // Ensure the ID is set to lowercase state abbreviation if not provided
+  // Generate slug-based ID from abbreviation if not provided
   if (!this.id && this.abbreviation) {
     this.id = this.abbreviation.toLowerCase();
   }
   
-  // Set updatedAt timestamp
-  this.set('updatedAt', new Date());
+  // Update stats.lastUpdated when any stat is modified
+  const state = this as any;
+  if (state.isModified('stats')) {
+    state.stats.lastUpdated = new Date();
+  }
+  
   next();
 });
-
-// Remove the conflicting _id virtual
-// StateSchema.virtual('_id').get(function() {
-//   return this._id;
-// });
 
 // Make sure virtuals are included in JSON output
 StateSchema.set('toJSON', { 

@@ -189,6 +189,133 @@ const handleExecute = async () => {
 };
 ```
 
+## Entity-Specific Controllers
+
+### County Controllers
+
+County controllers provide automated data management for county-level information. They work with the standardized County model that includes nested statistics.
+
+#### County Model Structure
+
+```typescript
+interface ICounty {
+  stateId: mongoose.Types.ObjectId;  // Reference to State
+  name: string;                      // County name
+  fips: string;                      // FIPS code
+  boundaries: any;                   // GeoJSON representation
+  population: number;                // Population count
+  propertyCount: number;             // Number of properties
+  
+  // Nested statistics structure
+  stats: {
+    medianHomeValue: number;         // Median home value
+    medianIncome: number;            // Median household income
+    unemploymentRate: number;        // Unemployment rate %
+    avgDaysOnMarket: number;         // Average days on market
+    listingCount: number;            // Number of listings
+    priceChangeYoY: number;          // Year-over-year price change %
+    lastUpdated: Date;               // Last update timestamp
+  };
+}
+```
+
+#### County Controller Operations
+
+```typescript
+// Update county statistics
+const updateCountyStats = async (countyId: string, statsUpdate: Partial<ICounty['stats']>) => {
+  try {
+    const county = await County.findById(countyId);
+    
+    if (!county) {
+      throw new Error('County not found');
+    }
+    
+    // Create update object for nested stats fields
+    const updateData: any = {};
+    
+    // Update only valid stats fields
+    Object.keys(statsUpdate).forEach(key => {
+      if (key in county.stats) {
+        updateData[`stats.${key}`] = statsUpdate[key];
+      }
+    });
+    
+    // Update last updated timestamp
+    updateData['stats.lastUpdated'] = new Date();
+
+    // Apply updates
+    const updatedCounty = await County.findByIdAndUpdate(
+      countyId,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
+    
+    return updatedCounty.stats;
+  } catch (error) {
+    console.error(`Error updating county stats: ${error}`);
+    throw error;
+  }
+};
+
+// Get county statistics
+const getCountyStats = async (countyId: string) => {
+  try {
+    const county = await County.findById(countyId)
+      .select('stats population propertyCount');
+    
+    if (!county) {
+      throw new Error('County not found');
+    }
+    
+    // Create a plain object with the stats properties
+    const statsResponse = {
+      medianHomeValue: county.stats.medianHomeValue,
+      medianIncome: county.stats.medianIncome,
+      unemploymentRate: county.stats.unemploymentRate,
+      avgDaysOnMarket: county.stats.avgDaysOnMarket,
+      listingCount: county.stats.listingCount,
+      priceChangeYoY: county.stats.priceChangeYoY,
+      lastUpdated: county.stats.lastUpdated,
+      population: county.population,
+      propertyCount: county.propertyCount
+    };
+    
+    return statsResponse;
+  } catch (error) {
+    console.error(`Error fetching county stats: ${error}`);
+    throw error;
+  }
+};
+
+#### County Controller Configuration
+
+County controllers support various types of automation:
+
+1. **Statistical Data Collection**
+   - Periodic updates of economic statistics
+   - Population and property count verification
+   - Real estate market metrics calculation
+
+2. **Boundary Management**
+   - GeoJSON boundaries verification and optimization
+   - Coordinates system standardization
+
+3. **Property Aggregation**
+   - Automatic property counting and categorization
+   - Tax data compilation
+
+#### County Controller API
+
+```typescript
+const COUNTY_CONTROLLER_ENDPOINTS = {
+  stats: '/api/counties/:countyId/stats',
+  updateStats: '/api/counties/:countyId/stats',
+  boundaries: '/api/counties/:countyId/boundaries',
+  search: '/api/counties/search',
+};
+```
+
 ## API Integration
 
 ### Endpoints
@@ -211,4 +338,4 @@ const CONTROLLER_ENDPOINTS = {
 ## Related Documentation
 - [Architecture Overview](./architecture.md)
 - [Panel System](./panels.md)
-- [Testing Guide](./testing.md) 
+- [Testing Guide](./testing.md)

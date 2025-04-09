@@ -8,7 +8,7 @@ export class StateService {
    * Get all states with filtered fields
    */
   async getAllStates(includeGeometry = false): Promise<IState[]> {
-    const fields = 'name abbreviation metadata.totalCounties metadata.totalProperties metadata.statistics';
+    const fields = 'name abbreviation totalCounties totalProperties stats';
     return includeGeometry 
       ? State.find().select(`${fields} geometry`).exec()
       : State.find().select(fields).exec();
@@ -121,9 +121,9 @@ export class StateService {
    * Get counties for a state
    */
   async getStateCounties(id: string, includeGeometry = false): Promise<any[]> {
-    const fields = 'name metadata.totalProperties metadata.statistics';
+    const fields = 'name population propertyCount stats';
     
-    const query = County.find({ parentId: id });
+    const query = County.find({ stateId: id });
     return includeGeometry
       ? query.select(`${fields} geometry`).exec()
       : query.select(fields).exec();
@@ -134,14 +134,14 @@ export class StateService {
    */
   async getStateStatistics(id: string): Promise<StateStatistics> {
     const state = await State.findById(id)
-      .select('metadata.statistics')
+      .select('stats')
       .exec();
 
     if (!state) {
       throw new Error('State not found');
     }
 
-    return state.metadata.statistics;
+    return state.stats;
   }
 
   /**
@@ -173,13 +173,25 @@ export class StateService {
       throw new Error('State not found');
     }
 
-    state.metadata.statistics = {
-      ...state.metadata.statistics,
-      ...statistics,
-      lastUpdated: new Date()
-    };
+    // Create update object for nested stats fields
+    const updateData: any = {};
+    
+    // Update specific stats fields
+    Object.keys(statistics).forEach(key => {
+      if (key in state.stats) {
+        updateData[`stats.${key}`] = statistics[key];
+      }
+    });
+    
+    // Update last updated timestamp
+    updateData['stats.lastUpdated'] = new Date();
 
-    return state.save();
+    // Apply updates
+    return State.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true }
+    ).exec();
   }
   
   /**
@@ -191,34 +203,46 @@ export class StateService {
     
     try {
       // Get all counties for this state
-      const counties = await County.find({ parentId: stateId }).session(session);
+      const counties = await County.find({ stateId: stateId }).session(session);
       
       // Calculate aggregated statistics
-      const totalProperties = counties.reduce((sum, county) => sum + county.metadata.totalProperties, 0);
-      const totalTaxLiens = counties.reduce((sum, county) => sum + county.metadata.statistics.totalTaxLiens, 0);
-      const totalValue = counties.reduce((sum, county) => sum + county.metadata.statistics.totalValue, 0);
-      const totalPropertiesWithLiens = counties.reduce(
-        (sum, county) => sum + (county.metadata.statistics.totalPropertiesWithLiens || 0), 
-        0
-      );
+      let totalProperties = 0;
+      let totalTaxLiens = 0;
+      let totalValue = 0;
+      let totalPropertiesWithLiens = 0;
+      let totalMedianHomeValue = 0;
+      let countsWithMedianValues = 0;
+      
+      counties.forEach(county => {
+        totalProperties += county.propertyCount || 0;
+        totalTaxLiens += county.stats?.totalTaxLiens || 0;
+        totalValue += county.stats?.totalValue || 0;
+        totalPropertiesWithLiens += county.stats?.totalPropertiesWithLiens || 0;
+        
+        if (county.stats?.medianHomeValue > 0) {
+          totalMedianHomeValue += county.stats.medianHomeValue;
+          countsWithMedianValues++;
+        }
+      });
       
       // Calculate average property value (if there are properties)
       const averagePropertyValue = totalProperties > 0 ? totalValue / totalProperties : 0;
+      
+      // Calculate average median home value across counties
+      const stateMedianHomeValue = countsWithMedianValues > 0 ? totalMedianHomeValue / countsWithMedianValues : 0;
       
       // Update the state with new statistics
       const updatedState = await State.findByIdAndUpdate(
         stateId,
         {
           $set: {
-            'metadata.totalCounties': counties.length,
-            'metadata.totalProperties': totalProperties,
-            'metadata.statistics': {
-              totalTaxLiens,
-              totalValue,
-              averagePropertyValue,
-              totalPropertiesWithLiens,
-              lastUpdated: new Date()
-            }
+            'totalCounties': counties.length,
+            'totalProperties': totalProperties,
+            'stats.totalTaxLiens': totalTaxLiens,
+            'stats.totalValue': totalValue,
+            'stats.averagePropertyValue': averagePropertyValue,
+            'stats.medianHomeValue': stateMedianHomeValue,
+            'stats.lastUpdated': new Date()
           }
         },
         { new: true, session }

@@ -3,27 +3,32 @@ cd client
 
 echo "Running Core Layout Tests..."
 
-# Run core components tests - Updated for flattened structure
-npx vitest run "src/__tests__/components_multiframe_*" --config ./vitest.config.ts --no-coverage
+# Test Core Layout Components
+$ErrorActionPreference = 'Stop'
 
-echo "Running Panel Registry Tests..."
+Write-Host "`nRunning Core Components tests...`n" -ForegroundColor Green
+    
+# Run core component tests
+npx vitest run "src/_tests_/TC*_components_multiframe_*" --config ./vitest.config.ts --no-coverage
 
-# Run panel registry service tests - Updated for flattened structure
-npx vitest run src/__tests__/services_panelContentRegistry.test.tsx --config ./vitest.config.ts --no-coverage
+Write-Host "`nRunning Panel Registry tests...`n" -ForegroundColor Green
+    
+# Run panel registry tests  
+npx vitest run src/_tests_/TC301_services_panelContentRegistry.test.tsx --config ./vitest.config.ts --no-coverage
 
-echo "Running MultiFrameContainer Tests..."
+Write-Host "`nRunning MultiFrameContainer tests...`n" -ForegroundColor Green
+    
+# Run MultiFrameContainer tests
+npx vitest run src/_tests_/TC201_components_MultiFrameContainer.test.tsx --config ./vitest.config.ts --no-coverage
 
-# Run container tests - Updated for flattened structure
-npx vitest run src/__tests__/components_MultiFrameContainer.test.tsx --config ./vitest.config.ts --no-coverage
+Write-Host "`nRunning Enhanced Container tests...`n" -ForegroundColor Green
+    
+# Run Enhanced Container tests
+npx vitest run src/_tests_/TC201_components_EnhancedMultiFrameContainer.test.tsx --config ./vitest.config.ts --no-coverage
 
-echo "Running EnhancedMultiFrameContainer Tests..."
-
-# Run enhanced container tests - Updated for flattened structure
-npx vitest run src/__tests__/components_EnhancedMultiFrameContainer.test.tsx --config ./vitest.config.ts --no-coverage
-
-echo "Running Database Integration Tests..."
-
-# Run database integration tests - Updated for flattened structure
-npx vitest run src/__tests__/services_dbConnection.test.ts --config ./vitest.config.ts --no-coverage
+Write-Host "`nRunning DB Connection tests...`n" -ForegroundColor Green
+    
+# Run DB Connection tests
+npx vitest run src/_tests_/TC2201_services_dbConnection.test.ts --config ./vitest.config.ts --no-coverage
 
 echo "All core layout tests completed!" 

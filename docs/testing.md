@@ -33,15 +33,15 @@ The platform uses several types of tests:
 
 ## Test Structure
 
-Tests are organized in the `__tests__` directory, which mirrors the structure of the source code:
+Tests are organized in the `_tests_` directory with a flattened structure using test case IDs:
 
 ```
-client/src/__tests__/
-├── components_*       # Component tests with flattened structure using underscores
-├── hooks_*            # Custom React hook tests with flattened structure
-├── integration_*      # Integration tests with flattened structure
-├── services_*         # Service layer tests with flattened structure
-└── setup/            # Test setup utilities
+client/src/_tests_/
+├── TC*_components_*       # Component tests with flattened structure using underscores and TC IDs
+├── TC*_hooks_*            # Custom React hook tests with flattened structure
+├── TC*_integration_*      # Integration tests with flattened structure
+├── TC*_services_*         # Service layer tests with flattened structure
+└── README.md              # Test setup documentation
 ```
 
 ## Running Tests
@@ -56,7 +56,7 @@ npm test
 npm test -- --coverage
 
 # Run a specific test file
-npm test -- src/__tests__/hooks_useAdvancedLayout.test.tsx
+npm test -- src/_tests_/TC401_hooks_useAdvancedLayout.test.tsx
 
 # Run tests without watching
 npm test -- --no-watch
@@ -486,21 +486,29 @@ The application includes a system of multiframe components that require special 
 3. **Test Layout Transitions**: Verify that layout changes work correctly
 4. **Test Panel Configurations**: Ensure panels receive and display the correct content
 
+#### Test Case IDs
+
+All tests follow a standardized naming convention with test case IDs:
+
+- `TC101_components_multiframe_controls_LayoutSelector.test.tsx` - Layout selector tests
+- `TC201_components_multiframe_MultiFrameContainer.test.tsx` - MultiFrameContainer tests
+- `TC201_components_EnhancedMultiFrameContainer.test.tsx` - EnhancedMultiFrameContainer tests
+
 #### Testing MultiFrameContainer
 
 ```typescript
 import { render, screen } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { MultiFrameContainer } from '../components/multiframe/MultiFrameContainer';
+import { MultiFrameContainer } from '../../src/components/multiframe/MultiFrameContainer';
 
 // Mock child components
-vi.mock('../components/multiframe/controls/LayoutSelector', () => ({
+vi.mock('../../src/components/multiframe/controls/LayoutSelector', () => ({
   LayoutSelector: ({ currentLayout }) => (
     <div data-testid="mock-layout-selector">Layout: {currentLayout}</div>
   )
 }));
 
-vi.mock('../components/multiframe/layouts/SinglePanelLayout', () => ({
+vi.mock('../../src/components/multiframe/layouts/SinglePanelLayout', () => ({
   SinglePanelLayout: () => <div data-testid="mock-single-panel-layout">Single Panel Layout</div>
 }));
 
@@ -509,7 +517,7 @@ describe('MultiFrameContainer', () => {
     vi.clearAllMocks();
   });
 
-  it('renders with default layout', () => {
+  it('TC201: should render with default layout', () => {
     render(
       <MultiFrameContainer 
         initialLayout="single" 
@@ -522,30 +530,3 @@ describe('MultiFrameContainer', () => {
   });
 });
 ```
-
-### Detailed Guides
-
-For more detailed information on testing specific components, please refer to:
-
-- [Testing Guide with Multiframe Instructions](../src/__tests__/README.md)
-- [Component Architecture Documentation](./architecture/components.md)
-
-### Testing Stateful Components
-
-```typescript
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
-import Counter from '../components/Counter';
-
-describe('Counter Component', () => {
-  it('increments count when button is clicked', () => {
-    render(<Counter initialCount={0} />);
-    
-    expect(screen.getByText('Count: 0')).toBeInTheDocument();
-    
-    fireEvent.click(screen.getByText('Increment'));
-    
-    expect(screen.getByText('Count: 1')).toBeInTheDocument();
-  });
-});
-``` 

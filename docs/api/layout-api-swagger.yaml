@@ -348,8 +348,13 @@ components:
           type: string
           enum: [single, dual, tri, quad, custom]
           example: "tri"
-        isGlobal:
+        isDefault:
           type: boolean
+          description: "Whether this is the default layout"
+          example: false
+        isPublic:
+          type: boolean
+          description: "Whether this layout is public"
           example: false
         tags:
           type: array
@@ -381,8 +386,14 @@ components:
           type: string
           enum: [single, dual, tri, quad, custom]
           example: "tri"
-        isGlobal:
+        isDefault:
           type: boolean
+          description: "Whether this is the default layout"
+          default: false
+          example: false
+        isPublic:
+          type: boolean
+          description: "Whether this layout is public"
           default: false
           example: false
         tags:
@@ -411,8 +422,13 @@ components:
           type: string
           enum: [single, dual, tri, quad, custom]
           example: "quad"
-        isGlobal:
+        isDefault:
           type: boolean
+          description: "Whether this is the default layout"
+          example: false
+        isPublic:
+          type: boolean
+          description: "Whether this layout is public"
           example: false
         tags:
           type: array
@@ -442,8 +458,13 @@ components:
           type: string
           enum: [single, dual, tri, quad, custom]
           example: "tri"
-        isGlobal:
+        isDefault:
           type: boolean
+          description: "Whether this is the default layout"
+          example: false
+        isPublic:
+          type: boolean
+          description: "Whether this layout is public"
           example: false
         tags:
           type: array

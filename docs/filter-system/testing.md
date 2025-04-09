@@ -67,10 +67,10 @@ Or run individual tests:
 ```bash
 # Run specific test
 cd client
-npx vitest run src/__tests__/services/filterService.test.ts
+npx vitest run src/_tests_/TC2301_services_filterService.test.ts
 
 # Run with watch mode for development
-npx vitest watch src/__tests__/hooks/useFilter.test.tsx
+npx vitest watch src/_tests_/TC1301_hooks_useFilter.test.tsx
 ```
 
 ## Common Test Issues
@@ -155,4 +155,15 @@ npx vitest run --coverage
 
 - [Filter System Architecture](./architecture.md)
 - [Filter System API Reference](../api/filter-system.md)
-- [Using Filters in Components](../guides/using-filters.md) 
+- [Using Filters in Components](../guides/using-filters.md)
+
+Tests are organized in the `_tests_` directory, which contains test files with TC IDs:
+
+```
+client/src/_tests_/
+├── TC*_components_*       # Component tests with flattened structure using underscores
+├── TC*_hooks_*            # Custom React hook tests with flattened structure
+├── TC*_integration_*      # Integration tests with flattened structure
+├── TC*_services_*         # Service layer tests with flattened structure
+└── README.md              # Test setup documentation
+``` 

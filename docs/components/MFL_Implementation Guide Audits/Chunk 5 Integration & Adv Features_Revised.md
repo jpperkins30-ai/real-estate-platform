@@ -1,10 +1,10 @@
 # 🧩 Chunk 5: Integration & Advanced Features (Vitest Implementation)
 
-> **IMPORTANT NOTE**: Test file paths in this document reference the old nested test structure. The project has moved to a flattened test directory structure where files are located directly in `src/__tests__/` with underscores replacing directory separators. For example:
+> **IMPORTANT NOTE**: Test file paths in this document reference the old nested test structure. The project has moved to a flattened test directory structure where files are located directly in `src/_tests_/` with underscores replacing directory separators. For example:
 > - Old path: `src/__tests__/components/controllers/ControllerWizardLauncher.test.tsx`
-> - New path: `src/__tests__/components_multiframe_controllers_ControllerWizardLauncher.test.tsx`
+> - New path: `src/_tests_/TC1201_components_controllers_ControllerWizardLauncher.test.tsx`
 >
-> For more information on the test structure, see the test guide in `src/__tests__/README.md`.
+> For more information on the test structure, see the test guide in `src/_tests_/README.md`.
 
 ## 🎯 Objective
 
@@ -1324,7 +1324,7 @@ Create test files for new components and use Vitest for testing:
 
 ##### 1. Test for Custom Hooks
 
-📄 **client/src/__tests__/hooks/useDraggable.test.tsx**
+📄 **client/src/_tests_/TC601_hooks_useDraggable.test.tsx**
 ```typescript
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -1378,189 +1378,23 @@ describe('useDraggable hook', () => {
 });
 ```
 
-📄 **client/src/__tests__/hooks/useResizable.test.tsx**
+📄 **client/src/_tests_/TC1501_hooks_useResizable.test.tsx**
 ```typescript
 import { renderHook, act } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { useResizable } from '../../hooks/useResizable';
-
-describe('useResizable hook', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('initializes with the provided size', () => {
-    const initialSize = { width: 300, height: 200 };
-    const { result } = renderHook(() => useResizable(initialSize));
-    
-    expect(result.current.size).toEqual(initialSize);
-    expect(result.current.isResizing).toBe(false);
-  });
-  
-  it('changes isResizing state on resize start', () => {
-    const { result } = renderHook(() => useResizable());
-    
-    // Simulate resize start
-    act(() => {
-      const mockEvent = {
-        clientX: 100,
-        clientY: 100,
-        preventDefault: vi.fn(),
-      };
-      
-      result.current.handleResizeStart(mockEvent as any, 'corner');
-    });
-    
-    expect(result.current.isResizing).toBe(true);
-  });
-  
-  // Additional tests
-});
 ```
 
 ##### 2. Test for ControllerWizardLauncher
 
-📄 **client/src/__tests__/components/controllers/ControllerWizardLauncher.test.tsx**
+📄 **client/src/_tests_/TC1201_components_controllers_ControllerWizardLauncher.test.tsx**
 ```typescript
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ControllerWizardLauncher } from '../../../components/multiframe/controllers/ControllerWizardLauncher';
-import { fetchControllerStatus } from '../../../services/controllerService';
-
-// Mock dependencies
-vi.mock('../../../services/controllerService', () => ({
-  fetchControllerStatus: vi.fn()
-}));
-
-vi.mock('react-router-dom', () => ({
-  useNavigate: () => vi.fn()
-}));
-
-describe('ControllerWizardLauncher', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('renders with loading state initially', () => {
-    vi.mocked(fetchControllerStatus).mockResolvedValue({
-      hasController: false,
-      status: null,
-      lastRun: null
-    });
-    
-    render(
-      <ControllerWizardLauncher 
-        entityType="state"
-        entityId="CA"
-      />
-    );
-    
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
-  });
-
-  it('shows correct status for existing controller', async () => {
-    vi.mocked(fetchControllerStatus).mockResolvedValue({
-      hasController: true,
-      status: 'active',
-      lastRun: '2023-01-01T12:00:00Z'
-    });
-    
-    render(
-      <ControllerWizardLauncher 
-        entityType="county"
-        entityId="los-angeles"
-      />
-    );
-    
-    await waitFor(() => {
-      expect(screen.getByText('active')).toBeInTheDocument();
-      expect(screen.getByText('Edit Controller')).toBeInTheDocument();
-    });
-  });
-  
-  // Additional tests
-});
 ```
 
 ##### 3. Create Test for Enhanced Panel Container
 
-📄 **client/src/__tests__/components/EnhancedPanelContainer.test.tsx**
+📄 **client/src/_tests_/TC701_components_multiframe_EnhancedPanelContainer.test.tsx**
 ```typescript
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { EnhancedPanelContainer } from '../../components/multiframe/EnhancedPanelContainer';
-
-// Mock hooks and services
-vi.mock('../../hooks/useDraggable', () => ({
-  useDraggable: () => ({
-    isDragging: false,
-    position: { x: 0, y: 0 },
-    ref: { current: null },
-    onMouseDown: vi.fn()
-  })
-}));
-
-vi.mock('../../hooks/useResizable', () => ({
-  useResizable: () => ({
-    isResizing: false,
-    size: { width: 300, height: 200 },
-    ref: { current: null },
-    handleResizeStart: vi.fn()
-  })
-}));
-
-vi.mock('../../hooks/usePanelSync', () => ({
-  usePanelSync: () => ({
-    broadcast: vi.fn(),
-    subscribe: () => vi.fn()
-  })
-}));
-
-vi.mock('../../hooks/useLayoutContext', () => ({
-  useLayoutContext: () => ({
-    registerPanel: vi.fn(),
-    unregisterPanel: vi.fn(),
-    updatePanelConfig: vi.fn()
-  })
-}));
-
-vi.mock('../../services/panelContentRegistry', () => ({
-  getPanelContent: () => () => <div>Mock Panel Content</div>
-}));
-
-describe('EnhancedPanelContainer', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('renders with the provided title', () => {
-    render(
-      <EnhancedPanelContainer
-        id="test-panel"
-        title="Test Panel"
-        contentType="test"
-      />
-    );
-    
-    expect(screen.getByText('Test Panel')).toBeInTheDocument();
-  });
-
-  it('renders panel content', () => {
-    render(
-      <EnhancedPanelContainer
-        id="test-panel"
-        title="Test Panel"
-        contentType="test"
-      />
-    );
-    
-    expect(screen.getByText('Mock Panel Content')).toBeInTheDocument();
-  });
-  
-  // Additional tests
-});
 ```
 
 ##### 4. Run Tests
@@ -1573,16 +1407,16 @@ Create a test script for running tests:
 cd client
 
 echo "Running Custom Hooks Tests..."
-npx vitest run src/__tests__/hooks/ --config ./vitest.config.ts
+npx vitest run "src/_tests_/TC*_hooks_*" --config ./vitest.config.ts
 
 echo "Running Controller Component Tests..."
-npx vitest run src/__tests__/components/controllers/ --config ./vitest.config.ts
+npx vitest run "src/_tests_/TC*_components_controllers_*" --config ./vitest.config.ts
 
 echo "Running Panel Component Tests..."
-npx vitest run src/__tests__/components/panels/ --config ./vitest.config.ts
+npx vitest run "src/_tests_/TC*_components_panels_*" --config ./vitest.config.ts
 
-echo "Running Enhanced Container Tests..."
-npx vitest run src/__tests__/components/EnhancedPanelContainer.test.tsx --config ./vitest.config.ts
+echo "Running EnhancedPanelContainer tests..."
+npx vitest run src/_tests_/TC701_components_multiframe_EnhancedPanelContainer.test.tsx --config ./vitest.config.ts
 
 echo "All integration and advanced features tests completed!"
 ```
@@ -1613,41 +1447,5 @@ The hierarchical flow between State → County → Property is implemented throu
 2. **Event Broadcasting**: The `usePanelSync` hook allows coordinated updates across panels
 3. **Controller Integration**: Each level (state, county) has its own controller with status awareness
 4. **Enhanced UI Components**: Components with proper loading, error, and empty states
-
-### Component Architecture Diagram
-
-```
-┌─────────────────────────────────────────────────────────┐
-│ MultiFrameContainer                                     │
-│ │                                                       │
-│ │  ┌───────────────────────┐   ┌───────────────────────┐│
-│ │  │                       │   │                       ││
-│ │  │  MapPanelWithControllers  │   StatePanel          ││
-│ │  │                       │   │                       ││
-│ │  │  ┌─────────────────┐  │   │                       ││
-│ │  │  │ControllerLauncher  │   │                       ││
-│ │  │  └─────────────────┘  │   │                       ││
-│ │  │                       │   │                       ││
-│ │  └───────────────────────┘   └───────────────────────┘│
-│ │                                                       │
-│ │  ┌───────────────────────┐   ┌───────────────────────┐│
-│ │  │                       │   │                       ││
-│ │  │  CountyPanel          │   │  PropertyPanel        ││
-│ │  │                       │   │                       ││
-│ │  │  ┌─────────────────┐  │   │                       ││
-│ │  │  │ControllerLauncher  │   │                       ││
-│ │  │  └─────────────────┘  │   │                       ││
-│ │  │                       │   │                       ││
-│ │  └───────────────────────┘   └───────────────────────┘│
-│ │                                                       │
-└─────────────────────────────────────────────────────────┘
-```
-
-### Key Enhancements
-
-1. **Custom Hooks Architecture**: Reusable hooks for drag, resize, and entity data
-2. **Modern Testing Setup**: Vitest for faster, more reliable tests
-3. **TypeScript Type Safety**: Fully typed components and hooks
-4. **Status-Aware Controllers**: Real-time status and execution tracking
 5. **Enhanced Data Flow**: Proper hierarchy with parent-child relationships
 6. **Interactive UI**: Improved interactions with drag, resize, and maximize
